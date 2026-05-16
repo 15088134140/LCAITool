@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__tavily-remote-mcp__tavily_research",
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:brainstorming:*)",
+      "Bash(mkdir -p docs)"
+    ],
+    "additionalDirectories": [
+      "c:\\MyProject\\LCAiTool"
+    ]
+  }
+}
