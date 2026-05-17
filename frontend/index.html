@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>灵创AI工具箱 - 专业场景AI工具集合平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card-hover {
+            transition: all 0.25s ease-out;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(30, 58, 95, 0.12);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(5, 150, 105, 0.3);
+        }
+
+        .btn-secondary {
+            border: 2px solid #1E3A5F;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #1E3A5F;
+            color: white;
+        }
+
+        .hero-image {
+            border-radius: 16px;
+            box-shadow: 0 25px 50px rgba(30, 58, 95, 0.15);
+        }
+
+        .value-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #E4E7EB;
+            transition: all 0.25s ease;
+        }
+
+        .value-card:hover {
+            border-color: #2563EB;
+            background: #F8FAFC;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #E4E7EB;
+            overflow: hidden;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #E4E7EB;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .category-card:hover {
+            border-color: #2563EB;
+            background: #F0F7FF;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #E4E7EB;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #059669, #10B981);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .avatar-stack img {
+            border: 2px solid white;
+            margin-left: -8px;
+        }
+
+        .avatar-stack img:first-child {
+            margin-left: 0;
+        }
+
+        .testimonial-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #E4E7EB;
+            padding: 28px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #E4E7EB;
+            padding: 32px;
+        }
+
+        .footer-link {
+            color: #64748B;
+            transition: color 0.2s ease;
+        }
+
+        .footer-link:hover {
+            color: #1E3A5F;
+        }
+
+        .new-badge {
+            background: linear-gradient(135deg, #F59E0B, #EF4444);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .hot-badge {
+            background: linear-gradient(135deg, #EF4444, #DC2626);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .focus-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#0F172A] antialiased">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#E4E7EB]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AI</span>
+                    </div>
+                    <span class="font-bold text-xl text-[#1E3A5F]">灵创AI</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="tools.html" class="text-[#475569] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">工具中心</a>
+                    <a href="index.html#cases" class="text-[#475569] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">成功案例</a>
+                    <a href="vote.html" class="text-[#475569] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">用户共创</a>
+                    <a href="feedback.html" class="text-[#475569] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">帮助反馈</a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="user-center.html" class="hidden sm:block px-4 py-2 text-[#1E3A5F] font-medium hover:bg-[#F1F3F5] rounded-lg transition-colors focus-ring">个人中心</a>
+                    <a href="pricing.html" class="btn-primary px-5 py-2 text-white font-semibold rounded-lg focus-ring">充值套餐</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Section 1: Hero -->
+    <section class="py-16 lg:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+                        灵创AI工具箱
+                        <span class="gradient-text block mt-2">专业场景AI工具集合平台</span>
+                    </h1>
+                    <p class="text-lg sm:text-xl text-[#475569] mb-8 leading-relaxed">
+                        无需AI专业知识，简单几步，获得专业级可商用的完整成果。让每一个创意都能通过AI高效实现。
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-12">
+                        <button class="btn-primary px-8 py-4 text-white font-semibold rounded-xl text-lg focus-ring">
+                            立即免费体验
+                        </button>
+                        <button class="btn-secondary px-8 py-4 text-[#1E3A5F] font-semibold rounded-xl text-lg focus-ring">
+                            浏览全部工具
+                        </button>
+                    </div>
+
+                    <!-- Five Value Cards -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                        <div class="value-card p-4 text-center">
+                            <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-sm text-[#1E3A5F]">场景深耕</h3>
+                        </div>
+                        <div class="value-card p-4 text-center">
+                            <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-green-50 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-[#059669]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-sm text-[#1E3A5F]">成果完整</h3>
+                        </div>
+                        <div class="value-card p-4 text-center">
+                            <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-amber-50 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-sm text-[#1E3A5F]">按量付费</h3>
+                        </div>
+                        <div class="value-card p-4 text-center">
+                            <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-rose-50 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-[#E11D48]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-sm text-[#1E3A5F]">持续迭代</h3>
+                        </div>
+                        <div class="value-card p-4 text-center col-span-2 sm:col-span-1">
+                            <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-purple-50 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-[#7C3AED]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-sm text-[#1E3A5F]">用户共建</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="hero-image overflow-hidden">
+                        <img src="images/hero-banner.png"
+                             alt="AI 创作成果展示"
+                             class="w-full h-auto object-cover"
+                             loading="eager">
+                    </div>
+                    <div class="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-xl p-4 border border-[#E4E7EB]">
+                        <div class="flex items-center gap-3">
+                            <div class="avatar-stack flex">
+                                <img src="https://i.pravatar.cc/40?img=1" class="w-8 h-8 rounded-full" alt="用户头像">
+                                <img src="https://i.pravatar.cc/40?img=2" class="w-8 h-8 rounded-full" alt="用户头像">
+                                <img src="https://i.pravatar.cc/40?img=3" class="w-8 h-8 rounded-full" alt="用户头像">
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-[#1E3A5F]">10,000+ 活跃用户</div>
+                                <div class="text-xs text-[#64748B]">今日新增 328 人</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: Benchmark Tools -->
+    <section id="tools" class="py-16 lg:py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#1E3A5F] mb-4">精品工具 · 开箱即用</h2>
+                <p class="text-lg text-[#64748B] max-w-2xl mx-auto">每一款工具都经过专业调试，输出质量达到商用标准，让你的创意快速落地</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Tool 1 -->
+                <div class="tool-card card-hover">
+                    <div class="aspect-[4/3] relative overflow-hidden">
+                        <img src="images/tool-illustration.png"
+                             alt="AI有声绘本生成专家"
+                             class="w-full h-full object-cover"
+                             loading="lazy">
+                        <div class="absolute top-4 left-4">
+                            <span class="hot-badge">HOT</span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-[#1E3A5F] mb-2">AI有声绘本生成专家</h3>
+                        <p class="text-[#64748B] mb-4">输入故事主题或文字，自动生成带精美插图和专业配音的完整有声绘本</p>
+                        <div class="flex items-center gap-2 mb-4 text-sm text-[#64748B]">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                4.9
+                            </span>
+                            <span>·</span>
+                            <span>已帮助 3,280 位用户</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-lg font-bold text-[#059669]">8 积分/次起</span>
+                            <div class="flex gap-2">
+                                <a href="tool-detail.html" class="px-4 py-2 border border-[#1E3A5F] text-[#1E3A5F] rounded-lg font-medium hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">查看演示</a>
+                                <a href="tool-detail.html" class="btn-primary px-4 py-2 text-white rounded-lg font-medium focus-ring">立即使用</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool 2 -->
+                <div class="tool-card card-hover">
+                    <div class="aspect-[4/3] relative overflow-hidden">
+                        <img src="images/tool-ecommerce.png"
+                             alt="AI电商商品详情页生成器"
+                             class="w-full h-full object-cover"
+                             loading="lazy">
+                        <div class="absolute top-4 left-4">
+                            <span class="new-badge">NEW</span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-[#1E3A5F] mb-2">AI电商商品详情页生成器</h3>
+                        <p class="text-[#64748B] mb-4">输入商品信息，一键生成包含主图、详情图、营销文案的完整详情页</p>
+                        <div class="flex items-center gap-2 mb-4 text-sm text-[#64748B]">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                4.8
+                            </span>
+                            <span>·</span>
+                            <span>已帮助 2,156 位用户</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-lg font-bold text-[#059669]">12 积分/次起</span>
+                            <div class="flex gap-2">
+                                <a href="tool-detail.html" class="px-4 py-2 border border-[#1E3A5F] text-[#1E3A5F] rounded-lg font-medium hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">查看演示</a>
+                                <a href="tool-detail.html" class="btn-primary px-4 py-2 text-white rounded-lg font-medium focus-ring">立即使用</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool 3 -->
+                <div class="tool-card card-hover">
+                    <div class="aspect-[4/3] relative overflow-hidden">
+                        <img src="images/tool-content.png"
+                             alt="AI营销文案大师"
+                             class="w-full h-full object-cover"
+                             loading="lazy">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-[#1E3A5F] mb-2">AI营销文案大师</h3>
+                        <p class="text-[#64748B] mb-4">专业级营销文案生成，支持多风格、多平台，转化率提升看得见</p>
+                        <div class="flex items-center gap-2 mb-4 text-sm text-[#64748B]">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                4.9
+                            </span>
+                            <span>·</span>
+                            <span>已帮助 4,521 位用户</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-lg font-bold text-[#059669]">5 积分/次起</span>
+                            <div class="flex gap-2">
+                                <a href="tool-detail.html" class="px-4 py-2 border border-[#1E3A5F] text-[#1E3A5F] rounded-lg font-medium hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">查看演示</a>
+                                <a href="tool-detail.html" class="btn-primary px-4 py-2 text-white rounded-lg font-medium focus-ring">立即使用</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Tool Categories -->
+    <section class="py-16 lg:py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#1E3A5F] mb-4">按场景选择工具</h2>
+                <p class="text-lg text-[#64748B]">覆盖主流创作场景，找到最适合你的AI工具</p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div class="category-card card-hover">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-[#1E3A5F]">内容创作</h3>
+                    <p class="text-sm text-[#64748B] mt-1">8 款工具</p>
+                </div>
+
+                <div class="category-card card-hover">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-[#1E3A5F]">设计工具</h3>
+                    <p class="text-sm text-[#64748B] mt-1">12 款工具</p>
+                </div>
+
+                <div class="category-card card-hover">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-[#1E3A5F]">教育教学</h3>
+                    <p class="text-sm text-[#64748B] mt-1">6 款工具</p>
+                </div>
+
+                <div class="category-card card-hover">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-[#1E3A5F]">电商营销</h3>
+                    <p class="text-sm text-[#64748B] mt-1">10 款工具</p>
+                </div>
+
+                <div class="category-card card-hover">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-[#1E3A5F]">办公效率</h3>
+                    <p class="text-sm text-[#64748B] mt-1">7 款工具</p>
+                </div>
+
+                <div class="category-card card-hover">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-[#1E3A5F]">视频制作</h3>
+                    <p class="text-sm text-[#64748B] mt-1">5 款工具</p>
+                </div>
+
+                <div class="category-card card-hover">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-[#1E3A5F]">音频处理</h3>
+                    <p class="text-sm text-[#64748B] mt-1">4 款工具</p>
+                </div>
+
+                <div class="category-card card-hover">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-[#1E3A5F]">更多</h3>
+                    <p class="text-sm text-[#64748B] mt-1">即将上线</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: New & Hot Tools -->
+    <section class="py-16 lg:py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12">
+                <!-- New Tools -->
+                <div>
+                    <div class="flex items-center gap-3 mb-8">
+                        <span class="new-badge text-sm px-3 py-1">NEW</span>
+                        <h2 class="text-2xl font-bold text-[#1E3A5F]">新品上架</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-[#1E3A5F]">AI社交媒体配图</h3>
+                                        <p class="text-sm text-[#64748B] mt-1">一键生成小红书、抖音、微博全套配图</p>
+                                        <p class="text-xs text-[#059669] font-medium mt-2">今日已有 128 人使用</p>
+                                    </div>
+                                </div>
+                                <span class="text-sm font-bold text-[#059669]">6 积分</span>
+                            </div>
+                        </div>
+
+                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-[#1E3A5F]">AI智能PPT生成器</h3>
+                                        <p class="text-sm text-[#64748B] mt-1">输入主题，自动生成完整PPT框架和内容</p>
+                                        <p class="text-xs text-[#059669] font-medium mt-2">今日已有 89 人使用</p>
+                                    </div>
+                                </div>
+                                <span class="text-sm font-bold text-[#059669]">10 积分</span>
+                            </div>
+                        </div>
+
+                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-[#1E3A5F]">AI思维导图助手</h3>
+                                        <p class="text-sm text-[#64748B] mt-1">自动梳理思路，生成专业思维导图</p>
+                                        <p class="text-xs text-[#059669] font-medium mt-2">今日已有 56 人使用</p>
+                                    </div>
+                                </div>
+                                <span class="text-sm font-bold text-[#059669]">4 积分</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hot Tools -->
+                <div>
+                    <div class="flex items-center gap-3 mb-8">
+                        <span class="hot-badge text-sm px-3 py-1">HOT</span>
+                        <h2 class="text-2xl font-bold text-[#1E3A5F]">热门工具</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-2xl font-bold text-[#EF4444]">#1</span>
+                                <div class="flex items-center gap-1">
+                                    <svg class="w-4 h-4 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">4.9</span>
+                                </div>
+                            </div>
+                            <h3 class="font-semibold text-[#1E3A5F]">AI营销文案大师</h3>
+                            <p class="text-sm text-[#64748B] mt-1">本周 1,234 次使用</p>
+                        </div>
+
+                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-2xl font-bold text-[#F59E0B]">#2</span>
+                                <div class="flex items-center gap-1">
+                                    <svg class="w-4 h-4 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">4.8</span>
+                                </div>
+                            </div>
+                            <h3 class="font-semibold text-[#1E3A5F]">AI有声绘本生成专家</h3>
+                            <p class="text-sm text-[#64748B] mt-1">本周 987 次使用</p>
+                        </div>
+
+                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-2xl font-bold text-[#059669]">#3</span>
+                                <div class="flex items-center gap-1">
+                                    <svg class="w-4 h-4 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">4.9</span>
+                                </div>
+                            </div>
+                            <h3 class="font-semibold text-[#1E3A5F]">AI电商商品详情页生成器</h3>
+                            <p class="text-sm text-[#64748B] mt-1">本周 756 次使用</p>
+                        </div>
+
+                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-2xl font-bold text-[#64748B]">#4</span>
+                                <div class="flex items-center gap-1">
+                                    <svg class="w-4 h-4 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">4.7</span>
+                                </div>
+                            </div>
+                            <h3 class="font-semibold text-[#1E3A5F]">AI头像生成器</h3>
+                            <p class="text-sm text-[#64748B] mt-1">本周 623 次使用</p>
+                        </div>
+
+                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-2xl font-bold text-[#64748B]">#5</span>
+                                <div class="flex items-center gap-1">
+                                    <svg class="w-4 h-4 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">4.8</span>
+                                </div>
+                            </div>
+                            <h3 class="font-semibold text-[#1E3A5F]">AI海报设计器</h3>
+                            <p class="text-sm text-[#64748B] mt-1">本周 512 次使用</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: User Co-creation -->
+    <section id="vote" class="py-16 lg:py-20 bg-gradient-to-br from-[#1E3A5F] to-[#2563EB]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">参与产品共建 · 投票你期待的工具</h2>
+                <p class="text-lg text-blue-100 max-w-2xl mx-auto">你的声音决定开发优先级，高票工具优先安排开发，采纳创意获得积分奖励</p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Vote Card 1 -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-2">AI视频脚本生成器</h3>
+                    <p class="text-blue-100 text-sm mb-4">自动生成短视频、宣传片、广告片专业脚本</p>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-blue-100 mb-2">
+                            <span>328 / 500 票</span>
+                            <span>66%</span>
+                        </div>
+                        <div class="progress-bar bg-white/20">
+                            <div class="progress-fill" style="width: 66%"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="avatar-stack flex">
+                            <img src="https://i.pravatar.cc/32?img=10" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <img src="https://i.pravatar.cc/32?img=11" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <img src="https://i.pravatar.cc/32?img=12" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <img src="https://i.pravatar.cc/32?img=13" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
+                        </div>
+                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                    </div>
+                </div>
+
+                <!-- Vote Card 2 -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-2">AI播客节目生成器</h3>
+                    <p class="text-blue-100 text-sm mb-4">输入主题，自动生成对话稿+配音+背景音乐</p>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-blue-100 mb-2">
+                            <span>256 / 500 票</span>
+                            <span>51%</span>
+                        </div>
+                        <div class="progress-bar bg-white/20">
+                            <div class="progress-fill" style="width: 51%"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="avatar-stack flex">
+                            <img src="https://i.pravatar.cc/32?img=20" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <img src="https://i.pravatar.cc/32?img=21" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <img src="https://i.pravatar.cc/32?img=22" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
+                        </div>
+                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                    </div>
+                </div>
+
+                <!-- Vote Card 3 -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-2">AI简历优化大师</h3>
+                    <p class="text-blue-100 text-sm mb-4">智能分析简历，优化内容+排版，提高通过率</p>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-blue-100 mb-2">
+                            <span>189 / 500 票</span>
+                            <span>38%</span>
+                        </div>
+                        <div class="progress-bar bg-white/20">
+                            <div class="progress-fill" style="width: 38%"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="avatar-stack flex">
+                            <img src="https://i.pravatar.cc/32?img=30" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <img src="https://i.pravatar.cc/32?img=31" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
+                        </div>
+                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                    </div>
+                </div>
+
+                <!-- Vote Card 4 -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-2">AI菜谱创意生成</h3>
+                    <p class="text-blue-100 text-sm mb-4">输入可用食材，智能生成创意菜谱+步骤图</p>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-blue-100 mb-2">
+                            <span>156 / 500 票</span>
+                            <span>31%</span>
+                        </div>
+                        <div class="progress-bar bg-white/20">
+                            <div class="progress-fill" style="width: 31%"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="avatar-stack flex">
+                            <img src="https://i.pravatar.cc/32?img=40" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <img src="https://i.pravatar.cc/32?img=41" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
+                        </div>
+                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                    </div>
+                </div>
+
+                <!-- Vote Card 5 -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-2">AI旅行规划助手</h3>
+                    <p class="text-blue-100 text-sm mb-4">一键生成个性化旅行攻略+预算+行程表</p>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-blue-100 mb-2">
+                            <span>142 / 500 票</span>
+                            <span>28%</span>
+                        </div>
+                        <div class="progress-bar bg-white/20">
+                            <div class="progress-fill" style="width: 28%"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="avatar-stack flex">
+                            <img src="https://i.pravatar.cc/32?img=50" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <img src="https://i.pravatar.cc/32?img=51" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
+                        </div>
+                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                    </div>
+                </div>
+
+                <!-- Vote Card 6 -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-2">AI表情包制作器</h3>
+                    <p class="text-blue-100 text-sm mb-4">输入文字或上传图片，生成定制表情包</p>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-blue-100 mb-2">
+                            <span>98 / 500 票</span>
+                            <span>20%</span>
+                        </div>
+                        <div class="progress-bar bg-white/20">
+                            <div class="progress-fill" style="width: 20%"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="avatar-stack flex">
+                            <img src="https://i.pravatar.cc/32?img=60" class="w-6 h-6 rounded-full" alt="投票用户">
+                            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
+                        </div>
+                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-10 space-x-4">
+                <button class="px-6 py-3 border border-white/30 text-white rounded-xl font-medium hover:bg-white/10 transition-colors focus-ring">查看全部 30+ 构思工具 →</button>
+                <button class="px-6 py-3 bg-white text-[#1E3A5F] rounded-xl font-semibold hover:bg-blue-50 transition-colors focus-ring">💡 提交我的工具创意</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: Testimonials & Cases -->
+    <section id="cases" class="py-16 lg:py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#1E3A5F] mb-4">看看其他用户用灵创AI做出了什么</h2>
+                <p class="text-lg text-[#64748B]">已有 10,000+ 用户在灵创AI产出了 50,000+ 个专业作品</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+                <div class="text-center p-6 bg-[#F8FAFC] rounded-2xl">
+                    <div class="text-3xl sm:text-4xl font-bold text-[#1E3A5F]">10,000+</div>
+                    <div class="text-[#64748B] mt-1">注册用户</div>
+                </div>
+                <div class="text-center p-6 bg-[#F8FAFC] rounded-2xl">
+                    <div class="text-3xl sm:text-4xl font-bold text-[#059669]">50,000+</div>
+                    <div class="text-[#64748B] mt-1">作品产出</div>
+                </div>
+                <div class="text-center p-6 bg-[#F8FAFC] rounded-2xl">
+                    <div class="text-3xl sm:text-4xl font-bold text-[#2563EB]">98%</div>
+                    <div class="text-[#64748B] mt-1">任务成功率</div>
+                </div>
+                <div class="text-center p-6 bg-[#F8FAFC] rounded-2xl">
+                    <div class="text-3xl sm:text-4xl font-bold text-[#F59E0B]">4.9</div>
+                    <div class="text-[#64748B] mt-1">平均评分</div>
+                </div>
+            </div>
+
+            <!-- Testimonials Grid -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="testimonial-card card-hover">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://i.pravatar.cc/48?img=68" class="w-12 h-12 rounded-full" alt="用户头像">
+                        <div>
+                            <div class="font-semibold text-[#1E3A5F]">张小美的绘本馆</div>
+                            <div class="text-sm text-[#64748B]">绘本创作者</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 mb-4">
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                    </div>
+                    <p class="text-[#475569] leading-relaxed">"用AI绘本工具做了一套儿童绘本，质量超出预期，插图精美，配音专业，已经在我的网店销售了！节省了大量时间和成本。"</p>
+                    <div class="mt-4 text-sm text-[#059669] font-medium">使用工具：AI有声绘本生成专家</div>
+                </div>
+
+                <div class="testimonial-card card-hover">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://i.pravatar.cc/48?img=69" class="w-12 h-12 rounded-full" alt="用户头像">
+                        <div>
+                            <div class="font-semibold text-[#1E3A5F]">李明 - 电商卖家</div>
+                            <div class="text-sm text-[#64748B]">淘宝店铺运营</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 mb-4">
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                    </div>
+                    <p class="text-[#475569] leading-relaxed">"上新速度提升了10倍！以前做一套详情页要找摄影师、设计师，花几千块。现在10分钟搞定，质量一点不输专业设计。"</p>
+                    <div class="mt-4 text-sm text-[#059669] font-medium">使用工具：AI电商商品详情页生成器</div>
+                </div>
+
+                <div class="testimonial-card card-hover">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://i.pravatar.cc/48?img=70" class="w-12 h-12 rounded-full" alt="用户头像">
+                        <div>
+                            <div class="font-semibold text-[#1E3A5F]">王老师 - 教育博主</div>
+                            <div class="text-sm text-[#64748B]">知识付费创作者</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 mb-4">
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                    </div>
+                    <p class="text-[#475569] leading-relaxed">"课程产出效率大大提高！以前做一套有声课程要2周，现在用AI一天搞定，文案+配音+配图全套输出，学员反馈质量非常好。"</p>
+                    <div class="mt-4 text-sm text-[#059669] font-medium">使用工具：AI有声绘本生成专家 + AI文案大师</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 7: Value-added Services -->
+    <section id="services" class="py-16 lg:py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#1E3A5F] mb-4">需要更多定制化服务？</h2>
+                <p class="text-lg text-[#64748B]">我们为你提供专业的企业级解决方案</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="service-card card-hover">
+                    <div class="flex items-start gap-6">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center flex-shrink-0">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-[#1E3A5F] mb-2">工具个人定制</h3>
+                            <p class="text-[#64748B] mb-4">针对您的个性化需求，单独定制改造专属工具，仅您可见。支持微调训练、专属风格、定制输出格式。</p>
+                            <button class="px-5 py-2.5 border-2 border-[#1E3A5F] text-[#1E3A5F] rounded-xl font-semibold hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">咨询详情</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="service-card card-hover">
+                    <div class="flex items-start gap-6">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#059669] to-[#10B981] flex items-center justify-center flex-shrink-0">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-[#1E3A5F] mb-2">企业级系统定制</h3>
+                            <p class="text-[#64748B] mb-4">完整智能体应用系统开发，深度满足业务场景需求。从需求分析到上线部署，全流程专业服务。</p>
+                            <button class="px-5 py-2.5 border-2 border-[#1E3A5F] text-[#1E3A5F] rounded-xl font-semibold hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">获取方案</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="service-card card-hover">
+                    <div class="flex items-start gap-6">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] flex items-center justify-center flex-shrink-0">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-[#1E3A5F] mb-2">私有化部署</h3>
+                            <p class="text-[#64748B] mb-4">数据敏感型企业适用，完整系统部署在您的内网，数据100%留存在本地。支持国产信创环境适配。</p>
+                            <button class="px-5 py-2.5 border-2 border-[#1E3A5F] text-[#1E3A5F] rounded-xl font-semibold hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">了解详情</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="service-card card-hover">
+                    <div class="flex items-start gap-6">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#F59E0B] to-[#F97316] flex items-center justify-center flex-shrink-0">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-[#1E3A5F] mb-2">系统对接集成</h3>
+                            <p class="text-[#64748B] mb-4">对接OA、ERP、邮箱等现有系统，打造自动化工作流。提供标准API接口和专业技术支持团队。</p>
+                            <button class="px-5 py-2.5 border-2 border-[#1E3A5F] text-[#1E3A5F] rounded-xl font-semibold hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">联系我们</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 lg:py-20 bg-gradient-to-br from-[#059669] to-[#0D9488]">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-6">开始你的AI创作之旅</h2>
+            <p class="text-xl text-green-100 mb-10">注册即送体验积分，零成本体验完整AI工具能力</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button class="px-8 py-4 bg-white text-[#059669] rounded-xl font-bold text-lg hover:bg-green-50 transition-colors focus-ring shadow-xl">立即免费体验</button>
+                <button class="px-8 py-4 border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-colors focus-ring">查看工具定价</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#0F172A] py-12 lg:py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-10">
+                <div class="lg:col-span-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                            <span class="text-white font-bold text-lg">AI</span>
+                        </div>
+                        <span class="font-bold text-xl text-white">灵创AI工具箱</span>
+                    </div>
+                    <p class="text-[#94A3B8] mb-6 max-w-sm">专业场景AI工具集合平台，深耕细分场景，做深做透每一个工具，让AI创作触手可及。</p>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors focus-ring">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors focus-ring">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"/></svg>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors focus-ring">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c5.51 0 10-4.48 10-10S17.51 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-white mb-4">产品</h4>
+                    <ul class="space-y-3">
+                        <li><a href="tools.html" class="footer-link">工具列表</a></li>
+                        <li><a href="tools.html" class="footer-link">新上线</a></li>
+                        <li><a href="vote.html" class="footer-link">构思中</a></li>
+                        <li><a href="#" class="footer-link">API文档</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-white mb-4">支持</h4>
+                    <ul class="space-y-3">
+                        <li><a href="feedback.html" class="footer-link">帮助中心</a></li>
+                        <li><a href="feedback.html" class="footer-link">反馈建议</a></li>
+                        <li><a href="#" class="footer-link">商务合作</a></li>
+                        <li><a href="#" class="footer-link">开发者入驻</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-white mb-4">账户</h4>
+                    <ul class="space-y-3">
+                        <li><a href="login.html" class="footer-link">登录</a></li>
+                        <li><a href="register.html" class="footer-link">注册</a></li>
+                        <li><a href="user-center.html" class="footer-link">个人中心</a></li>
+                        <li><a href="orders.html" class="footer-link">消费明细</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-white/10 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p class="text-[#64748B] text-sm">© 2024 灵创AI工具箱. 保留所有权利.</p>
+                <div class="flex items-center gap-6 text-sm text-[#64748B]">
+                    <span>安全认证</span>
+                    <span>ICP备案号</span>
+                    <span>公安备案</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

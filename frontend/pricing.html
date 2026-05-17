@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>充值中心 - 灵创AI工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', system-ui, -apple-system, sans-serif; }
+        .card-hover { transition: all 0.25s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .btn-primary { background: linear-gradient(135deg, #059669 0%, #10B981 100%); transition: all 0.2s ease; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 25px rgba(5, 150, 105, 0.35); }
+        .popular-badge { background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); }
+        .pricing-card.active { border: 2px solid #059669; box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1); }
+        .check-icon { color: #059669; }
+        .gradient-bg { background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 50%, #059669 100%); }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+        .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3); }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#0F172A] antialiased">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#E2E8F0]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AI</span>
+                    </div>
+                    <span class="font-bold text-xl text-[#1E3A5F]">灵创AI</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="index.html" class="text-[#64748B] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">首页</a>
+                    <a href="tools.html" class="text-[#64748B] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">工具中心</a>
+                    <a href="vote.html" class="text-[#64748B] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">用户共创</a>
+                    <a href="pricing.html" class="text-[#1E3A5F] font-medium border-b-2 border-[#1E3A5F] pb-1">充值中心</a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="user-center.html" class="px-4 py-2 text-[#1E3A5F] font-medium hover:bg-[#F1F5F9] rounded-lg transition-colors focus-ring">个人中心</a>
+                    <a href="pricing.html" class="btn-primary px-5 py-2 text-white font-semibold rounded-lg focus-ring">立即充值</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg py-16 lg:py-24">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl sm:text-5xl font-bold text-white mb-6">简单透明的定价</h1>
+            <p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+                按次付费，无订阅压力。充值即享额外积分赠送，用多少充多少，灵活方便。
+            </p>
+
+            <!-- Current Balance -->
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-md mx-auto">
+                <div class="text-blue-100 text-sm mb-2">当前积分余额</div>
+                <div class="text-5xl font-bold text-white mb-4">156</div>
+                <button class="w-full py-3 bg-white text-[#1E3A5F] rounded-xl font-semibold hover:bg-blue-50 transition-colors focus-ring">
+                    立即充值
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Plans -->
+    <section class="py-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-[#1E3A5F] mb-3 text-center">选择充值套餐</h2>
+            <p class="text-[#64748B] text-center mb-12">所有套餐积分永久有效，无过期时间</p>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <!-- Plan 1 -->
+                <div class="pricing-card card-hover bg-white rounded-2xl border border-[#E2E8F0] p-6 cursor-pointer" onclick="selectPlan(this)">
+                    <div class="text-center mb-6">
+                        <h3 class="font-bold text-xl text-[#1E3A5F] mb-1">入门套餐</h3>
+                        <p class="text-sm text-[#64748B]">适合初次体验</p>
+                    </div>
+                    <div class="text-center mb-6">
+                        <div class="text-4xl font-bold text-[#1E3A5F]">¥30</div>
+                        <div class="text-[#64748B]">= 300 积分</div>
+                    </div>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">所有工具可用</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">赠送 20 积分</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">积分永久有效</span>
+                        </li>
+                    </ul>
+                    <button class="w-full py-3 border-2 border-[#1E3A5F] text-[#1E3A5F] rounded-xl font-semibold hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">
+                        选择此套餐
+                    </button>
+                </div>
+
+                <!-- Plan 2 - Popular -->
+                <div class="pricing-card card-hover bg-white rounded-2xl border border-[#E2E8F0] p-6 cursor-pointer active relative" onclick="selectPlan(this)">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span class="popular-badge text-white px-4 py-1 rounded-full text-sm font-bold">🔥 推荐</span>
+                    </div>
+                    <div class="text-center mb-6 pt-2">
+                        <h3 class="font-bold text-xl text-[#1E3A5F] mb-1">进阶套餐</h3>
+                        <p class="text-sm text-[#64748B]">最受欢迎选择</p>
+                    </div>
+                    <div class="text-center mb-6">
+                        <div class="text-4xl font-bold text-[#1E3A5F]">¥100</div>
+                        <div class="text-[#64748B]">= 1,000 积分</div>
+                    </div>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">所有工具可用</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">赠送 100 积分</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">优先体验新工具</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">专属客服支持</span>
+                        </li>
+                    </ul>
+                    <button class="btn-primary w-full py-3 text-white rounded-xl font-semibold focus-ring">
+                        立即购买
+                    </button>
+                </div>
+
+                <!-- Plan 3 - Best Value -->
+                <div class="pricing-card card-hover bg-white rounded-2xl border border-[#E2E8F0] p-6 cursor-pointer" onclick="selectPlan(this)">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span class="bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white px-4 py-1 rounded-full text-sm font-bold">💎 最划算</span>
+                    </div>
+                    <div class="text-center mb-6 pt-2">
+                        <h3 class="font-bold text-xl text-[#1E3A5F] mb-1">专业套餐</h3>
+                        <p class="text-sm text-[#64748B]">深度用户首选</p>
+                    </div>
+                    <div class="text-center mb-6">
+                        <div class="text-4xl font-bold text-[#1E3A5F]">¥300</div>
+                        <div class="text-[#64748B]">= 3,000 积分</div>
+                    </div>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">所有工具可用</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">赠送 400 积分</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">优先体验新工具</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">专属客服支持</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">API 调用额度</span>
+                        </li>
+                    </ul>
+                    <button class="w-full py-3 border-2 border-[#1E3A5F] text-[#1E3A5F] rounded-xl font-semibold hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">
+                        选择此套餐
+                    </button>
+                </div>
+
+                <!-- Plan 4 - Enterprise -->
+                <div class="pricing-card card-hover bg-white rounded-2xl border border-[#E2E8F0] p-6 cursor-pointer" onclick="selectPlan(this)">
+                    <div class="text-center mb-6">
+                        <h3 class="font-bold text-xl text-[#1E3A5F] mb-1">企业套餐</h3>
+                        <p class="text-sm text-[#64748B]">团队/企业使用</p>
+                    </div>
+                    <div class="text-center mb-6">
+                        <div class="text-4xl font-bold text-[#1E3A5F]">¥1,000</div>
+                        <div class="text-[#64748B]">= 10,000 积分</div>
+                    </div>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">多子账户管理</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">赠送 2,000 积分</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">专属客户经理</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">定制化功能</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <svg class="w-5 h-5 check-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            <span class="text-[#475569]">增值税专用发票</span>
+                        </li>
+                    </ul>
+                    <button class="w-full py-3 border-2 border-[#1E3A5F] text-[#1E3A5F] rounded-xl font-semibold hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">
+                        联系销售
+                    </button>
+                </div>
+            </div>
+
+            <!-- Custom Amount -->
+            <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-[#E2E8F0] p-6">
+                <h3 class="font-bold text-lg text-[#1E3A5F] mb-4">自定义充值金额</h3>
+                <div class="flex gap-4">
+                    <div class="flex-1 relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B]">¥</span>
+                        <input type="number" placeholder="输入金额" class="w-full pl-10 pr-4 py-3 border border-[#E2E8F0] rounded-xl focus-ring" min="1">
+                    </div>
+                    <button class="btn-primary px-8 py-3 text-white rounded-xl font-semibold focus-ring">
+                        立即充值
+                    </button>
+                </div>
+                <p class="text-sm text-[#64748B] mt-3">* 1元 = 10积分，自定义充值不享受额外赠送</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Payment Methods -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-[#1E3A5F] mb-8 text-center">选择支付方式</h2>
+
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="p-5 border-2 border-[#059669] rounded-2xl flex items-center gap-4 cursor-pointer bg-green-50/50">
+                    <div class="w-12 h-12 rounded-xl bg-[#059669] flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-[#1E3A5F]">微信支付</div>
+                        <div class="text-sm text-[#64748B]">推荐使用</div>
+                    </div>
+                    <svg class="w-5 h-5 text-[#059669] ml-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                </div>
+
+                <div class="p-5 border border-[#E2E8F0] rounded-2xl flex items-center gap-4 cursor-pointer hover:border-[#2563EB] transition-colors">
+                    <div class="w-12 h-12 rounded-xl bg-[#2563EB] flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19.5 3h-15C3.12 3 2 4.12 2 5.5v13C2 19.88 3.12 21 4.5 21h15c1.38 0 2.5-1.12 2.5-2.5v-13C22 4.12 20.88 3 19.5 3zm-7.5 8h-4v-2h4v2zm0 4h-4v-2h4v2zm6 0h-4v-2h4v2zm0-4h-4v-2h4v2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-[#1E3A5F]">支付宝</div>
+                        <div class="text-sm text-[#64748B]">快捷支付</div>
+                    </div>
+                </div>
+
+                <div class="p-5 border border-[#E2E8F0] rounded-2xl flex items-center gap-4 cursor-pointer hover:border-[#2563EB] transition-colors">
+                    <div class="w-12 h-12 rounded-xl bg-[#7C3AED] flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-[#1E3A5F]">对公转账</div>
+                        <div class="text-sm text-[#64748B]">企业用户</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security & Guarantee -->
+    <section class="py-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-[#1E3A5F] mb-10 text-center">安全保障与服务承诺</h2>
+
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-lg text-[#1E3A5F] mb-2">银行级加密</h3>
+                    <p class="text-[#64748B] text-sm">SSL 256位加密传输，保障您的支付安全</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-lg text-[#1E3A5F] mb-2">即时到账</h3>
+                    <p class="text-[#64748B] text-sm">支付成功后，积分即时到账，无需等待</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-lg text-[#1E3A5F] mb-2">未用可退</h3>
+                    <p class="text-[#64748B] text-sm">7天内未使用余额可申请退款，无后顾之忧</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-lg text-[#1E3A5F] mb-2">专属客服</h3>
+                    <p class="text-[#64748B] text-sm">7x24小时在线客服，随时解答您的疑问</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-[#1E3A5F] mb-10 text-center">常见问题</h2>
+
+            <div class="space-y-4">
+                <div class="border border-[#E2E8F0] rounded-xl p-5">
+                    <button class="w-full flex items-center justify-between text-left focus-ring rounded" onclick="toggleFaq(this)">
+                        <span class="font-semibold text-[#1E3A5F]">积分有有效期吗？</span>
+                        <svg class="w-5 h-5 text-[#64748B] transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="hidden mt-4 pt-4 border-t border-[#E2E8F0] text-[#64748B]">
+                        积分永久有效，无过期时间。您可以根据使用需求灵活充值，用多少充多少。
+                    </div>
+                </div>
+
+                <div class="border border-[#E2E8F0] rounded-xl p-5">
+                    <button class="w-full flex items-center justify-between text-left focus-ring rounded" onclick="toggleFaq(this)">
+                        <span class="font-semibold text-[#1E3A5F]">充值后可以开发票吗？</span>
+                        <svg class="w-5 h-5 text-[#64748B] transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="hidden mt-4 pt-4 border-t border-[#E2E8F0] text-[#64748B]">
+                        可以。充值成功后可在个人中心申请开具发票，支持增值税普通发票和专用发票。发票会在申请后3个工作日内开具并邮寄给您。
+                    </div>
+                </div>
+
+                <div class="border border-[#E2E8F0] rounded-xl p-5">
+                    <button class="w-full flex items-center justify-between text-left focus-ring rounded" onclick="toggleFaq(this)">
+                        <span class="font-semibold text-[#1E3A5F]">可以申请退款吗？</span>
+                        <svg class="w-5 h-5 text-[#64748B] transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="hidden mt-4 pt-4 border-t border-[#E2E8F0] text-[#64748B]">
+                        充值后7天内，如未使用任何积分，可申请全额退款。已使用部分按实际消费结算，剩余部分可退还。退款将在5个工作日内原路返回。
+                    </div>
+                </div>
+
+                <div class="border border-[#E2E8F0] rounded-xl p-5">
+                    <button class="w-full flex items-center justify-between text-left focus-ring rounded" onclick="toggleFaq(this)">
+                        <span class="font-semibold text-[#1E3A5F]">各工具的消费价格是多少？</span>
+                        <svg class="w-5 h-5 text-[#64748B] transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="hidden mt-4 pt-4 border-t border-[#E2E8F0] text-[#64748B]">
+                        各工具价格不同，基础调用费在2-20积分之间，额外资源（如图文生成、语音合成等）按使用量计费。具体价格请查看各工具详情页。使用前会显示预估费用，确认后才会扣费。
+                    </div>
+                </div>
+
+                <div class="border border-[#E2E8F0] rounded-xl p-5">
+                    <button class="w-full flex items-center justify-between text-left focus-ring rounded" onclick="toggleFaq(this)">
+                        <span class="font-semibold text-[#1E3A5F]">支持哪些支付方式？</span>
+                        <svg class="w-5 h-5 text-[#64748B] transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="hidden mt-4 pt-4 border-t border-[#E2E8F0] text-[#64748B]">
+                        目前支持微信支付、支付宝、对公转账。企业用户如需对公转账，请联系客服获取银行账户信息。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-16 bg-gradient-to-br from-[#059669] to-[#0D9488]">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-white mb-6">注册即送 50 积分</h2>
+            <p class="text-xl text-green-100 mb-10">立即注册，免费体验所有 AI 工具</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button class="px-10 py-4 bg-white text-[#059669] rounded-xl font-bold text-lg hover:bg-green-50 transition-colors shadow-xl focus-ring">
+                    立即免费注册
+                </button>
+                <button class="px-10 py-4 border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-colors focus-ring">
+                    了解更多
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#0F172A] py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-10">
+                <div class="lg:col-span-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                            <span class="text-white font-bold text-lg">AI</span>
+                        </div>
+                        <span class="font-bold text-xl text-white">灵创AI工具箱</span>
+                    </div>
+                    <p class="text-[#94A3B8] mb-6 max-w-sm">专业场景AI工具集合平台，深耕细分场景，做深做透每一个工具，让AI创作触手可及。</p>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors focus-ring">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors focus-ring">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path></svg>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors focus-ring">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c5.51 0 10-4.48 10-10S17.51 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"></path></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-white mb-4">产品</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">工具列表</a></li>
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">新上线工具</a></li>
+                        <li><a href="vote.html" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">构思中工具</a></li>
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">API文档</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-white mb-4">支持</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">帮助中心</a></li>
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">反馈建议</a></li>
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">商务合作</a></li>
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">开发者入驻</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-white mb-4">关于</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">关于我们</a></li>
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">用户协议</a></li>
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">隐私政策</a></li>
+                        <li><a href="#" class="text-[#94A3B8] hover:text-white transition-colors focus-ring rounded">联系我们</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-[#64748B] text-sm">© 2024 灵创AI工具箱. 保留所有权利.</p>
+                <div class="flex flex-wrap items-center justify-center gap-6 text-sm text-[#64748B]">
+                    <span>安全认证</span>
+                    <span>ICP备案号：京ICP备XXXXXXXX号</span>
+                    <span>公安备案：京公网安备XXXXXXXXXX号</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function selectPlan(element) {
+            document.querySelectorAll('.pricing-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
+
+        function toggleFaq(button) {
+            const content = button.nextElementSibling;
+            const icon = button.querySelector('svg');
+
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+    </script>
+
+</body>
+</html>

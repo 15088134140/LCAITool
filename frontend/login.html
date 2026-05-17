@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 灵创AI工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', system-ui, -apple-system, sans-serif; }
+        .btn-primary { background: linear-gradient(135deg, #059669 0%, #10B981 100%); transition: all 0.2s ease; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3); }
+        .social-btn { transition: all 0.2s ease; border: 1px solid #E4E7EB; }
+        .social-btn:hover { border-color: #2563EB; background: #F8FAFC; }
+        .input-field { transition: all 0.2s ease; border: 1px solid #E4E7EB; }
+        .input-field:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+        .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3); }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#0F172A] antialiased min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-[#E4E7EB]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AI</span>
+                    </div>
+                    <span class="font-bold text-xl text-[#1E3A5F]">灵创AI</span>
+                </a>
+                <div>
+                    <a href="register.html" class="text-[#2563EB] font-medium hover:text-[#1E3A5F] transition-colors focus-ring rounded">没有账号？去注册</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Section -->
+    <section class="py-16 lg:py-24">
+        <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header -->
+            <div class="text-center mb-10">
+                <h1 class="text-3xl font-bold text-[#1E3A5F] mb-3">欢迎回来</h1>
+                <p class="text-[#64748B]">登录您的灵创AI账号，继续创作之旅</p>
+            </div>
+
+            <!-- Login Card -->
+            <div class="bg-white rounded-2xl border border-[#E4E7EB] p-8 shadow-sm">
+                <!-- Social Login -->
+                <div class="space-y-3 mb-8">
+                    <button class="social-btn w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-medium text-[#1E3A5F] focus-ring">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178A1.17 1.17 0 014.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178 1.17 1.17 0 01-1.162-1.178c0-.651.52-1.18 1.162-1.18z"/>
+                            <path d="M23.95 14.928c0-3.318-3.188-6.057-7.178-6.057-3.99 0-7.178 2.74-7.178 6.057 0 3.318 3.188 6.057 7.178 6.057.847 0 1.659-.123 2.42-.343a.695.695 0 01.58.079l1.558.911a.264.264 0 00.134.043c.13 0 .233-.107.233-.237 0-.058-.024-.115-.039-.171l-.317-1.196a.473.473 0 01.171-.533c1.485-1.083 2.438-2.708 2.438-4.508zm-9.525-1.02c-.519 0-.939-.427-.939-.953a.946.946 0 01.939-.954.946.946 0 01.939.954c0 .526-.42.954-.939.954zm4.682 0c-.518 0-.939-.427-.939-.953a.946.946 0 01.939-.954.946.946 0 01.939.954c0 .526-.42.954-.939.954z"/>
+                        </svg>
+                        使用微信登录
+                    </button>
+                    <button class="social-btn w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-medium text-[#1E3A5F] focus-ring">
+                        <svg class="w-5 h-5 text-[#12B7F5]" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19.63 10.92c.01-.15.02-.3.02-.46 0-4.47-3.58-8.1-8-8.1-3.75 0-6.92 2.56-7.76 6.06 3.4.44 6.36 1.77 8.66 3.7.28-.03.56-.05.85-.05 2.43 0 4.61.83 6.23 2.21v-.36z"/>
+                            <path d="M4.37 12.58c-.01.15-.02.3-.02.46 0 4.47 3.58 8.1 8 8.1 1.32 0 2.57-.3 3.66-.83-.37-1.15-.94-2.23-1.7-3.19-.09-.11-.18-.22-.28-.33-.36-.4-.76-.78-1.19-1.13-.72-.59-1.55-1.07-2.45-1.43-1.34-.55-2.77-.84-4.19-.84-.62 0-1.24.05-1.84.14-.07-.01-.13-.02-.2-.03.12-.12.24-.24.35-.36.26-.28.51-.57.76-.86.15-.18.3-.36.44-.55.42-.57.81-1.16 1.18-1.77-1.52-.2-3.08-.27-4.63-.22h-.07c-.42 0-.84.02-1.26.06-.07.01-.14.01-.21.02.15.12.3.23.44.35z"/>
+                        </svg>
+                        使用 QQ 登录
+                    </button>
+                </div>
+
+                <!-- Divider -->
+                <div class="relative mb-8">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-[#E4E7EB]"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-4 bg-white text-[#64748B]">或使用账号密码登录</span>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <form class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-[#1E3A5F] mb-2">手机号 / 邮箱</label>
+                        <input type="text" placeholder="请输入手机号或邮箱" class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] focus-ring">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#1E3A5F] mb-2">密码</label>
+                        <div class="relative">
+                            <input type="password" placeholder="请输入密码" class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] pr-12 focus-ring">
+                            <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] focus-ring rounded">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 rounded border-[#E4E7EB] text-[#2563EB] focus:ring-[#2563EB] focus:ring-offset-0">
+                            <span class="text-sm text-[#64748B]">记住我</span>
+                        </label>
+                        <a href="#" class="text-sm text-[#2563EB] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">忘记密码？</a>
+                    </div>
+                    <button type="submit" class="btn-primary w-full py-3 px-6 text-white font-semibold rounded-xl focus-ring">
+                        登录
+                    </button>
+                </form>
+
+                <!-- Agreement -->
+                <p class="mt-6 text-center text-xs text-[#94A3B8]">
+                    登录即表示您同意
+                    <a href="#" class="text-[#2563EB] hover:underline">用户协议</a>
+                    和
+                    <a href="#" class="text-[#2563EB] hover:underline">隐私政策</a>
+                </p>
+            </div>
+
+            <!-- Register CTA -->
+            <div class="mt-8 text-center">
+                <p class="text-[#64748B]">
+                    还没有账号？
+                    <a href="register.html" class="text-[#2563EB] font-semibold hover:text-[#1E3A5F] transition-colors focus-ring rounded">立即注册</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#1E3A5F] text-white py-12 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center gap-2 mb-4">
+                    <div class="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AI</span>
+                    </div>
+                    <span class="font-bold text-xl">灵创AI工具箱</span>
+                </div>
+                <p class="text-blue-200 text-sm">© 2024 灵创AI. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

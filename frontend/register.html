@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 灵创AI工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', system-ui, -apple-system, sans-serif; }
+        .btn-primary { background: linear-gradient(135deg, #059669 0%, #10B981 100%); transition: all 0.2s ease; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3); }
+        .input-field { transition: all 0.2s ease; border: 1px solid #E4E7EB; }
+        .input-field:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .gift-card { background: linear-gradient(135deg, #F0F7FF 0%, #EEF2FF 100%); }
+        .send-code-btn { background: #F1F5F9; color: #64748B; transition: all 0.2s ease; }
+        .send-code-btn:hover:not(:disabled) { background: #E2E8F0; color: #1E3A5F; }
+        .send-code-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+        .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3); }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#0F172A] antialiased min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-[#E4E7EB]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AI</span>
+                    </div>
+                    <span class="font-bold text-xl text-[#1E3A5F]">灵创AI</span>
+                </a>
+                <div>
+                    <a href="login.html" class="text-[#2563EB] font-medium hover:text-[#1E3A5F] transition-colors focus-ring rounded">已有账号？去登录</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Register Section -->
+    <section class="py-16 lg:py-24">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-start">
+                <!-- Left: Benefits -->
+                <div class="hidden lg:block">
+                    <h1 class="text-3xl font-bold text-[#1E3A5F] mb-4">开启您的AI创作之旅</h1>
+                    <p class="text-[#64748B] mb-8">注册即送多重好礼，零成本体验专业AI工具</p>
+
+                    <div class="space-y-4">
+                        <div class="gift-card rounded-xl p-5 border border-blue-100">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1E3A5F] flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-[#1E3A5F]">新用户注册礼包</h3>
+                                    <p class="text-[#2563EB] font-semibold text-lg">50 积分免费送</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="gift-card rounded-xl p-5 border border-blue-100">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-[#059669] to-[#10B981] flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-[#1E3A5F]">实名认证奖励</h3>
+                                    <p class="text-[#059669] font-semibold text-lg">额外 +20 积分</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="gift-card rounded-xl p-5 border border-blue-100">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-[#F59E0B] to-[#EF4444] flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-[#1E3A5F]">专属新手特权</h3>
+                                    <p class="text-[#F59E0B] font-semibold text-lg">首单工具 5 折</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trust Indicators -->
+                    <div class="mt-10 pt-8 border-t border-[#E4E7EB]">
+                        <div class="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                                <div class="text-2xl font-bold text-[#1E3A5F]">50,000+</div>
+                                <div class="text-sm text-[#64748B]">注册用户</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-[#1E3A5F]">4.9</div>
+                                <div class="text-sm text-[#64748B]">用户评分</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-[#1E3A5F]">99.9%</div>
+                                <div class="text-sm text-[#64748B]">服务可用性</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Register Form -->
+                <div>
+                    <div class="bg-white rounded-2xl border border-[#E4E7EB] p-8 shadow-sm">
+                        <h2 class="text-2xl font-bold text-[#1E3A5F] mb-2">创建账号</h2>
+                        <p class="text-[#64748B] mb-8">只需30秒，开启AI创作</p>
+
+                        <form class="space-y-5">
+                            <div>
+                                <label class="block text-sm font-medium text-[#1E3A5F] mb-2">手机号码</label>
+                                <input type="tel" placeholder="请输入手机号码" class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] focus-ring">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-[#1E3A5F] mb-2">验证码</label>
+                                <div class="flex gap-3">
+                                    <input type="text" placeholder="请输入验证码" class="input-field flex-1 px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] focus-ring">
+                                    <button type="button" class="send-code-btn px-5 py-3 rounded-xl font-medium whitespace-nowrap focus-ring">
+                                        获取验证码
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-[#1E3A5F] mb-2">设置密码</label>
+                                <div class="relative">
+                                    <input type="password" placeholder="6-20位字母、数字或符号" class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] pr-12 focus-ring">
+                                    <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] focus-ring rounded">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="mt-2 text-xs text-[#94A3B8]">密码长度6-20位，包含字母和数字</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-[#1E3A5F] mb-2">确认密码</label>
+                                <input type="password" placeholder="请再次输入密码" class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] focus-ring">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-[#1E3A5F] mb-2">昵称（选填）</label>
+                                <input type="text" placeholder="给自己起个好听的名字" class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] focus-ring">
+                            </div>
+
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" class="w-4 h-4 mt-0.5 rounded border-[#E4E7EB] text-[#2563EB] focus:ring-[#2563EB] focus:ring-offset-0">
+                                <span class="text-sm text-[#64748B]">
+                                    我已阅读并同意
+                                    <a href="#" class="text-[#2563EB] hover:underline">《用户协议》</a>
+                                    和
+                                    <a href="#" class="text-[#2563EB] hover:underline">《隐私政策》</a>
+                                </span>
+                            </label>
+
+                            <button type="submit" class="btn-primary w-full py-3 px-6 text-white font-semibold rounded-xl focus-ring">
+                                立即注册
+                            </button>
+                        </form>
+
+                        <!-- Mobile Benefits -->
+                        <div class="lg:hidden mt-6 pt-6 border-t border-[#E4E7EB]">
+                            <div class="flex items-center justify-around text-center">
+                                <div>
+                                    <div class="text-lg font-bold text-[#2563EB]">50积分</div>
+                                    <div class="text-xs text-[#64748B]">注册即送</div>
+                                </div>
+                                <div>
+                                    <div class="text-lg font-bold text-[#059669]">+20积分</div>
+                                    <div class="text-xs text-[#64748B]">认证奖励</div>
+                                </div>
+                                <div>
+                                    <div class="text-lg font-bold text-[#F59E0B]">5折</div>
+                                    <div class="text-xs text-[#64748B]">首单特惠</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#1E3A5F] text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center gap-2 mb-4">
+                    <div class="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AI</span>
+                    </div>
+                    <span class="font-bold text-xl">灵创AI工具箱</span>
+                </div>
+                <p class="text-blue-200 text-sm">© 2024 灵创AI. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

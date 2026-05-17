@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消费明细 - 灵创AI工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', system-ui, -apple-system, sans-serif; }
+        .btn-primary { background: linear-gradient(135deg, #059669 0%, #10B981 100%); transition: all 0.2s ease; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3); }
+        .tab-btn { transition: all 0.2s ease; }
+        .tab-btn.active { background: #2563EB; color: white; }
+        .tab-btn:not(.active):hover { background: #F1F5F9; }
+        .status-success { background: #D1FAE5; color: #059669; }
+        .status-pending { background: #FEF3C7; color: #D97706; }
+        .status-failed { background: #FEE2E2; color: #DC2626; }
+        .type-income { color: #059669; }
+        .type-expense { color: #DC2626; }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+        .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3); }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#0F172A] antialiased min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#E4E7EB]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AI</span>
+                    </div>
+                    <span class="font-bold text-xl text-[#1E3A5F]">灵创AI</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="index.html" class="text-[#64748B] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">首页</a>
+                    <a href="tools.html" class="text-[#64748B] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">全部工具</a>
+                    <a href="vote.html" class="text-[#64748B] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">用户共创</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="user-center.html" class="hidden sm:block px-4 py-2 text-[#1E3A5F] font-medium hover:bg-[#F1F3F5] rounded-lg transition-colors focus-ring">个人中心</a>
+                    <a href="pricing.html" class="btn-primary px-5 py-2 text-white font-semibold rounded-lg focus-ring">充值</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Section -->
+    <section class="py-10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold text-[#1E3A5F] mb-2">消费明细</h1>
+                <p class="text-[#64748B]">查看您的所有充值和消费记录</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white rounded-2xl border border-[#E4E7EB] p-6">
+                    <div class="text-sm text-[#64748B] mb-1">账户余额</div>
+                    <div class="text-3xl font-bold text-[#1E3A5F]">156</div>
+                    <div class="text-xs text-[#94A3B8] mt-1">积分</div>
+                </div>
+                <div class="bg-white rounded-2xl border border-[#E4E7EB] p-6">
+                    <div class="text-sm text-[#64748B] mb-1">累计充值</div>
+                    <div class="text-3xl font-bold text-[#059669]">500</div>
+                    <div class="text-xs text-[#94A3B8] mt-1">积分</div>
+                </div>
+                <div class="bg-white rounded-2xl border border-[#E4E7EB] p-6">
+                    <div class="text-sm text-[#64748B] mb-1">累计消费</div>
+                    <div class="text-3xl font-bold text-[#DC2626]">344</div>
+                    <div class="text-xs text-[#94A3B8] mt-1">积分</div>
+                </div>
+                <div class="bg-white rounded-2xl border border-[#E4E7EB] p-6">
+                    <div class="text-sm text-[#64748B] mb-1">本月消费</div>
+                    <div class="text-3xl font-bold text-[#1E3A5F]">88</div>
+                    <div class="text-xs text-[#94A3B8] mt-1">积分</div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div class="flex gap-2 bg-white rounded-xl p-2 border border-[#E4E7EB]">
+                    <button class="tab-btn active px-4 py-2 rounded-lg font-medium text-sm focus-ring">全部</button>
+                    <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm text-[#64748B] focus-ring">充值</button>
+                    <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm text-[#64748B] focus-ring">消费</button>
+                    <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm text-[#64748B] focus-ring">退款</button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select class="px-4 py-2 bg-white border border-[#E4E7EB] rounded-lg text-sm text-[#64748B] focus-ring">
+                        <option>全部时间</option>
+                        <option>今天</option>
+                        <option>最近7天</option>
+                        <option>最近30天</option>
+                        <option>本月</option>
+                        <option>上月</option>
+                        <option>自定义</option>
+                    </select>
+                    <button class="btn-primary px-4 py-2 text-white rounded-lg text-sm font-medium flex items-center gap-2 focus-ring">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        导出Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Order List -->
+            <div class="bg-white rounded-2xl border border-[#E4E7EB] overflow-hidden">
+                <!-- Table Header -->
+                <div class="hidden md:grid grid-cols-6 gap-4 px-6 py-4 bg-[#F8FAFC] border-b border-[#E4E7EB] text-sm font-medium text-[#64748B]">
+                    <div>订单时间</div>
+                    <div>订单类型</div>
+                    <div>详情</div>
+                    <div>金额</div>
+                    <div>状态</div>
+                    <div>操作</div>
+                </div>
+
+                <!-- Order Items -->
+                <div class="divide-y divide-[#E4E7EB]">
+                    <!-- Order Item 1 -->
+                    <div class="px-6 py-4">
+                        <div class="md:hidden space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">2024-01-15 14:32:18</span>
+                                <span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span>
+                            </div>
+                            <div class="font-medium text-[#1E3A5F]">AI有声绘本生成专家</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">消费</span>
+                                <span class="font-semibold type-expense">- 12 积分</span>
+                            </div>
+                            <button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button>
+                        </div>
+                        <div class="hidden md:grid grid-cols-6 gap-4 items-center">
+                            <div class="text-sm text-[#64748B]">2024-01-15 14:32:18</div>
+                            <div><span class="px-2 py-1 bg-red-50 text-[#DC2626] rounded text-xs font-medium">消费</span></div>
+                            <div class="font-medium text-[#1E3A5F]">AI有声绘本生成专家</div>
+                            <div class="font-semibold type-expense">- 12 积分</div>
+                            <div><span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span></div>
+                            <div><button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button></div>
+                        </div>
+                    </div>
+
+                    <!-- Order Item 2 -->
+                    <div class="px-6 py-4">
+                        <div class="md:hidden space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">2024-01-15 10:15:42</span>
+                                <span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span>
+                            </div>
+                            <div class="font-medium text-[#1E3A5F]">微信充值</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">充值</span>
+                                <span class="font-semibold type-income">+ 100 积分</span>
+                            </div>
+                            <button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button>
+                        </div>
+                        <div class="hidden md:grid grid-cols-6 gap-4 items-center">
+                            <div class="text-sm text-[#64748B]">2024-01-15 10:15:42</div>
+                            <div><span class="px-2 py-1 bg-green-50 text-[#059669] rounded text-xs font-medium">充值</span></div>
+                            <div class="font-medium text-[#1E3A5F]">微信充值</div>
+                            <div class="font-semibold type-income">+ 100 积分</div>
+                            <div><span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span></div>
+                            <div><button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button></div>
+                        </div>
+                    </div>
+
+                    <!-- Order Item 3 -->
+                    <div class="px-6 py-4">
+                        <div class="md:hidden space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">2024-01-14 18:45:33</span>
+                                <span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span>
+                            </div>
+                            <div class="font-medium text-[#1E3A5F]">AI电商商品详情页生成器</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">消费</span>
+                                <span class="font-semibold type-expense">- 18 积分</span>
+                            </div>
+                            <button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button>
+                        </div>
+                        <div class="hidden md:grid grid-cols-6 gap-4 items-center">
+                            <div class="text-sm text-[#64748B]">2024-01-14 18:45:33</div>
+                            <div><span class="px-2 py-1 bg-red-50 text-[#DC2626] rounded text-xs font-medium">消费</span></div>
+                            <div class="font-medium text-[#1E3A5F]">AI电商商品详情页生成器</div>
+                            <div class="font-semibold type-expense">- 18 积分</div>
+                            <div><span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span></div>
+                            <div><button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button></div>
+                        </div>
+                    </div>
+
+                    <!-- Order Item 4 -->
+                    <div class="px-6 py-4">
+                        <div class="md:hidden space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">2024-01-14 09:22:15</span>
+                                <span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span>
+                            </div>
+                            <div class="font-medium text-[#1E3A5F]">每日签到奖励</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">奖励</span>
+                                <span class="font-semibold type-income">+ 1 积分</span>
+                            </div>
+                            <button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button>
+                        </div>
+                        <div class="hidden md:grid grid-cols-6 gap-4 items-center">
+                            <div class="text-sm text-[#64748B]">2024-01-14 09:22:15</div>
+                            <div><span class="px-2 py-1 bg-purple-50 text-[#7C3AED] rounded text-xs font-medium">奖励</span></div>
+                            <div class="font-medium text-[#1E3A5F]">每日签到奖励</div>
+                            <div class="font-semibold type-income">+ 1 积分</div>
+                            <div><span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span></div>
+                            <div><button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button></div>
+                        </div>
+                    </div>
+
+                    <!-- Order Item 5 -->
+                    <div class="px-6 py-4">
+                        <div class="md:hidden space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">2024-01-13 16:08:47</span>
+                                <span class="px-2 py-1 rounded text-xs font-medium status-pending">处理中</span>
+                            </div>
+                            <div class="font-medium text-[#1E3A5F]">AI营销文案生成器</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">消费</span>
+                                <span class="font-semibold type-expense">- 5 积分</span>
+                            </div>
+                            <button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button>
+                        </div>
+                        <div class="hidden md:grid grid-cols-6 gap-4 items-center">
+                            <div class="text-sm text-[#64748B]">2024-01-13 16:08:47</div>
+                            <div><span class="px-2 py-1 bg-red-50 text-[#DC2626] rounded text-xs font-medium">消费</span></div>
+                            <div class="font-medium text-[#1E3A5F]">AI营销文案生成器</div>
+                            <div class="font-semibold type-expense">- 5 积分</div>
+                            <div><span class="px-2 py-1 rounded text-xs font-medium status-pending">处理中</span></div>
+                            <div><button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button></div>
+                        </div>
+                    </div>
+
+                    <!-- Order Item 6 -->
+                    <div class="px-6 py-4">
+                        <div class="md:hidden space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">2024-01-12 11:30:22</span>
+                                <span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span>
+                            </div>
+                            <div class="font-medium text-[#1E3A5F]">实名认证奖励</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">奖励</span>
+                                <span class="font-semibold type-income">+ 20 积分</span>
+                            </div>
+                            <button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button>
+                        </div>
+                        <div class="hidden md:grid grid-cols-6 gap-4 items-center">
+                            <div class="text-sm text-[#64748B]">2024-01-12 11:30:22</div>
+                            <div><span class="px-2 py-1 bg-purple-50 text-[#7C3AED] rounded text-xs font-medium">奖励</span></div>
+                            <div class="font-medium text-[#1E3A5F]">实名认证奖励</div>
+                            <div class="font-semibold type-income">+ 20 积分</div>
+                            <div><span class="px-2 py-1 rounded text-xs font-medium status-success">成功</span></div>
+                            <div><button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button></div>
+                        </div>
+                    </div>
+
+                    <!-- Order Item 7 -->
+                    <div class="px-6 py-4">
+                        <div class="md:hidden space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">2024-01-11 20:15:33</span>
+                                <span class="px-2 py-1 rounded text-xs font-medium status-failed">失败</span>
+                            </div>
+                            <div class="font-medium text-[#1E3A5F]">AI头像生成器</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-[#64748B]">消费</span>
+                                <span class="font-semibold type-income">+ 6 积分（退款）</span>
+                            </div>
+                            <button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button>
+                        </div>
+                        <div class="hidden md:grid grid-cols-6 gap-4 items-center">
+                            <div class="text-sm text-[#64748B]">2024-01-11 20:15:33</div>
+                            <div><span class="px-2 py-1 bg-blue-50 text-[#2563EB] rounded text-xs font-medium">退款</span></div>
+                            <div class="font-medium text-[#1E3A5F]">AI头像生成器（生成失败退款）</div>
+                            <div class="font-semibold type-income">+ 6 积分</div>
+                            <div><span class="px-2 py-1 rounded text-xs font-medium status-failed">失败</span></div>
+                            <div><button class="text-sm text-[#2563EB] hover:underline focus-ring rounded">查看详情</button></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="px-6 py-6 border-t border-[#E4E7EB]">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-[#64748B]">
+                            共 <span class="font-medium text-[#1E3A5F]">42</span> 条记录，第 <span class="font-medium text-[#1E3A5F]">1</span>/<span class="font-medium text-[#1E3A5F]">6</span> 页
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="w-9 h-9 rounded-lg border border-[#E4E7EB] flex items-center justify-center text-[#64748B] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors disabled:opacity-50 focus-ring" disabled>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                            </button>
+                            <button class="w-9 h-9 rounded-lg bg-[#2563EB] text-white font-medium text-sm focus-ring">1</button>
+                            <button class="w-9 h-9 rounded-lg border border-[#E4E7EB] flex items-center justify-center text-[#64748B] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors text-sm focus-ring">2</button>
+                            <button class="w-9 h-9 rounded-lg border border-[#E4E7EB] flex items-center justify-center text-[#64748B] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors text-sm focus-ring">3</button>
+                            <span class="text-[#94A3B8]">...</span>
+                            <button class="w-9 h-9 rounded-lg border border-[#E4E7EB] flex items-center justify-center text-[#64748B] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors text-sm focus-ring">6</button>
+                            <button class="w-9 h-9 rounded-lg border border-[#E4E7EB] flex items-center justify-center text-[#64748B] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors focus-ring">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#1E3A5F] text-white py-12 mt-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
+                            <span class="text-white font-bold text-lg">AI</span>
+                        </div>
+                        <span class="font-bold text-xl">灵创AI工具箱</span>
+                    </div>
+                    <p class="text-blue-200 text-sm">专业场景AI工具集合平台，让每一个创意都能通过AI高效实现。</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">产品</h4>
+                    <ul class="space-y-2 text-blue-200 text-sm">
+                        <li><a href="tools.html" class="hover:text-white transition-colors focus-ring rounded">全部工具</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">最新上线</a></li>
+                        <li><a href="vote.html" class="hover:text-white transition-colors focus-ring rounded">构思中工具</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">API文档</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">支持</h4>
+                    <ul class="space-y-2 text-blue-200 text-sm">
+                        <li><a href="feedback.html" class="hover:text-white transition-colors focus-ring rounded">帮助中心</a></li>
+                        <li><a href="feedback.html" class="hover:text-white transition-colors focus-ring rounded">反馈建议</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">商务合作</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">开发者入驻</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">关于</h4>
+                    <ul class="space-y-2 text-blue-200 text-sm">
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">关于我们</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">用户协议</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">隐私政策</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/10 mt-10 pt-8 text-center text-blue-200 text-sm">
+                © 2024 灵创AI. 保留所有权利。
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

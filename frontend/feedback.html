@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帮助与反馈 - 灵创AI工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', system-ui, -apple-system, sans-serif; }
+        .btn-primary { background: linear-gradient(135deg, #059669 0%, #10B981 100%); transition: all 0.2s ease; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3); }
+        .faq-item { border: 1px solid #E4E7EB; transition: all 0.2s ease; }
+        .faq-item:hover { border-color: #2563EB; }
+        .faq-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        .faq-item.active .faq-content { max-height: 500px; }
+        .faq-item.active .faq-icon { transform: rotate(180deg); }
+        .faq-icon { transition: transform 0.3s ease; }
+        .input-field { transition: all 0.2s ease; border: 1px solid #E4E7EB; }
+        .input-field:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .tab-btn { transition: all 0.2s ease; }
+        .tab-btn.active { background: #2563EB; color: white; }
+        .tab-btn:not(.active):hover { background: #F1F5F9; }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+        .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3); }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#0F172A] antialiased min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#E4E7EB]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AI</span>
+                    </div>
+                    <span class="font-bold text-xl text-[#1E3A5F]">灵创AI</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="index.html" class="text-[#64748B] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">首页</a>
+                    <a href="tools.html" class="text-[#64748B] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">全部工具</a>
+                    <a href="vote.html" class="text-[#64748B] hover:text-[#1E3A5F] font-medium transition-colors focus-ring rounded">用户共创</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="user-center.html" class="hidden sm:block px-4 py-2 text-[#1E3A5F] font-medium hover:bg-[#F1F3F5] rounded-lg transition-colors focus-ring">个人中心</a>
+                    <a href="pricing.html" class="btn-primary px-5 py-2 text-white font-semibold rounded-lg focus-ring">充值</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-white mb-3">帮助与反馈</h1>
+                <p class="text-blue-200 text-lg">有问题？我们随时为您解答</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="py-10">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Tabs -->
+            <div class="flex gap-2 mb-8 bg-white rounded-xl p-2 border border-[#E4E7EB]">
+                <button class="tab-btn active flex-1 py-3 px-4 rounded-lg font-medium focus-ring">
+                    常见问题
+                </button>
+                <button class="tab-btn flex-1 py-3 px-4 rounded-lg font-medium text-[#64748B] focus-ring">
+                    提交反馈
+                </button>
+                <button class="tab-btn flex-1 py-3 px-4 rounded-lg font-medium text-[#64748B] focus-ring">
+                    联系客服
+                </button>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Left: FAQ -->
+                <div class="lg:col-span-2">
+                    <!-- Search FAQ -->
+                    <div class="mb-8">
+                        <div class="relative">
+                            <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input type="text" placeholder="搜索问题关键词..." class="input-field w-full pl-12 pr-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] focus-ring">
+                        </div>
+                    </div>
+
+                    <!-- FAQ Categories -->
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <button class="px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm font-medium focus-ring">全部问题</button>
+                        <button class="px-4 py-2 bg-white border border-[#E4E7EB] text-[#64748B] rounded-lg text-sm font-medium hover:border-[#2563EB] transition-colors focus-ring">账号相关</button>
+                        <button class="px-4 py-2 bg-white border border-[#E4E7EB] text-[#64748B] rounded-lg text-sm font-medium hover:border-[#2563EB] transition-colors focus-ring">充值支付</button>
+                        <button class="px-4 py-2 bg-white border border-[#E4E7EB] text-[#64748B] rounded-lg text-sm font-medium hover:border-[#2563EB] transition-colors focus-ring">工具使用</button>
+                        <button class="px-4 py-2 bg-white border border-[#E4E7EB] text-[#64748B] rounded-lg text-sm font-medium hover:border-[#2563EB] transition-colors focus-ring">成果下载</button>
+                    </div>
+
+                    <!-- FAQ List -->
+                    <div class="space-y-4">
+                        <!-- FAQ Item 1 -->
+                        <div class="faq-item active bg-white rounded-xl overflow-hidden">
+                            <button class="w-full px-6 py-5 flex items-center justify-between text-left focus-ring" onclick="this.parentElement.classList.toggle('active')">
+                                <span class="font-semibold text-[#1E3A5F]">如何获取积分？积分有什么用？</span>
+                                <svg class="faq-icon w-5 h-5 text-[#64748B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="faq-content">
+                                <div class="px-6 pb-5 text-[#64748B]">
+                                    <p class="mb-3">您可以通过以下方式获取积分：</p>
+                                    <ul class="list-disc list-inside space-y-1 ml-2">
+                                                        <li>充值购买：1元 = 10积分</li>
+                                                        <li>新用户注册：赠送50积分</li>
+                                                        <li>实名认证：额外赠送20积分</li>
+                                                        <li>每日签到：1-5积分不等</li>
+                                                        <li>邀请好友：双方各得10积分</li>
+                                                        <li>提交反馈被采纳：20-100积分</li>
+                                                    </ul>
+                                                    <p class="mt-3">积分可用于调用平台上的所有AI工具，不同工具消耗的积分数不同。</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- FAQ Item 2 -->
+                                        <div class="faq-item bg-white rounded-xl overflow-hidden">
+                                            <button class="w-full px-6 py-5 flex items-center justify-between text-left focus-ring" onclick="this.parentElement.classList.toggle('active')">
+                                                <span class="font-semibold text-[#1E3A5F]">生成的成果可以用于商业用途吗？</span>
+                                                <svg class="faq-icon w-5 h-5 text-[#64748B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                </svg>
+                                            </button>
+                                            <div class="faq-content">
+                                                <div class="px-6 pb-5 text-[#64748B]">
+                                                    <p>是的，您通过灵创AI生成的所有成果（包括图片、文案、音频、视频等）都拥有完整的商用版权。您可以自由用于个人或商业项目，无需额外付费或标注来源。</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- FAQ Item 3 -->
+                                        <div class="faq-item bg-white rounded-xl overflow-hidden">
+                                            <button class="w-full px-6 py-5 flex items-center justify-between text-left focus-ring" onclick="this.parentElement.classList.toggle('active')">
+                                                <span class="font-semibold text-[#1E3A5F]">生成失败会扣费吗？如何申请退款？</span>
+                                                <svg class="faq-icon w-5 h-5 text-[#64748B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                </svg>
+                                            </button>
+                                            <div class="faq-content">
+                                                <div class="px-6 pb-5 text-[#64748B]">
+                                                    <p class="mb-3">如果生成过程中出现失败、超时或效果严重不符合预期的情况，系统将自动全额退款，积分会即时返还到您的账户。</p>
+                                                    <p>如果您对生成结果不满意，可以在24小时内通过"我的成果"页面申请退款，我们会在1-2个工作日内审核处理。</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- FAQ Item 4 -->
+                                        <div class="faq-item bg-white rounded-xl overflow-hidden">
+                                            <button class="w-full px-6 py-5 flex items-center justify-between text-left focus-ring" onclick="this.parentElement.classList.toggle('active')">
+                                                <span class="font-semibold text-[#1E3A5F]">为什么需要实名认证？不认证可以使用吗？</span>
+                                                <svg class="faq-icon w-5 h-5 text-[#64748B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                </svg>
+                                            </button>
+                                            <div class="faq-content">
+                                                <div class="px-6 pb-5 text-[#64748B]">
+                                                    <p class="mb-3">根据国家相关法律法规，使用生成式AI服务需要完成实名认证。这既是合规要求，也是为了防止滥用，保障所有用户的使用体验。</p>
+                                                    <p>未认证用户可以浏览工具详情、查看演示案例，但无法实际调用工具生成成果。完成认证还可获得20积分奖励。</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- FAQ Item 5 -->
+                                        <div class="faq-item bg-white rounded-xl overflow-hidden">
+                                            <button class="w-full px-6 py-5 flex items-center justify-between text-left focus-ring" onclick="this.parentElement.classList.toggle('active')">
+                                                <span class="font-semibold text-[#1E3A5F]">生成的成果会保存多久？可以重新下载吗？</span>
+                                                <svg class="faq-icon w-5 h-5 text-[#64748B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                </svg>
+                                            </button>
+                                            <div class="faq-content">
+                                                <div class="px-6 pb-5 text-[#64748B]">
+                                                    <p>您的所有生成成果将永久保存在"我的成果"中，可以随时查看、下载或基于现有成果进行迭代优化。我们承诺不会删除用户的任何成果数据。</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- FAQ Item 6 -->
+                                        <div class="faq-item bg-white rounded-xl overflow-hidden">
+                                            <button class="w-full px-6 py-5 flex items-center justify-between text-left focus-ring" onclick="this.parentElement.classList.toggle('active')">
+                                                <span class="font-semibold text-[#1E3A5F]">如何提交工具建议？有什么奖励？</span>
+                                                <svg class="faq-icon w-5 h-5 text-[#64748B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                </svg>
+                                            </button>
+                                            <div class="faq-content">
+                                                <div class="px-6 pb-5 text-[#64748B]">
+                                                    <p class="mb-3">您可以在"用户共创"页面提交您想要的工具想法。我们会定期评估用户的建议，优先开发高票需求。</p>
+                                                    <p>如果您的工具建议被采纳并上线，将获得200积分奖励，并在工具页面标注您为"创意贡献者"。</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Feedback Form Section -->
+                                    <div class="mt-10 bg-white rounded-2xl border border-[#E4E7EB] p-8">
+                                        <h2 class="text-xl font-bold text-[#1E3A5F] mb-6">没有找到答案？提交您的问题</h2>
+                                        <form class="space-y-5">
+                                            <div class="grid md:grid-cols-2 gap-5">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-[#1E3A5F] mb-2">您的姓名</label>
+                                                    <input type="text" placeholder="请输入姓名" class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] focus-ring">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-[#1E3A5F] mb-2">联系邮箱</label>
+                                                    <input type="email" placeholder="请输入邮箱" class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] focus-ring">
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-[#1E3A5F] mb-2">问题类型</label>
+                                                <select class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] focus-ring">
+                                                    <option>请选择问题类型</option>
+                                                    <option>账号问题</option>
+                                                    <option>充值支付</option>
+                                                    <option>工具使用</option>
+                                                    <option>成果下载</option>
+                                                    <option>功能建议</option>
+                                                    <option>Bug反馈</option>
+                                                    <option>其他问题</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-[#1E3A5F] mb-2">问题描述</label>
+                                                <textarea rows="5" placeholder="请详细描述您遇到的问题或建议..." class="input-field w-full px-4 py-3 rounded-xl text-[#1E3A5F] placeholder-[#94A3B8] resize-none focus-ring"></textarea>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-[#1E3A5F] mb-2">上传截图（选填）</label>
+                                                <div class="border-2 border-dashed border-[#E4E7EB] rounded-xl p-8 text-center hover:border-[#2563EB] transition-colors cursor-pointer">
+                                                    <svg class="w-12 h-12 mx-auto text-[#94A3B8] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                    <p class="text-[#64748B]">点击或拖拽文件到此处上传</p>
+                                                    <p class="text-sm text-[#94A3B8] mt-1">支持 JPG、PNG 格式，最大 10MB</p>
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn-primary w-full py-3 px-6 text-white font-semibold rounded-xl focus-ring">
+                                                提交反馈
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Contact -->
+                                <div class="space-y-6">
+                                    <!-- Quick Contact -->
+                                    <div class="bg-white rounded-2xl border border-[#E4E7EB] p-6">
+                                        <h3 class="font-bold text-lg text-[#1E3A5F] mb-4">快速联系</h3>
+                                        <div class="space-y-4">
+                                            <div class="flex items-center gap-4 p-4 bg-[#F8FAFC] rounded-xl">
+                                                <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                                                    <svg class="w-6 h-6 text-[#059669]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium text-[#1E3A5F]">在线客服</div>
+                                                    <div class="text-sm text-[#64748B]">工作时间 9:00-22:00</div>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-4 p-4 bg-[#F8FAFC] rounded-xl">
+                                                <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                                                    <svg class="w-6 h-6 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium text-[#1E3A5F]">邮件支持</div>
+                                                    <div class="text-sm text-[#64748B]">support@lingchuangai.com</div>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-4 p-4 bg-[#F8FAFC] rounded-xl">
+                                                <div class="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                                                    <svg class="w-6 h-6 text-[#7C3AED]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium text-[#1E3A5F]">官方QQ群</div>
+                                                    <div class="text-sm text-[#64748B]">群号：123456789</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Service Commitment -->
+                                    <div class="bg-white rounded-2xl border border-[#E4E7EB] p-6">
+                                        <h3 class="font-bold text-lg text-[#1E3A5F] mb-4">服务承诺</h3>
+                                        <ul class="space-y-3">
+                                            <li class="flex items-start gap-3">
+                                                <svg class="w-5 h-5 text-[#059669] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                <span class="text-sm text-[#64748B]">工作日 2 小时内响应反馈</span>
+                                            </li>
+                                            <li class="flex items-start gap-3">
+                                                <svg class="w-5 h-5 text-[#059669] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                <span class="text-sm text-[#64748B]">紧急问题 30 分钟内处理</span>
+                                            </li>
+                                            <li class="flex items-start gap-3">
+                                                <svg class="w-5 h-5 text-[#059669] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                <span class="text-sm text-[#64748B]">生成失败全额退款保障</span>
+                                            </li>
+                                            <li class="flex items-start gap-3">
+                                                <svg class="w-5 h-5 text-[#059669] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                <span class="text-sm text-[#64748B]">用户数据加密安全存储</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Feedback Rewards -->
+                                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-6">
+                                        <h3 class="font-bold text-lg text-[#059669] mb-3">💡 反馈有奖</h3>
+                                        <p class="text-sm text-[#065F46] mb-4">您的每一条建议都是我们进步的动力！</p>
+                                        <ul class="space-y-2 text-sm text-[#065F46]">
+                                            <li>• 有效Bug反馈：20-50积分</li>
+                                            <li>• 采纳的功能建议：50-200积分</li>
+                                            <li>• 重大问题发现：最高500积分</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Footer -->
+                    <footer class="bg-[#1E3A5F] text-white py-12">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div class="grid md:grid-cols-4 gap-8">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <div class="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
+                                            <span class="text-white font-bold text-lg">AI</span>
+                                        </div>
+                                        <span class="font-bold text-xl">灵创AI工具箱</span>
+                                    </div>
+                                    <p class="text-blue-200 text-sm">专业场景AI工具集合平台，让每一个创意都能通过AI高效实现。</p>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-4">产品</h4>
+                                    <ul class="space-y-2 text-blue-200 text-sm">
+                                        <li><a href="tools.html" class="hover:text-white transition-colors focus-ring rounded">全部工具</a></li>
+                                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">最新上线</a></li>
+                                        <li><a href="vote.html" class="hover:text-white transition-colors focus-ring rounded">构思中工具</a></li>
+                                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">API文档</a></li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-4">支持</h4>
+                                    <ul class="space-y-2 text-blue-200 text-sm">
+                                        <li><a href="feedback.html" class="hover:text-white transition-colors focus-ring rounded">帮助中心</a></li>
+                                        <li><a href="feedback.html" class="hover:text-white transition-colors focus-ring rounded">反馈建议</a></li>
+                                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">商务合作</a></li>
+                                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">开发者入驻</a></li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-4">关于</h4>
+                                    <ul class="space-y-2 text-blue-200 text-sm">
+                                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">关于我们</a></li>
+                                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">用户协议</a></li>
+                                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">隐私政策</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="border-t border-white/10 mt-10 pt-8 text-center text-blue-200 text-sm">
+                                © 2024 灵创AI. 保留所有权利。
+                            </div>
+                        </div>
+                    </footer>
+
+                </body>
+                </html>
