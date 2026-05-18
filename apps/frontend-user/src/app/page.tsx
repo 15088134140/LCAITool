@@ -1,16 +1,28 @@
-import { Button } from "@lcaitool/ui";
+import {
+  HeroSection,
+  BenchmarkTools,
+  CategoryGrid,
+  SectionPlaceholder,
+} from '../components/home';
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gradient-to-b from-blue-50 to-white">
-      <div className="text-center space-y-8">
-        <h1 className="text-5xl font-bold text-gray-900">灵创AI工具箱</h1>
-        <p className="text-xl text-gray-600">专业场景AI工具集合平台</p>
-        <div className="flex gap-4 justify-center">
-          <Button size="lg">立即开始</Button>
-          <Button variant="outline" size="lg">了解更多</Button>
-        </div>
-      </div>
-    </main>
+    <>
+      <HeroSection />
+      <BenchmarkTools />
+      <CategoryGrid />
+      <SectionPlaceholder
+        title="新工具 & 热门推荐"
+        description="最新上线和用户最爱的AI工具，持续更新中..."
+      />
+      <SectionPlaceholder
+        title="用户共创"
+        description="参与投票，决定下一个工具的开发方向，让你的声音被听见"
+      />
+      <SectionPlaceholder
+        title="用户评价"
+        description="来自真实用户的使用体验和效果反馈"
+      />
+    </>
   );
 }

@@ -19,7 +19,7 @@ interface ToolState {
   detailLoading: boolean;
 
   // Actions
-  fetchTools: (params?: { categoryId?: string; search?: string }) => Promise<void>;
+  fetchTools: (params?: { categoryId?: string | null; search?: string; isFeatured?: boolean }) => Promise<void>;
   fetchToolDetail: (id: string) => Promise<void>;
   fetchToolReviews: (toolId: string, page?: number) => Promise<void>;
   setSearchQuery: (query: string) => void;
@@ -48,10 +48,11 @@ export const useToolStore = create<ToolState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       const queryParams: Record<string, string> = {};
-      const categoryId = params?.categoryId || get().categoryFilter;
+      const categoryId = params?.categoryId ?? get().categoryFilter;
       const search = params?.search || get().searchQuery;
       if (categoryId) queryParams['categoryId'] = categoryId;
       if (search) queryParams['search'] = search;
+      if (params?.isFeatured) queryParams['isFeatured'] = 'true';
       const result = await provider.getTools(queryParams);
       set({ tools: result.items, totalTools: result.total, loading: false });
     } catch (err) {
