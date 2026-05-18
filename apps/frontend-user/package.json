@@ -12,7 +12,8 @@
     "@lcaitool/ui": "workspace:*",
     "next": "^14.2.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@lcaitool/eslint-config": "workspace:*",
