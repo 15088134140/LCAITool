@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_BASE_URL = process.env["NEXT_PUBLIC_API_URL"] || "http://localhost:8000/api/v1";
 
 export class ApiError extends Error {
   constructor(
@@ -46,13 +46,13 @@ export const api = {
   post: <T>(endpoint: string, data?: any, options?: Omit<RequestInit, "method" | "body">) =>
     request<T>(endpoint, {
       method: "POST",
-      body: data ? JSON.stringify(data) : undefined,
+      body: data ? JSON.stringify(data) : null,
       ...options,
     }),
   put: <T>(endpoint: string, data?: any, options?: Omit<RequestInit, "method" | "body">) =>
     request<T>(endpoint, {
       method: "PUT",
-      body: data ? JSON.stringify(data) : undefined,
+      body: data ? JSON.stringify(data) : null,
       ...options,
     }),
   delete: <T>(endpoint: string, options?: Omit<RequestInit, "method">) =>
