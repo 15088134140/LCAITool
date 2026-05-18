@@ -1,0 +1,146 @@
+[
+  {
+    "id": "r001",
+    "userId": "u1001",
+    "userName": "小李老师",
+    "userAvatar": "https://picsum.photos/seed/u1001/100/100",
+    "rating": 5,
+    "content": "太棒了！给幼儿园小朋友做的绘本，质量超出预期，故事温馨，插图精美，语音也很专业。孩子们特别喜欢！",
+    "createdAt": "2026-05-15T09:30:00Z",
+    "toolId": "storybook-generator"
+  },
+  {
+    "id": "r002",
+    "userId": "u1002",
+    "userName": "创意妈妈",
+    "userAvatar": "https://picsum.photos/seed/u1002/100/100",
+    "rating": 5,
+    "content": "用这个工具给孩子做了一本生日主题的绘本，当作礼物太有意义了！AI生成的故事很有想象力，强烈推荐！",
+    "createdAt": "2026-05-14T16:20:00Z",
+    "toolId": "storybook-generator"
+  },
+  {
+    "id": "r003",
+    "userId": "u1003",
+    "userName": "绘本馆老王",
+    "rating": 4,
+    "content": "作为绘本馆馆长，这个工具大大提升了工作效率。唯一建议是希望能增加更多画风选择。",
+    "createdAt": "2026-05-12T11:45:00Z",
+    "toolId": "storybook-generator"
+  },
+  {
+    "id": "r004",
+    "userId": "u1004",
+    "userName": "少儿出版社编辑",
+    "rating": 5,
+    "content": "试用了几个工具，这个绘本生成器是最成熟的。输出质量稳定，排版专业，已经成为我们的常备工具了。",
+    "createdAt": "2026-05-10T08:15:00Z",
+    "toolId": "storybook-generator"
+  },
+  {
+    "id": "r005",
+    "userId": "u1005",
+    "userName": "张爸爸",
+    "userAvatar": "https://picsum.photos/seed/u1005/100/100",
+    "rating": 5,
+    "content": "给女儿做了一本她当主角的冒险故事，她每天都要听好几遍。这个工具太有价值了！",
+    "createdAt": "2026-05-08T20:30:00Z",
+    "toolId": "storybook-generator"
+  },
+  {
+    "id": "r006",
+    "userId": "u2001",
+    "userName": "淘宝店主阿美",
+    "userAvatar": "https://picsum.photos/seed/u2001/100/100",
+    "rating": 5,
+    "content": "以前做一个详情页要花三天，现在半小时就搞定了！文案和图片质量都很高，转化率提升了20%！",
+    "createdAt": "2026-05-15T14:20:00Z",
+    "toolId": "ecommerce-detail"
+  },
+  {
+    "id": "r007",
+    "userId": "u2002",
+    "userName": "跨境电商小王",
+    "rating": 4,
+    "content": "工具很好用，省了很多设计成本。希望后续能支持多语言版本生成，这样做外贸就更方便了。",
+    "createdAt": "2026-05-13T10:00:00Z",
+    "toolId": "ecommerce-detail"
+  },
+  {
+    "id": "r008",
+    "userId": "u2003",
+    "userName": "拼多多商家",
+    "userAvatar": "https://picsum.photos/seed/u2003/100/100",
+    "rating": 5,
+    "content": "作为小卖家，没有预算请专业设计师。这个工具真是救星！生成的详情页完全不输给专业设计。",
+    "createdAt": "2026-05-11T17:45:00Z",
+    "toolId": "ecommerce-detail"
+  },
+  {
+    "id": "r009",
+    "userId": "u2004",
+    "userName": "代运营公司经理",
+    "rating": 5,
+    "content": "我们团队每天要用这个工具生成十几个详情页，效率提升太明显了。客户满意度也很高！",
+    "createdAt": "2026-05-09T09:30:00Z",
+    "toolId": "ecommerce-detail"
+  },
+  {
+    "id": "r010",
+    "userId": "u2005",
+    "userName": "微商团队长",
+    "userAvatar": "https://picsum.photos/seed/u2005/100/100",
+    "rating": 4,
+    "content": "很好用的工具！生成的营销文案很有说服力，配图也很精美。就是有时候需要微调一下。",
+    "createdAt": "2026-05-06T15:10:00Z",
+    "toolId": "ecommerce-detail"
+  },
+  {
+    "id": "r011",
+    "userId": "u3001",
+    "userName": "市场部老周",
+    "userAvatar": "https://picsum.photos/seed/u3001/100/100",
+    "rating": 5,
+    "content": "我们市场部现在写文案都用这个工具，初稿质量很高，稍微修改就能用，效率提升太多了！",
+    "createdAt": "2026-05-14T11:00:00Z",
+    "toolId": "marketing-copywriter"
+  },
+  {
+    "id": "r012",
+    "userId": "u3002",
+    "userName": "自媒体新人",
+    "rating": 4,
+    "content": "作为自媒体新人，这个工具帮了大忙。生成的标题和文案都很抓眼球，粉丝涨得很快！",
+    "createdAt": "2026-05-12T19:30:00Z",
+    "toolId": "marketing-copywriter"
+  },
+  {
+    "id": "r013",
+    "userId": "u3003",
+    "userName": "品牌方市场总监",
+    "userAvatar": "https://picsum.photos/seed/u3003/100/100",
+    "rating": 5,
+    "content": "试过很多AI文案工具，这个是质量最高的。能够理解品牌调性，输出专业级文案，强烈推荐！",
+    "createdAt": "2026-05-10T14:15:00Z",
+    "toolId": "marketing-copywriter"
+  },
+  {
+    "id": "r014",
+    "userId": "u3004",
+    "userName": "电商运营",
+    "rating": 4,
+    "content": "文案质量不错，特别是标题生成很给力。建议增加更多行业模板，适用场景会更广。",
+    "createdAt": "2026-05-07T16:45:00Z",
+    "toolId": "marketing-copywriter"
+  },
+  {
+    "id": "r015",
+    "userId": "u3005",
+    "userName": "创业公司CEO",
+    "userAvatar": "https://picsum.photos/seed/u3005/100/100",
+    "rating": 5,
+    "content": "创业公司预算有限，这个工具帮我们省下了一个文案编辑的成本，效果还更好！性价比超高。",
+    "createdAt": "2026-05-04T10:30:00Z",
+    "toolId": "marketing-copywriter"
+  }
+]

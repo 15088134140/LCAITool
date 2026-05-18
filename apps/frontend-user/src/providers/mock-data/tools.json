@@ -1,0 +1,69 @@
+[
+  {
+    "id": "storybook-generator",
+    "name": "AI有声绘本生成专家",
+    "description": "一键生成精美绘本，只需输入故事主题，AI自动创作完整故事文本、生成配套插图并合成专业语音朗读。支持PDF下载和在线分享。",
+    "shortDescription": "AI一键生成有声绘本，图文音三合一",
+    "icon": "📚",
+    "categoryId": "creative-writing",
+    "pricing": {
+      "baseFee": 15,
+      "resourceFees": {
+        "image": 1,
+        "audio": 1
+      },
+      "example": "生成一本10页的绘本需要15 + 10*1 + 10*1 = 35积分"
+    },
+    "avgRating": 4.9,
+    "useCount": 12580,
+    "isNew": true,
+    "isFeatured": true,
+    "isHot": true,
+    "tags": ["绘本", "AI绘画", "语音合成", "儿童教育"],
+    "status": "active",
+    "createdAt": "2026-05-01T10:00:00Z"
+  },
+  {
+    "id": "ecommerce-detail",
+    "name": "AI电商商品详情页生成器",
+    "description": "输入商品基本信息，AI自动生成吸引人的商品标题、详细的产品描述、营销卖点文案以及配套的主图和详情页图片。",
+    "shortDescription": "专业级电商详情页AI生成工具",
+    "icon": "🛍️",
+    "categoryId": "ecommerce",
+    "pricing": {
+      "baseFee": 12,
+      "resourceFees": {
+        "image": 1
+      },
+      "example": "生成一套完整的商品详情页需要12 + 5*1 = 17积分"
+    },
+    "avgRating": 4.8,
+    "useCount": 8932,
+    "isNew": false,
+    "isFeatured": true,
+    "isHot": true,
+    "tags": ["电商", "商品描述", "营销文案", "主图生成"],
+    "status": "active",
+    "createdAt": "2026-04-15T08:30:00Z"
+  },
+  {
+    "id": "marketing-copywriter",
+    "name": "AI营销文案大师",
+    "description": "专业的营销文案生成工具，支持多种文案类型：广告文案、社交媒体推文、邮件营销内容、SEO优化文章等。内置多种文案模板。",
+    "shortDescription": "写出高转化率的营销文案",
+    "icon": "✏️",
+    "categoryId": "marketing",
+    "pricing": {
+      "baseFee": 8,
+      "example": "生成一篇营销文案仅需8积分"
+    },
+    "avgRating": 4.7,
+    "useCount": 15420,
+    "isNew": false,
+    "isFeatured": true,
+    "isHot": false,
+    "tags": ["营销文案", "广告投放", "社交媒体", "SEO"],
+    "status": "active",
+    "createdAt": "2026-03-20T14:00:00Z"
+  }
+]

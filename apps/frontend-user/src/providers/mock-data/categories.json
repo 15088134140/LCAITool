@@ -1,0 +1,66 @@
+[
+  {
+    "id": "creative-writing",
+    "name": "创意写作",
+    "icon": "✍️",
+    "description": "AI驱动的创意内容生成，包括故事、文案、剧本等各类写作场景",
+    "toolCount": 5,
+    "sortOrder": 1
+  },
+  {
+    "id": "image-generation",
+    "name": "图像生成",
+    "icon": "🎨",
+    "description": "专业级AI图像生成工具，支持插图、设计图、商业图等多种风格",
+    "toolCount": 8,
+    "sortOrder": 2
+  },
+  {
+    "id": "ecommerce",
+    "name": "电商工具",
+    "icon": "🛒",
+    "description": "专为电商场景优化的AI工具，包括商品描述、主图生成、详情页等",
+    "toolCount": 4,
+    "sortOrder": 3
+  },
+  {
+    "id": "audio-processing",
+    "name": "音频处理",
+    "icon": "🎵",
+    "description": "语音合成、音频编辑、背景音乐生成等音频处理工具",
+    "toolCount": 3,
+    "sortOrder": 4
+  },
+  {
+    "id": "office-efficiency",
+    "name": "办公效率",
+    "icon": "📊",
+    "description": "提升办公效率的AI工具，包括文档处理、数据分析、报告生成等",
+    "toolCount": 6,
+    "sortOrder": 5
+  },
+  {
+    "id": "video-editing",
+    "name": "视频创作",
+    "icon": "🎬",
+    "description": "AI驱动的视频创作工具，脚本生成、剪辑建议、字幕处理等",
+    "toolCount": 3,
+    "sortOrder": 6
+  },
+  {
+    "id": "education",
+    "name": "教育学习",
+    "icon": "📚",
+    "description": "面向教育场景的AI工具，包括课件制作、题库生成、学习助手等",
+    "toolCount": 4,
+    "sortOrder": 7
+  },
+  {
+    "id": "marketing",
+    "name": "营销推广",
+    "icon": "📈",
+    "description": "专业营销工具，广告文案、社交媒体内容、SEO优化等",
+    "toolCount": 5,
+    "sortOrder": 8
+  }
+]
