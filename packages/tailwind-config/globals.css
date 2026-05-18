@@ -56,5 +56,300 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  /* 渐变文字 */
+  .gradient-text {
+    background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* 卡片上浮效果 */
+  .card-hover {
+    transition: all 0.25s ease-out;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(30, 58, 95, 0.12);
+  }
+
+  /* 主按钮渐变 */
+  .btn-primary {
+    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+    transition: all 0.2s ease;
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(5, 150, 105, 0.3);
+  }
+
+  /* 次要按钮 */
+  .btn-secondary {
+    border: 2px solid #1E3A5F;
+    transition: all 0.2s ease;
+  }
+  .btn-secondary:hover {
+    background: #1E3A5F;
+    color: white;
+  }
+
+  /* 工具卡片容器 */
+  .tool-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #E4E7EB;
+    overflow: hidden;
+  }
+
+  /* 分类卡片 */
+  .category-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #E4E7EB;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .category-card:hover {
+    border-color: #2563EB;
+    background: #F0F7FF;
+  }
+
+  /* NEW标签 */
+  .new-badge {
+    background: linear-gradient(135deg, #F59E0B, #EF4444);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  /* HOT标签 */
+  .hot-badge {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  /* 聚焦环样式 */
+  .focus-ring:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3);
+  }
+
+  /* 价值卡片 */
+  .value-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #E4E7EB;
+    transition: all 0.25s ease;
+  }
+  .value-card:hover {
+    border-color: #2563EB;
+    background: #F8FAFC;
+  }
+
+  /* 功能卡片 */
+  .feature-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #E4E7EB;
+    padding: 32px;
+    transition: all 0.25s ease;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(30, 58, 95, 0.12);
+    border-color: #2563EB;
+  }
+
+  /* 步骤卡片 */
+  .step-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #E4E7EB;
+    padding: 24px;
+    position: relative;
+    transition: all 0.25s ease;
+  }
+  .step-card:hover {
+    border-color: #2563EB;
+    background: #F8FAFC;
+  }
+
+  /* 定价卡片 */
+  .pricing-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #E4E7EB;
+    padding: 32px;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .pricing-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(30, 58, 95, 0.12);
+  }
+  .pricing-card.featured {
+    border-color: #2563EB;
+    border-width: 2px;
+  }
+
+  /* 评价卡片 */
+  .review-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #E4E7EB;
+    padding: 24px;
+    transition: all 0.25s ease;
+  }
+  .review-card:hover {
+    box-shadow: 0 10px 30px rgba(30, 58, 95, 0.08);
+  }
+
+  /* 背景 blob 动画容器 */
+  .section-bg-blobs {
+    position: relative;
+    overflow: hidden;
+  }
+  .section-bg-blobs::before,
+  .section-bg-blobs::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(50px);
+    opacity: 0.25;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* 浅蓝背景 (#F8FAFC) */
+  .section-bg-blobs.bg-slate-50::before,
+  .section-bg-blobs[class*="bg-\[\#F8FAFC\]"]::before {
+    width: 500px;
+    height: 500px;
+    background: linear-gradient(135deg, #2563EB, #3B82F6);
+    top: -150px;
+    left: -150px;
+    animation: blobFloat1 12s ease-in-out infinite;
+  }
+  .section-bg-blobs.bg-slate-50::after,
+  .section-bg-blobs[class*="bg-\[\#F8FAFC\]"]::after {
+    width: 400px;
+    height: 400px;
+    background: linear-gradient(135deg, #10B981, #34D399);
+    bottom: -100px;
+    right: -100px;
+    animation: blobFloat2 15s ease-in-out infinite;
+  }
+
+  /* 白色背景 */
+  .section-bg-blobs.bg-white::before {
+    width: 450px;
+    height: 450px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.5), rgba(59, 130, 246, 0.35));
+    top: -120px;
+    left: 5%;
+    animation: blobFloat1 14s ease-in-out infinite;
+  }
+  .section-bg-blobs.bg-white::after {
+    width: 380px;
+    height: 380px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.45), rgba(52, 211, 153, 0.3));
+    bottom: -100px;
+    right: 10%;
+    animation: blobFloat2 16s ease-in-out infinite;
+  }
+
+  /* 深色渐变 CTA 区域 */
+  .section-bg-blobs.bg-gradient-to-br::before {
+    width: 600px;
+    height: 600px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.15));
+    top: -200px;
+    left: -150px;
+    animation: blobFloat1 10s ease-in-out infinite;
+  }
+  .section-bg-blobs.bg-gradient-to-br::after {
+    width: 500px;
+    height: 500px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(16, 185, 129, 0.3));
+    bottom: -150px;
+    right: -100px;
+    animation: blobFloat2 13s ease-in-out infinite;
+  }
+
+  /* 深蓝渐变区域 */
+  .section-bg-blobs[class*="from-\[\#1E3A5F\]"]::before {
+    width: 550px;
+    height: 550px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(16, 185, 129, 0.2));
+    top: -150px;
+    right: -100px;
+    animation: blobFloat1 11s ease-in-out infinite;
+  }
+  .section-bg-blobs[class*="from-\[\#1E3A5F\]"]::after {
+    width: 480px;
+    height: 480px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(13, 148, 136, 0.25));
+    bottom: -120px;
+    left: -80px;
+    animation: blobFloat2 14s ease-in-out infinite;
+  }
+
+  /* 确保内容在背景之上 */
+  .section-bg-blobs > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 动画关键帧 */
+  @keyframes blobFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(100px, 50px) scale(1.15); }
+    50% { transform: translate(50px, 100px) scale(0.9); }
+    75% { transform: translate(-30px, 60px) scale(1.05); }
+  }
+
+  @keyframes blobFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-80px, -40px) scale(1.1); }
+    50% { transform: translate(-40px, -80px) scale(0.95); }
+    75% { transform: translate(60px, -30px) scale(1.08); }
+  }
+
+  @keyframes blobFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-60px, 80px) scale(1.2); }
+    66% { transform: translate(80px, -40px) scale(0.85); }
+  }
+
+  /* 减少动画偏好设置 */
+  @media (prefers-reduced-motion: reduce) {
+    .section-bg-blobs::before,
+    .section-bg-blobs::after,
+    .card-hover,
+    .btn-primary,
+    .btn-secondary,
+    .category-card,
+    .value-card,
+    .feature-card,
+    .pricing-card {
+      animation: none !important;
+      transition: none !important;
+    }
   }
 }
