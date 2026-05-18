@@ -20,9 +20,40 @@
         .type-expense { color: #DC2626; }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
         .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3); }
+
+        /* Page Background Animation */
+        .page-bg-animated { position: relative; overflow-x: hidden; }
+        .page-bg-animated::before, .page-bg-animated::after {
+            content: ''; position: fixed; border-radius: 50%;
+            filter: blur(60px); opacity: 0.2; z-index: 0; pointer-events: none;
+        }
+        .page-bg-animated::before {
+            width: 500px; height: 500px; background: linear-gradient(135deg, #2563EB, #3B82F6);
+            top: -150px; left: -150px; animation: blobFloat1 20s ease-in-out infinite;
+        }
+        .page-bg-animated::after {
+            width: 400px; height: 400px; background: linear-gradient(135deg, #10B981, #34D399);
+            bottom: -100px; right: -100px; animation: blobFloat2 25s ease-in-out infinite;
+        }
+        @keyframes blobFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(100px, 50px) scale(1.15); }
+            50% { transform: translate(50px, 100px) scale(0.9); }
+            75% { transform: translate(-30px, 60px) scale(1.05); }
+        }
+        @keyframes blobFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-80px, -40px) scale(1.1); }
+            50% { transform: translate(-40px, -80px) scale(0.95); }
+            75% { transform: translate(60px, -30px) scale(1.08); }
+        }
+        .page-bg-animated > * { position: relative; z-index: 1; }
+        @media (prefers-reduced-motion: reduce) {
+            .page-bg-animated::before, .page-bg-animated::after { animation: none; }
+        }
     </style>
 </head>
-<body class="bg-[#F8FAFC] text-[#0F172A] antialiased min-h-screen">
+<body class="bg-[#F8FAFC] text-[#0F172A] antialiased min-h-screen page-bg-animated">
 
     <!-- Navigation -->
     <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#E4E7EB]">

@@ -22,6 +22,47 @@
         .avatar-stack img:first-child { margin-left: 0; }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
         .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3); }
+
+        /* Section Background Animations */
+        .section-bg-blobs { position: relative; overflow: hidden; }
+        .section-bg-blobs::before, .section-bg-blobs::after {
+            content: ''; position: absolute; border-radius: 50%;
+            filter: blur(50px); opacity: 0.25; z-index: 0; pointer-events: none;
+        }
+        .section-bg-blobs[class*="bg-\[\#F8FAFC\]"]::before {
+            width: 500px; height: 500px; background: linear-gradient(135deg, #2563EB, #3B82F6);
+            top: -150px; left: -150px; animation: blobFloat1 12s ease-in-out infinite;
+        }
+        .section-bg-blobs[class*="bg-\[\#F8FAFC\]"]::after {
+            width: 400px; height: 400px; background: linear-gradient(135deg, #10B981, #34D399);
+            bottom: -100px; right: -100px; animation: blobFloat2 15s ease-in-out infinite;
+        }
+        .section-bg-blobs.gradient-hero::before {
+            width: 550px; height: 550px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(16,185,129,0.15));
+            top: -150px; right: -100px; animation: blobFloat1 11s ease-in-out infinite;
+        }
+        .section-bg-blobs.gradient-hero::after {
+            width: 480px; height: 480px;
+            background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(59,130,246,0.2));
+            bottom: -120px; left: -80px; animation: blobFloat2 14s ease-in-out infinite;
+        }
+        @keyframes blobFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(100px, 50px) scale(1.15); }
+            50% { transform: translate(50px, 100px) scale(0.9); }
+            75% { transform: translate(-30px, 60px) scale(1.05); }
+        }
+        @keyframes blobFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-80px, -40px) scale(1.1); }
+            50% { transform: translate(-40px, -80px) scale(0.95); }
+            75% { transform: translate(60px, -30px) scale(1.08); }
+        }
+        .section-bg-blobs > * { position: relative; z-index: 1; }
+        @media (prefers-reduced-motion: reduce) {
+            .section-bg-blobs::before, .section-bg-blobs::after { animation: none; }
+        }
     </style>
 </head>
 <body class="bg-[#F8FAFC] text-[#0F172A] antialiased">
@@ -51,7 +92,7 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="gradient-hero py-16 lg:py-24">
+    <section class="gradient-hero py-16 lg:py-24 section-bg-blobs">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 class="text-4xl sm:text-5xl font-bold text-white mb-6">参与产品共建</h1>
             <p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
@@ -85,7 +126,7 @@
     </section>
 
     <!-- Filter Section -->
-    <section class="py-8 border-b border-[#E2E8F0] bg-white">
+    <section class="py-8 border-b border-[#E2E8F0] bg-white section-bg-blobs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-2">
@@ -385,7 +426,7 @@
     </section>
 
     <!-- Success Stories -->
-    <section class="py-16 bg-white">
+    <section class="py-16 bg-white section-bg-blobs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-2xl font-bold text-[#1E3A5F] mb-8 text-center">从构思到上线的成功案例</h2>
 
@@ -436,7 +477,7 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="py-16 bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6]">
+    <section class="py-16 bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] section-bg-blobs">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl sm:text-4xl font-bold text-white mb-6">有更好的创意想法？</h2>
             <p class="text-xl text-purple-100 mb-10">提交你的工具创意，一旦被采纳，将获得 200 积分奖励！</p>

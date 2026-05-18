@@ -166,6 +166,200 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3);
         }
+
+        /* Section Background Animations - Tech Futuristic Style */
+        .section-bg-blobs {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-bg-blobs::before,
+        .section-bg-blobs::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(50px);
+            opacity: 0.25;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Light background sections (#F8FAFC) */
+        .section-bg-blobs.bg-slate-50::before,
+        .section-bg-blobs[class*="bg-\[\#F8FAFC\]"]::before {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #2563EB, #3B82F6);
+            top: -150px;
+            left: -150px;
+            animation: blobFloat1 12s ease-in-out infinite;
+        }
+
+        .section-bg-blobs.bg-slate-50::after,
+        .section-bg-blobs[class*="bg-\[\#F8FAFC\]"]::after {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #10B981, #34D399);
+            bottom: -100px;
+            right: -100px;
+            animation: blobFloat2 15s ease-in-out infinite;
+        }
+
+        /* White background sections */
+        .section-bg-blobs.bg-white::before {
+            width: 450px;
+            height: 450px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.5), rgba(59, 130, 246, 0.35));
+            top: -120px;
+            left: 5%;
+            animation: blobFloat1 14s ease-in-out infinite;
+        }
+
+        .section-bg-blobs.bg-white::after {
+            width: 380px;
+            height: 380px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.45), rgba(52, 211, 153, 0.3));
+            bottom: -100px;
+            right: 10%;
+            animation: blobFloat2 16s ease-in-out infinite;
+        }
+
+        /* Dark gradient sections (green/teal CTA) */
+        .section-bg-blobs.bg-gradient-to-br::before {
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.15));
+            top: -200px;
+            left: -150px;
+            animation: blobFloat1 10s ease-in-out infinite;
+        }
+
+        .section-bg-blobs.bg-gradient-to-br::after {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(16, 185, 129, 0.3));
+            bottom: -150px;
+            right: -100px;
+            animation: blobFloat2 13s ease-in-out infinite;
+        }
+
+        /* Hero section extra enhancement */
+        .hero-enhanced::before {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #1E3A5F, #2563EB);
+            top: -150px;
+            left: -150px;
+            filter: blur(60px);
+            opacity: 0.22;
+            animation: blobFloat1 12s ease-in-out infinite;
+        }
+
+        .hero-enhanced::after {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #059669, #10B981);
+            bottom: -120px;
+            right: -80px;
+            filter: blur(60px);
+            opacity: 0.18;
+            animation: blobFloat2 15s ease-in-out infinite;
+        }
+
+        /* Hero third blob accent */
+        .hero-enhanced > div:first-child::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #F59E0B, #EF4444);
+            top: 35%;
+            right: 25%;
+            border-radius: 50%;
+            filter: blur(70px);
+            opacity: 0.12;
+            z-index: 0;
+            pointer-events: none;
+            animation: blobFloat3 20s ease-in-out infinite;
+        }
+
+        /* Dark blue gradient section (user co-creation) */
+        .section-bg-blobs[class*="from-\[\#1E3A5F\]"]::before {
+            width: 550px;
+            height: 550px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(16, 185, 129, 0.2));
+            top: -150px;
+            right: -100px;
+            animation: blobFloat1 11s ease-in-out infinite;
+        }
+
+        .section-bg-blobs[class*="from-\[\#1E3A5F\]"]::after {
+            width: 480px;
+            height: 480px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(13, 148, 136, 0.25));
+            bottom: -120px;
+            left: -80px;
+            animation: blobFloat2 14s ease-in-out infinite;
+        }
+
+        @keyframes blobFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(100px, 50px) scale(1.15); }
+            50% { transform: translate(50px, 100px) scale(0.9); }
+            75% { transform: translate(-30px, 60px) scale(1.05); }
+        }
+
+        @keyframes blobFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-80px, -40px) scale(1.1); }
+            50% { transform: translate(-40px, -80px) scale(0.95); }
+            75% { transform: translate(60px, -30px) scale(1.08); }
+        }
+
+        @keyframes blobFloat3 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-60px, 80px) scale(1.2); }
+            66% { transform: translate(80px, -40px) scale(0.85); }
+        }
+
+        /* Ensure section content stays above background */
+        .section-bg-blobs > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Subtle shimmer glow effect */
+        .section-bg-blobs .section-glow {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 100%
+            );
+            z-index: 0;
+            pointer-events: none;
+            animation: shimmer 8s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(0); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateX(300%); opacity: 0; }
+        }
+
+        /* Reduced motion accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            .section-bg-blobs::before,
+            .section-bg-blobs::after {
+                animation: none;
+            }
+        }
     </style>
 </head>
 <body class="bg-[#F8FAFC] text-[#0F172A] antialiased">
@@ -195,7 +389,8 @@
     </nav>
 
     <!-- Section 1: Hero -->
-    <section class="py-16 lg:py-24">
+    <section class="py-16 lg:py-24 section-bg-blobs hero-enhanced">
+        <div class="section-glow"></div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div>
@@ -207,12 +402,12 @@
                         无需AI专业知识，简单几步，获得专业级可商用的完整成果。让每一个创意都能通过AI高效实现。
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 mb-12">
-                        <button class="btn-primary px-8 py-4 text-white font-semibold rounded-xl text-lg focus-ring">
+                        <a href="register.html" class="btn-primary px-8 py-4 text-white font-semibold rounded-xl text-lg focus-ring inline-block text-center">
                             立即免费体验
-                        </button>
-                        <button class="btn-secondary px-8 py-4 text-[#1E3A5F] font-semibold rounded-xl text-lg focus-ring">
+                        </a>
+                        <a href="tools.html" class="btn-secondary px-8 py-4 text-[#1E3A5F] font-semibold rounded-xl text-lg focus-ring inline-block text-center">
                             浏览全部工具
-                        </button>
+                        </a>
                     </div>
 
                     <!-- Five Value Cards -->
@@ -286,7 +481,7 @@
     </section>
 
     <!-- Section 2: Benchmark Tools -->
-    <section id="tools" class="py-16 lg:py-20 bg-white">
+    <section id="tools" class="py-16 lg:py-20 bg-white section-bg-blobs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl sm:text-4xl font-bold text-[#1E3A5F] mb-4">精品工具 · 开箱即用</h2>
@@ -397,7 +592,7 @@
     </section>
 
     <!-- Section 3: Tool Categories -->
-    <section class="py-16 lg:py-20">
+    <section class="py-16 lg:py-20 section-bg-blobs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl sm:text-4xl font-bold text-[#1E3A5F] mb-4">按场景选择工具</h2>
@@ -405,7 +600,7 @@
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                <div class="category-card card-hover">
+                <a href="tools.html" class="category-card card-hover block text-center">
                     <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -413,9 +608,9 @@
                     </div>
                     <h3 class="font-semibold text-[#1E3A5F]">内容创作</h3>
                     <p class="text-sm text-[#64748B] mt-1">8 款工具</p>
-                </div>
+                </a>
 
-                <div class="category-card card-hover">
+                <a href="tools.html" class="category-card card-hover block text-center">
                     <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -423,9 +618,9 @@
                     </div>
                     <h3 class="font-semibold text-[#1E3A5F]">设计工具</h3>
                     <p class="text-sm text-[#64748B] mt-1">12 款工具</p>
-                </div>
+                </a>
 
-                <div class="category-card card-hover">
+                <a href="tools.html" class="category-card card-hover block text-center">
                     <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
@@ -433,9 +628,9 @@
                     </div>
                     <h3 class="font-semibold text-[#1E3A5F]">教育教学</h3>
                     <p class="text-sm text-[#64748B] mt-1">6 款工具</p>
-                </div>
+                </a>
 
-                <div class="category-card card-hover">
+                <a href="tools.html" class="category-card card-hover block text-center">
                     <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -443,9 +638,9 @@
                     </div>
                     <h3 class="font-semibold text-[#1E3A5F]">电商营销</h3>
                     <p class="text-sm text-[#64748B] mt-1">10 款工具</p>
-                </div>
+                </a>
 
-                <div class="category-card card-hover">
+                <a href="tools.html" class="category-card card-hover block text-center">
                     <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
@@ -453,9 +648,9 @@
                     </div>
                     <h3 class="font-semibold text-[#1E3A5F]">办公效率</h3>
                     <p class="text-sm text-[#64748B] mt-1">7 款工具</p>
-                </div>
+                </a>
 
-                <div class="category-card card-hover">
+                <a href="tools.html" class="category-card card-hover block text-center">
                     <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -463,9 +658,9 @@
                     </div>
                     <h3 class="font-semibold text-[#1E3A5F]">视频制作</h3>
                     <p class="text-sm text-[#64748B] mt-1">5 款工具</p>
-                </div>
+                </a>
 
-                <div class="category-card card-hover">
+                <a href="tools.html" class="category-card card-hover block text-center">
                     <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
@@ -473,9 +668,9 @@
                     </div>
                     <h3 class="font-semibold text-[#1E3A5F]">音频处理</h3>
                     <p class="text-sm text-[#64748B] mt-1">4 款工具</p>
-                </div>
+                </a>
 
-                <div class="category-card card-hover">
+                <a href="vote.html" class="category-card card-hover block text-center">
                     <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"></path>
@@ -483,13 +678,13 @@
                     </div>
                     <h3 class="font-semibold text-[#1E3A5F]">更多</h3>
                     <p class="text-sm text-[#64748B] mt-1">即将上线</p>
-                </div>
+                </a>
             </div>
         </div>
     </section>
 
     <!-- Section 4: New & Hot Tools -->
-    <section class="py-16 lg:py-20 bg-white">
+    <section class="py-16 lg:py-20 bg-white section-bg-blobs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-2 gap-12">
                 <!-- New Tools -->
@@ -499,7 +694,7 @@
                         <h2 class="text-2xl font-bold text-[#1E3A5F]">新品上架</h2>
                     </div>
                     <div class="space-y-4">
-                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                        <a href="tool-detail.html" class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors block">
                             <div class="flex items-start justify-between">
                                 <div class="flex items-start gap-4">
                                     <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
@@ -515,9 +710,9 @@
                                 </div>
                                 <span class="text-sm font-bold text-[#059669]">6 积分</span>
                             </div>
-                        </div>
+                        </a>
 
-                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                        <a href="tool-detail.html" class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors block">
                             <div class="flex items-start justify-between">
                                 <div class="flex items-start gap-4">
                                     <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0">
@@ -533,9 +728,9 @@
                                 </div>
                                 <span class="text-sm font-bold text-[#059669]">10 积分</span>
                             </div>
-                        </div>
+                        </a>
 
-                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                        <a href="tool-detail.html" class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors block">
                             <div class="flex items-start justify-between">
                                 <div class="flex items-start gap-4">
                                     <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
@@ -551,7 +746,7 @@
                                 </div>
                                 <span class="text-sm font-bold text-[#059669]">4 积分</span>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 </div>
 
@@ -562,7 +757,7 @@
                         <h2 class="text-2xl font-bold text-[#1E3A5F]">热门工具</h2>
                     </div>
                     <div class="space-y-4">
-                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                        <a href="tool-detail.html" class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors block">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-2xl font-bold text-[#EF4444]">#1</span>
                                 <div class="flex items-center gap-1">
@@ -574,9 +769,9 @@
                             </div>
                             <h3 class="font-semibold text-[#1E3A5F]">AI营销文案大师</h3>
                             <p class="text-sm text-[#64748B] mt-1">本周 1,234 次使用</p>
-                        </div>
+                        </a>
 
-                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                        <a href="tool-detail.html" class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors block">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-2xl font-bold text-[#F59E0B]">#2</span>
                                 <div class="flex items-center gap-1">
@@ -588,9 +783,9 @@
                             </div>
                             <h3 class="font-semibold text-[#1E3A5F]">AI有声绘本生成专家</h3>
                             <p class="text-sm text-[#64748B] mt-1">本周 987 次使用</p>
-                        </div>
+                        </a>
 
-                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                        <a href="tool-detail.html" class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors block">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-2xl font-bold text-[#059669]">#3</span>
                                 <div class="flex items-center gap-1">
@@ -602,9 +797,9 @@
                             </div>
                             <h3 class="font-semibold text-[#1E3A5F]">AI电商商品详情页生成器</h3>
                             <p class="text-sm text-[#64748B] mt-1">本周 756 次使用</p>
-                        </div>
+                        </a>
 
-                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                        <a href="tool-detail.html" class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors block">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-2xl font-bold text-[#64748B]">#4</span>
                                 <div class="flex items-center gap-1">
@@ -616,9 +811,9 @@
                             </div>
                             <h3 class="font-semibold text-[#1E3A5F]">AI头像生成器</h3>
                             <p class="text-sm text-[#64748B] mt-1">本周 623 次使用</p>
-                        </div>
+                        </a>
 
-                        <div class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors cursor-pointer">
+                        <a href="tool-detail.html" class="p-5 border border-[#E4E7EB] rounded-xl hover:border-[#2563EB] transition-colors block">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-2xl font-bold text-[#64748B]">#5</span>
                                 <div class="flex items-center gap-1">
@@ -630,7 +825,7 @@
                             </div>
                             <h3 class="font-semibold text-[#1E3A5F]">AI海报设计器</h3>
                             <p class="text-sm text-[#64748B] mt-1">本周 512 次使用</p>
-                        </div>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -638,7 +833,7 @@
     </section>
 
     <!-- Section 5: User Co-creation -->
-    <section id="vote" class="py-16 lg:py-20 bg-gradient-to-br from-[#1E3A5F] to-[#2563EB]">
+    <section id="vote" class="py-16 lg:py-20 bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] section-bg-blobs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">参与产品共建 · 投票你期待的工具</h2>
@@ -667,7 +862,7 @@
                             <img src="https://i.pravatar.cc/32?img=13" class="w-6 h-6 rounded-full" alt="投票用户">
                             <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
                         </div>
-                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                        <a href="vote.html" class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring inline-block text-center">投票</a>
                     </div>
                 </div>
 
@@ -691,7 +886,7 @@
                             <img src="https://i.pravatar.cc/32?img=22" class="w-6 h-6 rounded-full" alt="投票用户">
                             <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
                         </div>
-                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                        <a href="vote.html" class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring inline-block text-center">投票</a>
                     </div>
                 </div>
 
@@ -714,7 +909,7 @@
                             <img src="https://i.pravatar.cc/32?img=31" class="w-6 h-6 rounded-full" alt="投票用户">
                             <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
                         </div>
-                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                        <a href="vote.html" class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring inline-block text-center">投票</a>
                     </div>
                 </div>
 
@@ -737,7 +932,7 @@
                             <img src="https://i.pravatar.cc/32?img=41" class="w-6 h-6 rounded-full" alt="投票用户">
                             <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
                         </div>
-                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                        <a href="vote.html" class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring inline-block text-center">投票</a>
                     </div>
                 </div>
 
@@ -760,7 +955,7 @@
                             <img src="https://i.pravatar.cc/32?img=51" class="w-6 h-6 rounded-full" alt="投票用户">
                             <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
                         </div>
-                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                        <a href="vote.html" class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring inline-block text-center">投票</a>
                     </div>
                 </div>
 
@@ -782,7 +977,7 @@
                             <img src="https://i.pravatar.cc/32?img=60" class="w-6 h-6 rounded-full" alt="投票用户">
                             <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs text-white ml-[-8px]">+</span>
                         </div>
-                        <button class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring">投票</button>
+                        <a href="vote.html" class="px-4 py-2 bg-white text-[#1E3A5F] rounded-lg font-semibold hover:bg-blue-50 transition-colors focus-ring inline-block text-center">投票</a>
                     </div>
                 </div>
             </div>
@@ -795,7 +990,7 @@
     </section>
 
     <!-- Section 6: Testimonials & Cases -->
-    <section id="cases" class="py-16 lg:py-20 bg-white">
+    <section id="cases" class="py-16 lg:py-20 bg-white section-bg-blobs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl sm:text-4xl font-bold text-[#1E3A5F] mb-4">看看其他用户用灵创AI做出了什么</h2>
@@ -885,7 +1080,7 @@
     </section>
 
     <!-- Section 7: Value-added Services -->
-    <section id="services" class="py-16 lg:py-20">
+    <section id="services" class="py-16 lg:py-20 section-bg-blobs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl sm:text-4xl font-bold text-[#1E3A5F] mb-4">需要更多定制化服务？</h2>
@@ -958,7 +1153,7 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="py-16 lg:py-20 bg-gradient-to-br from-[#059669] to-[#0D9488]">
+    <section class="py-16 lg:py-20 bg-gradient-to-br from-[#059669] to-[#0D9488] section-bg-blobs">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl sm:text-4xl font-bold text-white mb-6">开始你的AI创作之旅</h2>
             <p class="text-xl text-green-100 mb-10">注册即送体验积分，零成本体验完整AI工具能力</p>

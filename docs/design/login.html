@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 灵创AI工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', system-ui, -apple-system, sans-serif; }
+        .btn-primary { background: linear-gradient(135deg, #059669 0%, #10B981 100%); transition: all 0.2s ease; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3); }
+        .social-btn { transition: all 0.2s ease; border: 1px solid #E4E7EB; }
+        .social-btn:hover { border-color: #2563EB; background: #F8FAFC; }
+        .input-field { transition: all 0.2s ease; border: 1px solid #E4E7EB; }
+        .input-field:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .feature-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .float-animation { animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+        .pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+        .qr-scan-line { animation: scan 2s linear infinite; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+        .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3); }
+    </style>
+</head>
+<body class="text-white antialiased min-h-screen bg-gradient-to-br from-[#0F172A] via-[#1E3A5F] to-[#2563EB]">
+
+    <!-- Navigation -->
+    <nav class="relative z-20 border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-400/60 to-cyan-400/60 border border-white/20 flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AI</span>
+                    </div>
+                    <span class="font-bold text-xl text-white">灵创AI</span>
+                </a>
+                <div>
+                    <a href="register.html" class="text-blue-200 font-medium hover:text-white transition-colors focus:outline-none">没有账号？去注册</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="min-h-[calc(100vh-64px)] relative overflow-hidden">
+        <!-- Global Background Glow Effects -->
+        <div class="absolute -top-20 -left-20 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-cyan-500/15 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-400/5 rounded-full blur-3xl"></div>
+
+        <!-- Subtle Grid Pattern -->
+        <div class="absolute inset-0 opacity-[0.02]">
+            <svg width="100%" height="100%">
+                <defs>
+                    <pattern id="grid-bg" width="50" height="50" patternUnits="userSpaceOnUse">
+                        <path d="M 50 0 L 0 0 0 50" fill="none" stroke="white" stroke-width="1"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid-bg)"/>
+            </svg>
+        </div>
+
+        <!-- Floating Orbs -->
+        <div class="absolute top-40 left-1/4 w-4 h-4 bg-cyan-400/40 rounded-full float-animation shadow-lg shadow-cyan-400/30"></div>
+        <div class="absolute top-60 right-1/3 w-3 h-3 bg-blue-400/40 rounded-full float-animation" style="animation-delay: 1s;"></div>
+        <div class="absolute bottom-40 left-1/3 w-5 h-5 bg-white/20 rounded-full float-animation" style="animation-delay: 1.5s;"></div>
+        <div class="absolute top-1/3 right-1/4 w-2 h-2 bg-cyan-300/30 rounded-full float-animation" style="animation-delay: 0.5s;"></div>
+
+        <div class="relative z-10 flex min-h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Left Panel - Hero Section (Desktop Only) -->
+            <div class="hidden lg:flex lg:w-1/2 relative">
+                <!-- Content -->
+                <div class="flex flex-col justify-center pr-8 py-20 w-full">
+                    <!-- Logo & Brand -->
+                    <div class="mb-16">
+                        <div class="flex items-center gap-4 mb-8">
+                            <div class="relative">
+                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-400/60 to-cyan-400/60 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                    <span class="text-white font-bold text-2xl">AI</span>
+                                </div>
+                                <div class="absolute -inset-1 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-2xl opacity-20 blur-md"></div>
+                            </div>
+                            <span class="text-white font-bold text-2xl tracking-tight">灵创AI</span>
+                        </div>
+
+                        <h1 class="text-5xl font-bold text-white mb-6 leading-tight">
+                            释放创意<br/>
+                            <span class="bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
+                                赋能每一个灵感
+                            </span>
+                        </h1>
+                        <p class="text-blue-200/70 text-lg max-w-sm leading-relaxed">
+                            借助AI的力量，让创作变得简单而有趣。从绘本到插画，一键实现你的创意想法。
+                        </p>
+                    </div>
+
+                    <!-- Feature List -->
+                    <div class="space-y-6 mb-16">
+                        <div class="flex items-center gap-5 group">
+                            <div class="w-12 h-12 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-all duration-300">
+                                <svg class="w-6 h-6 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium text-lg">智能AI绘画</h3>
+                                <p class="text-blue-300/50 text-sm">专业级插图作品，多风格选择</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-5 group">
+                            <div class="w-12 h-12 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-all duration-300">
+                                <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium text-lg">有声绘本生成</h3>
+                                <p class="text-blue-300/50 text-sm">文字到绘本的全智能创作流程</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-5 group">
+                            <div class="w-12 h-12 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-all duration-300">
+                                <svg class="w-6 h-6 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium text-lg">专业语音合成</h3>
+                                <p class="text-blue-300/50 text-sm">多音色AI配音，自然流畅</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats with Separator -->
+                    <div class="flex items-center gap-10 pt-8 border-t border-white/10">
+                        <div>
+                            <div class="text-3xl font-bold text-white">50<span class="text-blue-300">万+</span></div>
+                            <div class="text-blue-300/50 text-sm mt-1">活跃用户</div>
+                        </div>
+                        <div class="w-px h-10 bg-white/10"></div>
+                        <div>
+                            <div class="text-3xl font-bold text-white">200<span class="text-cyan-300">万+</span></div>
+                            <div class="text-blue-300/50 text-sm mt-1">作品生成</div>
+                        </div>
+                        <div class="w-px h-10 bg-white/10"></div>
+                        <div>
+                            <div class="text-3xl font-bold text-white">99.9<span class="text-blue-300">%</span></div>
+                            <div class="text-blue-300/50 text-sm mt-1">服务可用</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Login Section -->
+            <div class="w-full lg:w-1/2 flex items-center justify-center pl-0 lg:pl-8 py-12">
+                <div class="w-full max-w-md">
+                    <!-- Mobile Header -->
+                    <div class="lg:hidden text-center mb-10">
+                        <div class="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white font-bold text-2xl">AI</span>
+                        </div>
+                        <h1 class="text-2xl font-bold text-white mb-2">欢迎回来</h1>
+                        <p class="text-blue-200/70">登录您的灵创AI账号，继续创作之旅</p>
+                    </div>
+
+                    <!-- Glassmorphism Login Card -->
+                    <div class="bg-white/8 backdrop-blur-2xl rounded-3xl border border-white/15 p-8 shadow-2xl shadow-black/10">
+                        <!-- Desktop Header -->
+                        <div class="hidden lg:block text-center mb-8">
+                            <h1 class="text-2xl font-bold text-white mb-2">欢迎回来</h1>
+                            <p class="text-blue-200/60">登录您的灵创AI账号，继续创作之旅</p>
+                        </div>
+
+                    <!-- Social Login -->
+                    <div class="space-y-3 mb-8">
+                        <button onclick="openWeChatLogin()" class="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-medium text-white bg-white/10 border border-white/15 hover:bg-white/15 hover:border-white/25 transition-all duration-200 focus:ring-2 focus:ring-white/20 focus:outline-none">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348z"/>
+                            </svg>
+                            使用微信登录
+                        </button>
+                        <button class="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-medium text-white bg-white/10 border border-white/15 hover:bg-white/15 hover:border-white/25 transition-all duration-200 focus:ring-2 focus:ring-white/20 focus:outline-none">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19.63 10.92c.01-.15.02-.3.02-.46 0-4.47-3.58-8.1-8-8.1-3.75 0-6.92 2.56-7.76 6.06 3.4.44 6.36 1.77 8.66 3.7.28-.03.56-.05.85-.05 2.43 0 4.61.83 6.23 2.21v-.36z"/>
+                            </svg>
+                            使用 QQ 登录
+                        </button>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="relative mb-8">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-white/15"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-4 text-blue-200/60 bg-transparent">或使用账号密码登录</span>
+                        </div>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form class="space-y-5" onsubmit="handleLogin(event)">
+                        <div>
+                            <label class="block text-sm font-medium text-white/90 mb-2">手机号 / 邮箱</label>
+                            <input type="text" placeholder="请输入手机号或邮箱" class="w-full px-4 py-3 rounded-xl text-white placeholder-blue-200/60 bg-white/8 border border-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-200">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-white/90 mb-2">密码</label>
+                            <div class="relative">
+                                <input type="password" id="passwordInput" placeholder="请输入密码" class="w-full px-4 py-3 rounded-xl text-white placeholder-blue-200/60 bg-white/8 border border-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-200 pr-12">
+                                <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 focus:outline-none transition-colors">
+                                    <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" class="w-4 h-4 rounded border-white/20 bg-white/8 text-blue-400 focus:ring-blue-400/30 focus:ring-offset-0 focus:outline-none">
+                                <span class="text-sm text-blue-200/60">记住我</span>
+                            </label>
+                            <a href="#" class="text-sm text-blue-300 hover:text-blue-200 font-medium transition-colors focus:outline-none">忘记密码？</a>
+                        </div>
+                        <button type="submit" class="w-full py-3 px-6 text-white font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 shadow-lg shadow-blue-500/25 hover:shadow-blue-400/30 transition-all duration-200 focus:ring-2 focus:ring-blue-400/30 focus:outline-none">
+                            登录
+                        </button>
+                    </form>
+
+                    <!-- Agreement -->
+                    <p class="mt-6 text-center text-xs text-blue-200/40">
+                        登录即表示您同意
+                        <a href="#" class="text-blue-300 hover:text-blue-200 hover:underline">用户协议</a>
+                        和
+                        <a href="#" class="text-blue-300 hover:text-blue-200 hover:underline">隐私政策</a>
+                    </p>
+                </div>
+
+                <!-- Register CTA -->
+                <div class="mt-8 text-center">
+                    <p class="text-blue-200/60">
+                        还没有账号？
+                        <a href="register.html" class="text-blue-300 font-semibold hover:text-blue-200 transition-colors focus:outline-none">立即注册</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- WeChat Login Modal -->
+    <div id="wechatModal" class="fixed inset-0 z-50 hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeWeChatLogin()"></div>
+
+        <!-- Modal Content -->
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/15 max-w-sm w-full overflow-hidden shadow-2xl shadow-black/20 animate-[fadeIn_0.3s_ease]">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-6 py-4 border-b border-white/10">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-8 h-8 text-green-400" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348z"/>
+                            </svg>
+                            <h3 class="text-white font-bold text-lg">微信扫码登录</h3>
+                        </div>
+                        <button onclick="closeWeChatLogin()" class="text-white/60 hover:text-white transition-colors focus:outline-none rounded-full p-1">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- QR Code Section -->
+                <div class="p-8 text-center" id="qrSection">
+                    <!-- QR Code Container -->
+                    <div class="relative inline-block mb-6">
+                        <div class="w-48 h-48 bg-white/90 rounded-xl p-3 relative overflow-hidden">
+                            <!-- Simulated QR Code Pattern -->
+                            <svg viewBox="0 0 200 200" class="w-full h-full">
+                                <rect fill="#fff" width="200" height="200"/>
+                                <!-- 3 Position Detection Patterns -->
+                                <g fill="#0F172A">
+                                    <!-- Top Left -->
+                                    <rect x="10" y="10" width="50" height="50" fill="#fff" stroke="#0F172A" stroke-width="4"/>
+                                    <rect x="20" y="20" width="30" height="30"/>
+                                    <rect x="28" y="28" width="14" height="14" fill="#fff"/>
+                                    <!-- Top Right -->
+                                    <rect x="140" y="10" width="50" height="50" fill="#fff" stroke="#0F172A" stroke-width="4"/>
+                                    <rect x="150" y="20" width="30" height="30"/>
+                                    <rect x="158" y="28" width="14" height="14" fill="#fff"/>
+                                    <!-- Bottom Left -->
+                                    <rect x="10" y="140" width="50" height="50" fill="#fff" stroke="#0F172A" stroke-width="4"/>
+                                    <rect x="20" y="150" width="30" height="30"/>
+                                    <rect x="28" y="158" width="14" height="14" fill="#fff"/>
+                                </g>
+                                <!-- Data Patterns -->
+                                <g fill="#0F172A">
+                                    <rect x="80" y="10" width="10" height="10"/>
+                                    <rect x="100" y="10" width="10" height="10"/>
+                                    <rect x="80" y="30" width="10" height="10"/>
+                                    <rect x="110" y="80" width="10" height="10"/>
+                                    <rect x="130" y="80" width="10" height="10"/>
+                                    <rect x="110" y="100" width="10" height="10"/>
+                                    <rect x="130" y="100" width="10" height="10"/>
+                                    <rect x="80" y="110" width="10" height="10"/>
+                                    <rect x="80" y="130" width="10" height="10"/>
+                                    <rect x="100" y="130" width="10" height="10"/>
+                                    <rect x="140" y="140" width="10" height="10"/>
+                                    <rect x="160" y="140" width="10" height="10"/>
+                                    <rect x="140" y="160" width="10" height="10"/>
+                                    <rect x="80" y="160" width="10" height="10"/>
+                                    <rect x="100" y="160" width="10" height="10"/>
+                                </g>
+                                <!-- Center Logo -->
+                                <rect x="85" y="85" width="30" height="30" fill="#0F172A" rx="4"/>
+                                <text x="100" y="105" text-anchor="middle" font-size="10" font-weight="bold" fill="#10B981">AI</text>
+                            </svg>
+                            <!-- Scanning Animation Line -->
+                            <div id="scanLine" class="absolute left-3 right-3 h-0.5 bg-gradient-to-r from-transparent via-green-400 to-transparent qr-scan-line"></div>
+                        </div>
+                        <!-- Pulse Animation Ring -->
+                        <div class="absolute inset-0 border-2 border-green-400/30 rounded-xl pulse-ring"></div>
+                    </div>
+
+                    <p class="text-white font-medium mb-2">请使用微信扫描二维码登录</p>
+                    <p class="text-blue-200/50 text-sm">扫码后请在手机上确认登录</p>
+
+                    <!-- Expire Countdown -->
+                    <div class="mt-6 pt-4 border-t border-white/10">
+                        <div class="flex items-center justify-center gap-2 text-sm text-blue-200/50">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>二维码将在 <span id="countdown" class="text-green-400 font-semibold">60</span> 秒后过期</span>
+                        </div>
+                        <button onclick="refreshQRCode()" class="mt-3 text-blue-300 text-sm hover:text-blue-200 font-medium transition-colors focus:outline-none">
+                            刷新二维码
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scanning Success State (Hidden by Default) -->
+                <div id="scanSuccess" class="p-8 text-center hidden">
+                    <div class="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6 border border-green-400/30">
+                        <svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <h4 class="text-white font-bold text-lg mb-2">扫码成功！</h4>
+                    <p class="text-blue-200/50">请在手机上确认登录</p>
+                    <div class="mt-6 flex items-center justify-center gap-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    </div>
+                </div>
+
+                <!-- Logged In State (Hidden by Default) -->
+                <div id="loggedIn" class="p-8 text-center hidden">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <h4 class="text-white font-bold text-lg mb-2">登录成功！</h4>
+                    <p class="text-blue-200/50 mb-6">欢迎回来，即将跳转到首页...</p>
+                    <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                        <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-full rounded-full animate-[progress_2s_ease-in-out]" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <!-- Footer Tips -->
+                <div class="bg-white/5 px-6 py-4 border-t border-white/10">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-blue-200/40 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="text-xs text-blue-200/40">
+                            <p class="font-medium text-blue-200/60 mb-1">温馨提示：</p>
+                            <p>• 请使用微信App扫码，不支持微信电脑版扫码</p>
+                            <p>• 如扫码失败，请点击刷新二维码重试</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="relative z-10 border-t border-white/10 py-6 lg:hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-blue-200/40 text-sm">© 2024 灵创AI工具箱. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes progress {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+    </style>
+
+    <script>
+        // Password visibility toggle
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                `;
+            } else {
+                input.type = 'password';
+                icon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                `;
+            }
+        }
+
+        // Form submission
+        function handleLogin(e) {
+            e.preventDefault();
+            alert('登录功能演示');
+        }
+
+        // WeChat Login Modal
+        let countdownInterval;
+        let countdown = 60;
+
+        function openWeChatLogin() {
+            const modal = document.getElementById('wechatModal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            // Reset states
+            document.getElementById('qrSection').classList.remove('hidden');
+            document.getElementById('scanSuccess').classList.add('hidden');
+            document.getElementById('loggedIn').classList.add('hidden');
+
+            // Start countdown
+            startCountdown();
+
+            // Simulate scan after 3 seconds (demo purpose)
+            setTimeout(() => {
+                simulateScanSuccess();
+            }, 3000);
+        }
+
+        function closeWeChatLogin() {
+            const modal = document.getElementById('wechatModal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+        }
+
+        function startCountdown() {
+            countdown = 60;
+            document.getElementById('countdown').textContent = countdown;
+
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            countdownInterval = setInterval(() => {
+                countdown--;
+                document.getElementById('countdown').textContent = countdown;
+
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    // QR expired - you could show an expired state here
+                }
+            }, 1000);
+        }
+
+        function refreshQRCode() {
+            startCountdown();
+            // In a real app, you would fetch a new QR code from the server here
+        }
+
+        function simulateScanSuccess() {
+            // Show scan success state
+            document.getElementById('qrSection').classList.add('hidden');
+            document.getElementById('scanSuccess').classList.remove('hidden');
+
+            // Simulate user confirmation on phone
+            setTimeout(() => {
+                document.getElementById('scanSuccess').classList.add('hidden');
+                document.getElementById('loggedIn').classList.remove('hidden');
+
+                // Redirect after animation
+                setTimeout(() => {
+                    closeWeChatLogin();
+                    window.location.href = 'index.html';
+                }, 2000);
+            }, 2000);
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeWeChatLogin();
+            }
+        });
+    </script>
+
+</body>
+</html>

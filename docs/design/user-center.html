@@ -24,9 +24,80 @@
         .stat-card { background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%); }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
         .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3); }
+
+        /* Section Background Animations */
+        .section-bg-blobs { position: relative; overflow: hidden; }
+        .section-bg-blobs::before, .section-bg-blobs::after {
+            content: ''; position: absolute; border-radius: 50%;
+            filter: blur(50px); opacity: 0.25; z-index: 0; pointer-events: none;
+        }
+        .section-bg-blobs[class*="bg-\[\#F8FAFC\]"]::before {
+            width: 500px; height: 500px; background: linear-gradient(135deg, #2563EB, #3B82F6);
+            top: -150px; left: -150px; animation: blobFloat1 12s ease-in-out infinite;
+        }
+        .section-bg-blobs[class*="bg-\[\#F8FAFC\]"]::after {
+            width: 400px; height: 400px; background: linear-gradient(135deg, #10B981, #34D399);
+            bottom: -100px; right: -100px; animation: blobFloat2 15s ease-in-out infinite;
+        }
+        .section-bg-blobs.bg-white::before {
+            width: 450px; height: 450px;
+            background: linear-gradient(135deg, rgba(37,99,235,0.4), rgba(59,130,246,0.25));
+            top: -120px; left: 5%; animation: blobFloat1 14s ease-in-out infinite;
+        }
+        .section-bg-blobs.bg-white::after {
+            width: 380px; height: 380px;
+            background: linear-gradient(135deg, rgba(16,185,129,0.35), rgba(52,211,153,0.2));
+            bottom: -100px; right: 10%; animation: blobFloat2 16s ease-in-out infinite;
+        }
+        @keyframes blobFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(100px, 50px) scale(1.15); }
+            50% { transform: translate(50px, 100px) scale(0.9); }
+            75% { transform: translate(-30px, 60px) scale(1.05); }
+        }
+        @keyframes blobFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-80px, -40px) scale(1.1); }
+            50% { transform: translate(-40px, -80px) scale(0.95); }
+            75% { transform: translate(60px, -30px) scale(1.08); }
+        }
+        .section-bg-blobs > * { position: relative; z-index: 1; }
+        @media (prefers-reduced-motion: reduce) {
+            .section-bg-blobs::before, .section-bg-blobs::after { animation: none; }
+        }
+        /* Page Background Animation */
+        .page-bg-animated { position: relative; overflow-x: hidden; }
+        .page-bg-animated::before, .page-bg-animated::after {
+            content: ''; position: fixed; border-radius: 50%;
+            filter: blur(60px); opacity: 0.2; z-index: 0; pointer-events: none;
+        }
+        .page-bg-animated::before {
+            width: 500px; height: 500px; background: linear-gradient(135deg, #2563EB, #3B82F6);
+            top: -150px; left: -150px; animation: blobFloat1 20s ease-in-out infinite;
+        }
+        .page-bg-animated::after {
+            width: 400px; height: 400px; background: linear-gradient(135deg, #10B981, #34D399);
+            bottom: -100px; right: -100px; animation: blobFloat2 25s ease-in-out infinite;
+        }
+        @keyframes blobFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(100px, 50px) scale(1.15); }
+            50% { transform: translate(50px, 100px) scale(0.9); }
+            75% { transform: translate(-30px, 60px) scale(1.05); }
+        }
+        @keyframes blobFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-80px, -40px) scale(1.1); }
+            50% { transform: translate(-40px, -80px) scale(0.95); }
+            75% { transform: translate(60px, -30px) scale(1.08); }
+        }
+        .page-bg-animated > * { position: relative; z-index: 1; }
+        @media (prefers-reduced-motion: reduce) {
+            .page-bg-animated::before, .page-bg-animated::after { animation: none; }
+        }
     </style>
 </head>
-<body class="bg-[#F8FAFC] text-[#0F172A] antialiased">
+<body class="bg-[#F8FAFC] text-[#0F172A] antialiased page-bg-animated">
 
     <!-- Top Navigation -->
     <nav class="sticky top-0 z-50 bg-white border-b border-[#E2E8F0]">

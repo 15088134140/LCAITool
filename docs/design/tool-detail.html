@@ -109,9 +109,56 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3);
         }
+        .nav-item {
+            transition: all 0.2s ease;
+        }
+        .nav-item.active {
+            color: #1E3A5F;
+            font-weight: 600;
+            background: rgba(30, 58, 95, 0.05);
+            border-left: 3px solid #1E3A5F;
+        }
+        .nav-item:hover:not(.active) {
+            background: rgba(30, 58, 95, 0.03);
+        }
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 100px;
+        }
+
+        /* Page Background Animation */
+        .page-bg-animated { position: relative; overflow-x: hidden; }
+        .page-bg-animated::before, .page-bg-animated::after {
+            content: ''; position: fixed; border-radius: 50%;
+            filter: blur(60px); opacity: 0.2; z-index: 0; pointer-events: none;
+        }
+        .page-bg-animated::before {
+            width: 500px; height: 500px; background: linear-gradient(135deg, #2563EB, #3B82F6);
+            top: -150px; left: -150px; animation: blobFloat1 20s ease-in-out infinite;
+        }
+        .page-bg-animated::after {
+            width: 400px; height: 400px; background: linear-gradient(135deg, #10B981, #34D399);
+            bottom: -100px; right: -100px; animation: blobFloat2 25s ease-in-out infinite;
+        }
+        @keyframes blobFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(100px, 50px) scale(1.15); }
+            50% { transform: translate(50px, 100px) scale(0.9); }
+            75% { transform: translate(-30px, 60px) scale(1.05); }
+        }
+        @keyframes blobFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-80px, -40px) scale(1.1); }
+            50% { transform: translate(-40px, -80px) scale(0.95); }
+            75% { transform: translate(60px, -30px) scale(1.08); }
+        }
+        .page-bg-animated > * { position: relative; z-index: 1; }
+        @media (prefers-reduced-motion: reduce) {
+            .page-bg-animated::before, .page-bg-animated::after { animation: none; }
+        }
     </style>
 </head>
-<body class="bg-[#F8FAFC] text-[#0F172A] antialiased">
+<body class="bg-[#F8FAFC] text-[#0F172A] antialiased page-bg-animated">
 
     <!-- Navigation -->
     <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#E4E7EB]">
@@ -238,9 +285,9 @@
 
                     <!-- CTA Buttons -->
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <button class="btn-primary flex-1 py-4 text-white font-bold text-lg rounded-xl focus-ring">
+                        <a href="#start-creation" class="btn-primary flex-1 py-4 text-white font-bold text-lg rounded-xl focus-ring text-center">
                             立即使用
-                        </button>
+                        </a>
                         <button class="flex-1 py-4 border-2 border-[#1E3A5F] text-[#1E3A5F] font-bold text-lg rounded-xl hover:bg-[#1E3A5F] hover:text-white transition-colors focus-ring">
                             收藏工具
                         </button>
@@ -254,22 +301,429 @@
         </div>
     </section>
 
-    <!-- Tabs Content -->
-    <section class="pb-16">
+    <!-- Start Creation Section - Core Feature -->
+    <section id="start-creation" class="pb-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Tab Navigation -->
-            <div class="flex flex-wrap gap-2 mb-8 pb-4 border-b border-[#E4E7EB] sticky top-16 bg-[#F8FAFC]/95 backdrop-blur-sm z-40">
-                <button class="tab-btn active focus-ring" onclick="showTab('demo')">成品展示</button>
-                <button class="tab-btn focus-ring" onclick="showTab('features')">功能介绍</button>
-                <button class="tab-btn focus-ring" onclick="showTab('howto')">使用流程</button>
-                <button class="tab-btn focus-ring" onclick="showTab('pricing')">定价说明</button>
-                <button class="tab-btn focus-ring" onclick="showTab('playbook')">进阶玩法</button>
-                <button class="tab-btn focus-ring" onclick="showTab('reviews')">用户评价</button>
+            <!-- Section Header -->
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-[#1E3A5F] mb-4">开始创作</h2>
+                <p class="text-xl text-[#64748B] max-w-2xl mx-auto">选择适合您的创作方式，简单几步即可生成专属有声绘本</p>
             </div>
 
-            <!-- Tab: Demo -->
-            <div id="tab-demo" class="tab-content">
-                <h2 class="text-2xl font-bold text-[#1E3A5F] mb-8">成品效果展示</h2>
+            <!-- Mode Toggle -->
+            <div class="flex justify-center mb-12">
+                <div class="bg-white p-2 rounded-2xl border border-[#E4E7EB] shadow-sm">
+                    <button id="formModeBtn" class="px-8 py-4 bg-[#1E3A5F] text-white rounded-xl font-semibold transition-all focus-ring text-lg" onclick="switchMode('form')">
+                        📝 表单模式
+                    </button>
+                    <button id="chatModeBtn" class="px-8 py-4 text-[#64748B] rounded-xl font-semibold hover:bg-[#F8FAFC] transition-all focus-ring text-lg" onclick="switchMode('chat')">
+                        💬 对话模式
+                    </button>
+                </div>
+            </div>
+
+                <!-- Mode Toggle -->
+                <div class="flex gap-2 mb-8 bg-white p-2 rounded-xl border border-[#E4E7EB] w-fit">
+                    <button id="formModeBtn" class="px-6 py-3 bg-[#1E3A5F] text-white rounded-lg font-medium transition-all focus-ring" onclick="switchMode('form')">
+                        📝 表单模式
+                    </button>
+                    <button id="chatModeBtn" class="px-6 py-3 text-[#64748B] rounded-lg font-medium hover:bg-[#F8FAFC] transition-all focus-ring" onclick="switchMode('chat')">
+                        💬 对话模式
+                    </button>
+                </div>
+
+                <!-- Form-driven Mode -->
+                <div id="formMode" class="space-y-8">
+                    <div class="grid lg:grid-cols-3 gap-8">
+                        <!-- Left: Form -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <!-- Step 1: Basic Info -->
+                            <div class="bg-white rounded-2xl p-8 border border-[#E4E7EB] shadow-sm">
+                                <h3 class="font-semibold text-xl text-[#1E3A5F] mb-6 flex items-center gap-3">
+                                    <span class="w-10 h-10 bg-blue-100 text-[#1E3A5F] rounded-full flex items-center justify-center font-bold">1</span>
+                                    基础信息
+                                </h3>
+                                <div class="space-y-5">
+                                    <div>
+                                        <label class="block text-base font-medium text-[#475569] mb-2">绘本标题 *</label>
+                                        <input type="text" id="bookTitle" class="w-full px-5 py-4 border border-[#E4E7EB] rounded-xl focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all focus-ring text-lg" placeholder="例如：小兔子的森林冒险" oninput="calculateCost()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-base font-medium text-[#475569] mb-2">故事主题或文案 *</label>
+                                        <textarea id="storyContent" rows="5" class="w-full px-5 py-4 border border-[#E4E7EB] rounded-xl focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all resize-none focus-ring text-lg" placeholder="描述您想要的故事，或者粘贴完整的故事文案..." oninput="calculateCost()"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Style Settings -->
+                            <div class="bg-white rounded-2xl p-8 border border-[#E4E7EB] shadow-sm">
+                                <h3 class="font-semibold text-xl text-[#1E3A5F] mb-6 flex items-center gap-3">
+                                    <span class="w-10 h-10 bg-green-100 text-[#059669] rounded-full flex items-center justify-center font-bold">2</span>
+                                    风格设置
+                                </h3>
+                                <div class="space-y-8">
+                                    <div>
+                                        <label class="block text-base font-medium text-[#475569] mb-4">艺术风格</label>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="styleOptions">
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="style" value="cartoon" class="peer hidden" checked onchange="calculateCost()">
+                                                <div class="p-6 border-2 border-[#E4E7EB] rounded-2xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-3xl mb-2">🎨</div>
+                                                    <div class="font-semibold text-[#1E3A5F]">卡通水彩</div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="style" value="oil" class="peer hidden" onchange="calculateCost()">
+                                                <div class="p-6 border-2 border-[#E4E7EB] rounded-2xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-3xl mb-2">🖼️</div>
+                                                    <div class="font-semibold text-[#1E3A5F]">梦幻油画</div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="style" value="japanese" class="peer hidden" onchange="calculateCost()">
+                                                <div class="p-4 border-2 border-[#E4E7EB] rounded-xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-2xl mb-1">🌸</div>
+                                                    <div class="font-medium text-[#1E3A5F] text-sm">日系动漫</div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="style" value="japanese" class="peer hidden" onchange="calculateCost()">
+                                                <div class="p-6 border-2 border-[#E4E7EB] rounded-2xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-3xl mb-2">🌸</div>
+                                                    <div class="font-semibold text-[#1E3A5F]">日系动漫</div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="style" value="flat" class="peer hidden" onchange="calculateCost()">
+                                                <div class="p-6 border-2 border-[#E4E7EB] rounded-2xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-3xl mb-2">💎</div>
+                                                    <div class="font-semibold text-[#1E3A5F]">扁平插画</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-base font-medium text-[#475569] mb-4">配音音色</label>
+                                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4" id="voiceOptions">
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="voice" value="warm" class="peer hidden" checked onchange="calculateCost()">
+                                                <div class="p-5 border-2 border-[#E4E7EB] rounded-2xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-2xl mb-1">👩</div>
+                                                    <div class="font-semibold text-[#1E3A5F] text-sm">温柔女声</div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="voice" value="deep" class="peer hidden" onchange="calculateCost()">
+                                                <div class="p-5 border-2 border-[#E4E7EB] rounded-2xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-2xl mb-1">👨</div>
+                                                    <div class="font-semibold text-[#1E3A5F] text-sm">磁性男声</div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="voice" value="child" class="peer hidden" onchange="calculateCost()">
+                                                <div class="p-5 border-2 border-[#E4E7EB] rounded-2xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-2xl mb-1">👧</div>
+                                                    <div class="font-semibold text-[#1E3A5F] text-sm">可爱童声</div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="voice" value="story" class="peer hidden" onchange="calculateCost()">
+                                                <div class="p-5 border-2 border-[#E4E7EB] rounded-2xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-2xl mb-1">🧙</div>
+                                                    <div class="font-semibold text-[#1E3A5F] text-sm">故事主播</div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="voice" value="none" class="peer hidden" onchange="calculateCost()">
+                                                <div class="p-5 border-2 border-[#E4E7EB] rounded-2xl text-center peer-checked:border-[#2563EB] peer-checked:bg-blue-50 transition-all hover:border-[#CBD5E1]">
+                                                    <div class="text-2xl mb-1">🚫</div>
+                                                    <div class="font-semibold text-[#1E3A5F] text-sm">不需要</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Page Settings -->
+                            <div class="bg-white rounded-2xl p-8 border border-[#E4E7EB] shadow-sm">
+                                <h3 class="font-semibold text-xl text-[#1E3A5F] mb-6 flex items-center gap-3">
+                                    <span class="w-10 h-10 bg-purple-100 text-[#7C3AED] rounded-full flex items-center justify-center font-bold">3</span>
+                                    页数设置
+                                </h3>
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-base font-medium text-[#475569] mb-3">绘本页数：<span id="pageCountValue" class="text-[#2563EB] font-bold text-xl">10</span>页</label>
+                                        <input type="range" id="pageCount" min="5" max="30" value="10" class="w-full h-3 bg-[#E4E7EB] rounded-lg appearance-none cursor-pointer accent-[#2563EB]" oninput="updatePageCount(); calculateCost();">
+                                        <div class="flex justify-between text-sm text-[#64748B] mt-2">
+                                            <span>5页</span>
+                                            <span>15页</span>
+                                            <span>30页</span>
+                                        </div>
+                                    </div>
+                                    <div class="grid sm:grid-cols-2 gap-4">
+                                        <label class="flex items-center gap-4 p-5 border border-[#E4E7EB] rounded-2xl cursor-pointer hover:bg-[#F8FAFC] transition-all">
+                                            <input type="checkbox" id="bgMusic" class="w-6 h-6 accent-[#2563EB]" onchange="calculateCost()">
+                                            <div>
+                                                <span class="font-semibold text-[#1E3A5F] text-lg">🎵 添加背景音乐</span>
+                                                <p class="text-sm text-[#64748B]">根据故事氛围自动匹配</p>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-center gap-4 p-5 border border-[#E4E7EB] rounded-2xl cursor-pointer hover:bg-[#F8FAFC] transition-all">
+                                            <input type="checkbox" id="soundEffects" class="w-6 h-6 accent-[#2563EB]" onchange="calculateCost()">
+                                            <div>
+                                                <span class="font-semibold text-[#1E3A5F] text-lg">🔊 添加音效</span>
+                                                <p class="text-sm text-[#64748B]">脚步声、风声等场景音效</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Cost Estimator (Sticky) -->
+                        <div class="lg:col-span-1">
+                            <div class="sticky top-32 bg-white rounded-2xl p-8 border border-[#E4E7EB] shadow-xl">
+                                <h3 class="font-semibold text-xl text-[#1E3A5F] mb-6">费用预估</h3>
+                                <div class="space-y-4 mb-8">
+                                    <div class="flex justify-between items-center py-3 border-b border-[#E4E7EB]">
+                                        <span class="text-[#64748B] text-lg">基础调用费</span>
+                                        <span class="font-medium text-[#1E3A5F] text-lg">8 积分</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-3 border-b border-[#E4E7EB]">
+                                        <span class="text-[#64748B] text-lg">插图生成 (<span id="costPages">10</span>张 × 1积分)</span>
+                                        <span class="font-medium text-[#1E3A5F] text-lg" id="imageCost">10 积分</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-3 border-b border-[#E4E7EB]" id="voiceCostRow">
+                                        <span class="text-[#64748B] text-lg">配音合成 (<span id="costVoicePages">10</span>段 × 0.5积分)</span>
+                                        <span class="font-medium text-[#1E3A5F] text-lg" id="voiceCost">5 积分</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-4">
+                                        <span class="font-semibold text-[#1E3A5F] text-xl">总计</span>
+                                        <span class="text-3xl font-bold text-[#059669]" id="totalCost">23 积分</span>
+                                    </div>
+                                </div>
+                                <div class="bg-blue-50 rounded-2xl p-5 mb-8">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-blue-500 text-xl">💳</span>
+                                        <span class="font-semibold text-[#1E3A5F] text-lg">账户余额</span>
+                                    </div>
+                                    <div class="text-3xl font-bold text-[#1E3A5F]">128 积分</div>
+                                    <p class="text-sm text-[#64748B] mt-1">≈ ¥12.8</p>
+                                </div>
+                                <button id="generateBtn" class="w-full py-5 bg-gradient-to-r from-[#059669] to-[#10B981] text-white rounded-2xl font-bold text-xl hover:shadow-2xl hover:shadow-green-200 transition-all focus-ring" onclick="startGeneration()">
+                                    🚀 开始生成
+                                </button>
+                                <p class="text-center text-sm text-[#64748B] mt-4">预计耗时：2-5 分钟</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Modal (Hidden by default) -->
+                    <div id="progressModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+                        <div class="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl">
+                            <div class="text-center mb-8">
+                                <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#059669] to-[#10B981] flex items-center justify-center">
+                                    <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+                                        <span class="text-3xl" id="progressIcon">⚙️</span>
+                                    </div>
+                                </div>
+                                <h3 class="text-xl font-bold text-[#1E3A5F]" id="progressTitle">正在生成</h3>
+                                <p class="text-[#64748B] mt-2" id="progressDesc">AI正在创作故事内容...</p>
+                            </div>
+                            <div class="mb-6">
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-[#64748B]" id="progressStep">步骤 1/4</span>
+                                    <span class="font-medium text-[#059669]" id="progressPercent">25%</span>
+                                </div>
+                                <div class="h-3 bg-[#E4E7EB] rounded-full overflow-hidden">
+                                    <div id="progressBar" class="h-full bg-gradient-to-r from-[#059669] to-[#10B981] rounded-full transition-all duration-500" style="width: 25%"></div>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3 p-3 bg-green-50 rounded-lg" id="step1Status">
+                                    <svg class="w-5 h-5 text-[#059669]" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="text-[#059669] font-medium">故事内容创作</span>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg text-[#64748B]" id="step2Status">
+                                    <div class="w-5 h-5 rounded-full border-2 border-gray-300"></div>
+                                    <span>插图生成 (0/<span id="totalPages">10</span>张)</span>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg text-[#64748B]" id="step3Status">
+                                    <div class="w-5 h-5 rounded-full border-2 border-gray-300"></div>
+                                    <span>语音合成</span>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg text-[#64748B]" id="step4Status">
+                                    <div class="w-5 h-5 rounded-full border-2 border-gray-300"></div>
+                                    <span>打包交付</span>
+                                </div>
+                            </div>
+                            <div class="mt-6 text-center">
+                                <p class="text-sm text-[#64748B] mb-3">💡 小提示：</p>
+                                <p class="text-sm text-[#475569]" id="funFact">高质量的描述可以生成更精美的插图哦！</p>
+                            </div>
+                            <button class="mt-6 w-full py-3 border border-[#E4E7EB] text-[#64748B] rounded-xl font-medium hover:bg-[#F8FAFC] transition-all focus-ring" onclick="cancelGeneration()">
+                                取消生成
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat-driven Mode -->
+                <div id="chatMode" class="hidden space-y-6">
+                    <div class="grid lg:grid-cols-3 gap-8 h-[600px]">
+                        <!-- Left: Chat Area -->
+                        <div class="lg:col-span-2 bg-white rounded-2xl border border-[#E4E7EB] flex flex-col">
+                            <!-- Chat Header -->
+                            <div class="p-4 border-b border-[#E4E7EB]">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                                        <span class="text-white text-lg">🤖</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-[#1E3A5F]">绘本创作助手</h3>
+                                        <p class="text-xs text-[#64748B]">在线，可以随时提问</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Chat Messages -->
+                            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chatMessages">
+                                <div class="flex gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white text-sm">🤖</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="bg-[#F8FAFC] rounded-2xl rounded-tl-none p-4 max-w-lg">
+                                            <p class="text-[#475569] mb-3">您好！我是您的专属绘本创作助手 👋</p>
+                                            <p class="text-[#475569] mb-3">您可以告诉我您想要什么样的绘本，比如：</p>
+                                            <ul class="text-[#64748B] text-sm space-y-1 ml-4 list-disc">
+                                                <li>故事主题和目标受众</li>
+                                                <li>喜欢的艺术风格</li>
+                                                <li>主要角色和设定</li>
+                                                <li>特殊要求或偏好</li>
+                                            </ul>
+                                            <p class="text-[#475569] mt-3">让我先帮您构思一下吧！有什么想法吗？</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Quick Suggestions -->
+                            <div class="px-4 py-3 border-t border-[#E4E7EB]">
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    <button class="px-3 py-2 bg-blue-50 text-[#2563EB] rounded-lg text-sm hover:bg-blue-100 transition-all focus-ring" onclick="sendQuickMessage('帮我生成一个关于勇气的童话故事')">
+                                        🦁 关于勇气的童话
+                                    </button>
+                                    <button class="px-3 py-2 bg-green-50 text-[#059669] rounded-lg text-sm hover:bg-green-100 transition-all focus-ring" onclick="sendQuickMessage('我要做一个科学冒险主题的绘本')">
+                                        🔬 科学冒险
+                                    </button>
+                                    <button class="px-3 py-2 bg-purple-50 text-[#7C3AED] rounded-lg text-sm hover:bg-purple-100 transition-all focus-ring" onclick="sendQuickMessage('设计一个温馨的亲子故事')">
+                                        👨‍👩‍👧 亲子故事
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Chat Input -->
+                            <div class="p-4 border-t border-[#E4E7EB]">
+                                <div class="flex gap-3">
+                                    <input type="text" id="chatInput" class="flex-1 px-4 py-3 border border-[#E4E7EB] rounded-xl focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all focus-ring" placeholder="输入您的想法..." onkeypress="if(event.key === 'Enter') sendMessage()">
+                                    <button class="px-6 py-3 bg-gradient-to-r from-[#1E3A5F] to-[#2563EB] text-white rounded-xl font-medium hover:shadow-lg transition-all focus-ring" onclick="sendMessage()">
+                                        发送
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Requirements Summary (Sticky) -->
+                        <div class="lg:col-span-1">
+                            <div class="sticky top-32 bg-white rounded-2xl p-6 border border-[#E4E7EB] shadow-lg">
+                                <h3 class="font-semibold text-lg text-[#1E3A5F] mb-4">📋 需求摘要</h3>
+                                <div class="space-y-4 mb-6" id="requirementsSummary">
+                                    <div class="p-3 bg-gray-50 rounded-xl">
+                                        <p class="text-xs text-[#64748B] mb-1">故事主题</p>
+                                        <p class="text-sm text-[#475569]" id="reqTheme">待确定</p>
+                                    </div>
+                                    <div class="p-3 bg-gray-50 rounded-xl">
+                                        <p class="text-xs text-[#64748B] mb-1">艺术风格</p>
+                                        <p class="text-sm text-[#475569]" id="reqStyle">待确定</p>
+                                    </div>
+                                    <div class="p-3 bg-gray-50 rounded-xl">
+                                        <p class="text-xs text-[#64748B] mb-1">目标受众</p>
+                                        <p class="text-sm text-[#475569]" id="reqAudience">待确定</p>
+                                    </div>
+                                    <div class="p-3 bg-gray-50 rounded-xl">
+                                        <p class="text-xs text-[#64748B] mb-1">预估页数</p>
+                                        <p class="text-sm text-[#475569]" id="reqPages">10页</p>
+                                    </div>
+                                </div>
+                                <div class="border-t border-[#E4E7EB] pt-4 mb-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[#64748B]">预估费用</span>
+                                        <span class="text-xl font-bold text-[#059669]" id="chatTotalCost">≈ 23 积分</span>
+                                    </div>
+                                </div>
+                                <button id="chatGenerateBtn" class="w-full py-4 bg-gradient-to-r from-[#059669] to-[#10B981] text-white rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-green-200 transition-all focus-ring opacity-50 cursor-not-allowed" onclick="startGeneration()" disabled>
+                                    🚀 确认并生成
+                                </button>
+                                <p class="text-center text-xs text-[#64748B] mt-3">完成需求确认后即可开始生成</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Floating Navigation -->
+    <div class="hidden lg:block fixed right-8 top-1/2 -translate-y-1/2 z-50 w-56">
+        <div class="bg-white rounded-2xl shadow-xl border border-[#E4E7EB] p-4">
+            <div class="space-y-1 mb-4">
+                <a href="#start-creation" class="nav-item block px-4 py-2 rounded-lg text-sm text-[#64748B] hover:text-[#1E3A5F]">
+                    🚀 开始创作
+                </a>
+                <a href="#demo-section" class="nav-item block px-4 py-2 rounded-lg text-sm text-[#64748B] hover:text-[#1E3A5F]">
+                    🎨 成品展示
+                </a>
+                <a href="#features-section" class="nav-item block px-4 py-2 rounded-lg text-sm text-[#64748B] hover:text-[#1E3A5F]">
+                    ✨ 功能介绍
+                </a>
+                <a href="#howto-section" class="nav-item block px-4 py-2 rounded-lg text-sm text-[#64748B] hover:text-[#1E3A5F]">
+                    📋 使用流程
+                </a>
+                <a href="#pricing-section" class="nav-item block px-4 py-2 rounded-lg text-sm text-[#64748B] hover:text-[#1E3A5F]">
+                    💰 定价说明
+                </a>
+                <a href="#playbook-section" class="nav-item block px-4 py-2 rounded-lg text-sm text-[#64748B] hover:text-[#1E3A5F]">
+                    📖 进阶玩法
+                </a>
+                <a href="#reviews-section" class="nav-item block px-4 py-2 rounded-lg text-sm text-[#64748B] hover:text-[#1E3A5F]">
+                    ⭐ 用户评价
+                </a>
+            </div>
+            <div class="border-t border-[#E4E7EB] pt-4">
+                <a href="#start-creation" class="block w-full py-3 bg-gradient-to-r from-[#059669] to-[#10B981] text-white text-center rounded-xl font-bold hover:shadow-lg hover:shadow-green-200 transition-all focus-ring">
+                    立即开始创作
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Floating CTA -->
+    <div class="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-md">
+        <a href="#start-creation" class="block w-full py-4 bg-gradient-to-r from-[#059669] to-[#10B981] text-white text-center rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all focus-ring">
+            🚀 立即开始创作
+        </a>
+    </div>
+
+    <!-- Content Sections -->
+    <section id="demo-section" class="pb-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center">
+                    <span class="text-white text-2xl">🎨</span>
+                </div>
+                <h2 class="text-3xl font-bold text-[#1E3A5F]">成品效果展示</h2>
+            </div>
 
                 <div class="grid md:grid-cols-2 gap-6 mb-10">
                     <div class="gallery-img bg-white rounded-2xl p-6 border border-[#E4E7EB]">
@@ -308,12 +762,20 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <!-- Tab: Features -->
-            <div id="tab-features" class="tab-content hidden">
-                <h2 class="text-2xl font-bold text-[#1E3A5F] mb-8">功能介绍</h2>
+    <!-- Features Section -->
+    <section id="features-section" class="pb-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                    <span class="text-white text-2xl">✨</span>
+                </div>
+                <h2 class="text-3xl font-bold text-[#1E3A5F]">功能介绍</h2>
+            </div>
 
-                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div class="feature-card">
                         <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -408,12 +870,20 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <!-- Tab: How To -->
-            <div id="tab-howto" class="tab-content hidden">
-                <h2 class="text-2xl font-bold text-[#1E3A5F] mb-8">三步完成创作</h2>
+    <!-- How To Section -->
+    <section id="howto-section" class="pb-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                    <span class="text-white text-2xl">📋</span>
+                </div>
+                <h2 class="text-3xl font-bold text-[#1E3A5F]">三步完成创作</h2>
+            </div>
 
-                <div class="grid md:grid-cols-3 gap-8 mb-12">
+            <div class="grid md:grid-cols-3 gap-8 mb-12">
                     <div class="step-card">
                         <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">1</div>
                         <h3 class="font-semibold text-xl text-[#1E3A5F] mb-3">填写信息</h3>
@@ -485,12 +955,20 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <!-- Tab: Pricing -->
-            <div id="tab-pricing" class="tab-content hidden">
-                <h2 class="text-2xl font-bold text-[#1E3A5F] mb-8">透明定价，明明白白消费</h2>
+    <!-- Pricing Section -->
+    <section id="pricing-section" class="pb-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                    <span class="text-white text-2xl">💰</span>
+                </div>
+                <h2 class="text-3xl font-bold text-[#1E3A5F]">透明定价，明明白白消费</h2>
+            </div>
 
-                <div class="grid md:grid-cols-3 gap-8 mb-10">
+            <div class="grid md:grid-cols-3 gap-8 mb-10">
                     <div class="pricing-card">
                         <h3 class="font-semibold text-xl text-[#1E3A5F] mb-2">基础调用费</h3>
                         <p class="text-[#64748B] mb-6">每次调用固定收取，包含AI故事创作和基础排版服务</p>
@@ -615,16 +1093,24 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <!-- Tab: Playbook -->
-            <div id="tab-playbook" class="tab-content hidden">
-                <h2 class="text-2xl font-bold text-[#1E3A5F] mb-8">进阶玩法 · 创造更多可能</h2>
+    <!-- Playbook Section -->
+    <section id="playbook-section" class="pb-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                    <span class="text-white text-2xl">📖</span>
+                </div>
+                <h2 class="text-3xl font-bold text-[#1E3A5F]">进阶玩法 · 创造更多可能</h2>
+            </div>
 
-                <div class="space-y-6">
-                    <div class="bg-white rounded-2xl p-8 border border-[#E4E7EB] flex gap-6 items-start">
-                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            <div class="space-y-6">
+                <div class="bg-white rounded-2xl p-8 border border-[#E4E7EB] flex gap-6 items-start">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>
                         </div>
                         <div>
@@ -682,16 +1168,24 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <!-- Tab: Reviews -->
-            <div id="tab-reviews" class="tab-content hidden">
-                <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-2xl font-bold text-[#1E3A5F]">用户真实评价 (328)</h2>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[#64748B]">排序：</span>
-                        <select class="px-3 py-2 border border-[#E4E7EB] rounded-lg bg-white focus-ring">
-                            <option>最新评价</option>
-                            <option>最有帮助</option>
+    <!-- Reviews Section -->
+    <section id="reviews-section" class="pb-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
+                        <span class="text-white text-2xl">⭐</span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-[#1E3A5F]">用户真实评价 (328)</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[#64748B]">排序：</span>
+                    <select class="px-4 py-2 border border-[#E4E7EB] rounded-lg bg-white focus-ring">
+                        <option>最新评价</option>
+                        <option>最有帮助</option>
                             <option>评分最高</option>
                         </select>
                     </div>
@@ -957,6 +1451,259 @@
                     btn.classList.remove('active');
                 });
                 event.target.classList.add('active');
+            }
+
+            // Switch between form and chat modes
+            function switchMode(mode) {
+                const formMode = document.getElementById('formMode');
+                const chatMode = document.getElementById('chatMode');
+                const formModeBtn = document.getElementById('formModeBtn');
+                const chatModeBtn = document.getElementById('chatModeBtn');
+
+                if (mode === 'form') {
+                    formMode.classList.remove('hidden');
+                    chatMode.classList.add('hidden');
+                    formModeBtn.classList.add('bg-[#1E3A5F]', 'text-white');
+                    formModeBtn.classList.remove('text-[#64748B]');
+                    chatModeBtn.classList.remove('bg-[#1E3A5F]', 'text-white');
+                    chatModeBtn.classList.add('text-[#64748B]');
+                } else {
+                    formMode.classList.add('hidden');
+                    chatMode.classList.remove('hidden');
+                    chatModeBtn.classList.add('bg-[#1E3A5F]', 'text-white');
+                    chatModeBtn.classList.remove('text-[#64748B]');
+                    formModeBtn.classList.remove('bg-[#1E3A5F]', 'text-white');
+                    formModeBtn.classList.add('text-[#64748B]');
+                }
+            }
+
+            // Update page count display
+            function updatePageCount() {
+                const count = document.getElementById('pageCount').value;
+                document.getElementById('pageCountValue').textContent = count;
+            }
+
+            // Calculate and update cost
+            function calculateCost() {
+                const pages = parseInt(document.getElementById('pageCount').value);
+                const voiceSelected = document.querySelector('input[name="voice"]:checked').value;
+
+                const baseCost = 8;
+                const imageCost = pages * 1;
+                const voiceCost = voiceSelected !== 'none' ? pages * 0.5 : 0;
+                const totalCost = baseCost + imageCost + voiceCost;
+
+                document.getElementById('costPages').textContent = pages;
+                document.getElementById('imageCost').textContent = imageCost + ' 积分';
+
+                const voiceCostRow = document.getElementById('voiceCostRow');
+                if (voiceSelected === 'none') {
+                    voiceCostRow.classList.add('hidden');
+                } else {
+                    voiceCostRow.classList.remove('hidden');
+                    document.getElementById('costVoicePages').textContent = pages;
+                    document.getElementById('voiceCost').textContent = voiceCost + ' 积分';
+                }
+
+                document.getElementById('totalCost').textContent = totalCost + ' 积分';
+                document.getElementById('chatTotalCost').textContent = '≈ ' + totalCost + ' 积分';
+                document.getElementById('totalPages').textContent = pages;
+            }
+
+            // Start generation process
+            let progressInterval;
+            let currentStep = 1;
+            let currentProgress = 0;
+
+            const funFacts = [
+                "高质量的描述可以生成更精美的插图哦！",
+                "尝试添加更多细节，比如角色的性格、场景氛围等",
+                "不同的艺术风格适合不同类型的故事~",
+                "有声绘本更适合亲子阅读时光！",
+                "AI生成的插图保证独一无二！"
+            ];
+
+            function startGeneration() {
+                document.getElementById('progressModal').classList.remove('hidden');
+                currentStep = 1;
+                currentProgress = 0;
+                simulateProgress();
+            }
+
+            function simulateProgress() {
+                const totalPages = parseInt(document.getElementById('pageCount').value);
+
+                progressInterval = setInterval(() => {
+                    currentProgress += Math.random() * 5;
+
+                    if (currentProgress >= 100) {
+                        currentProgress = 100;
+                        clearInterval(progressInterval);
+                        setTimeout(() => {
+                            alert('🎉 绘本生成完成！您可以下载所有源文件了。');
+                            cancelGeneration();
+                        }, 500);
+                    } else if (currentProgress >= 75 && currentStep < 4) {
+                        currentStep = 4;
+                        updateStepStatus(4, 'completed');
+                        document.getElementById('progressStep').textContent = '步骤 4/4';
+                        document.getElementById('progressTitle').textContent = '打包交付';
+                        document.getElementById('progressDesc').textContent = '正在打包所有文件...';
+                        document.getElementById('progressIcon').textContent = '📦';
+                    } else if (currentProgress >= 50 && currentStep < 3) {
+                        currentStep = 3;
+                        updateStepStatus(3, 'completed');
+                        document.getElementById('progressStep').textContent = '步骤 3/4';
+                        document.getElementById('progressTitle').textContent = '语音合成';
+                        document.getElementById('progressDesc').textContent = '正在合成专业配音...';
+                        document.getElementById('progressIcon').textContent = '🎙️';
+                    } else if (currentProgress >= 25 && currentStep < 2) {
+                        currentStep = 2;
+                        updateStepStatus(2, 'completed');
+                        document.getElementById('progressStep').textContent = '步骤 2/4';
+                        const generatedPages = Math.floor((currentProgress - 25) / 25 * totalPages) + 1;
+                        document.getElementById('progressDesc').textContent = `正在生成插图... (${Math.min(generatedPages, totalPages)}/${totalPages}张)`;
+                        document.getElementById('progressIcon').textContent = '🎨';
+                    }
+
+                    document.getElementById('progressPercent').textContent = Math.floor(currentProgress) + '%';
+                    document.getElementById('progressBar').style.width = currentProgress + '%';
+
+                    // Update fun fact occasionally
+                    if (Math.random() < 0.05) {
+                        document.getElementById('funFact').textContent = funFacts[Math.floor(Math.random() * funFacts.length)];
+                    }
+                }, 200);
+            }
+
+            function updateStepStatus(step, status) {
+                const stepEl = document.getElementById('step' + step + 'Status');
+                if (status === 'completed') {
+                    stepEl.classList.remove('bg-gray-50', 'text-[#64748B]');
+                    stepEl.classList.add('bg-green-50');
+                    stepEl.innerHTML = `
+                        <svg class="w-5 h-5 text-[#059669]" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-[#059669] font-medium">${stepEl.querySelector('span').textContent}</span>
+                    `;
+                }
+            }
+
+            function cancelGeneration() {
+                clearInterval(progressInterval);
+                document.getElementById('progressModal').classList.add('hidden');
+            }
+
+            // Chat functions
+            function sendQuickMessage(message) {
+                document.getElementById('chatInput').value = message;
+                sendMessage();
+            }
+
+            function sendMessage() {
+                const input = document.getElementById('chatInput');
+                const message = input.value.trim();
+                if (!message) return;
+
+                // Add user message
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML += `
+                    <div class="flex gap-3 justify-end">
+                        <div class="bg-[#1E3A5F] rounded-2xl rounded-tr-none p-4 max-w-lg">
+                            <p class="text-white">${message}</p>
+                        </div>
+                    </div>
+                `;
+                input.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Simulate AI response
+                setTimeout(() => {
+                    chatMessages.innerHTML += `
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center flex-shrink-0">
+                                <span class="text-white text-sm">🤖</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="bg-[#F8FAFC] rounded-2xl rounded-tl-none p-4 max-w-lg">
+                                    <p class="text-[#475569]">太棒了！我理解您的需求了~ 🌟</p>
+                                    <p class="text-[#475569] mt-2">根据您的描述，我已经更新了需求摘要。确认无误后，您可以点击「确认并生成」按钮开始创作！</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                    // Update requirements summary
+                    document.getElementById('reqTheme').textContent = message.length > 20 ? message.substring(0, 20) + '...' : message;
+                    document.getElementById('reqStyle').textContent = '卡通水彩';
+                    document.getElementById('reqAudience').textContent = '3-8岁儿童';
+
+                    // Enable generate button
+                    const generateBtn = document.getElementById('chatGenerateBtn');
+                    generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    generateBtn.disabled = false;
+                }, 1000);
+            }
+
+            // Initialize cost calculation
+            document.addEventListener('DOMContentLoaded', function() {
+                calculateCost();
+                initScrollSpy();
+            });
+
+            // Scroll Spy - 滚动监听更新导航激活状态
+            function initScrollSpy() {
+                const sections = [
+                    'start-creation',
+                    'demo-section',
+                    'features-section',
+                    'howto-section',
+                    'pricing-section',
+                    'playbook-section',
+                    'reviews-section'
+                ];
+
+                function updateActiveNav() {
+                    const scrollPos = window.scrollY + 150; // 偏移量，提前激活
+
+                    sections.forEach(sectionId => {
+                        const section = document.getElementById(sectionId);
+                        if (!section) return;
+
+                        const sectionTop = section.offsetTop;
+                        const sectionBottom = sectionTop + section.offsetHeight;
+
+                        const navItem = document.querySelector(`a[href="#${sectionId}"]`);
+                        if (!navItem) return;
+
+                        if (scrollPos >= sectionTop && scrollPos < sectionBottom) {
+                            navItem.classList.add('active');
+                        } else {
+                            navItem.classList.remove('active');
+                        }
+                    });
+                }
+
+                // 防抖函数
+                function debounce(func, wait) {
+                    let timeout;
+                    return function executedFunction(...args) {
+                        const later = () => {
+                            clearTimeout(timeout);
+                            func(...args);
+                        };
+                        clearTimeout(timeout);
+                        timeout = setTimeout(later, wait);
+                    };
+                }
+
+                // 监听滚动事件（防抖 10ms）
+                window.addEventListener('scroll', debounce(updateActiveNav, 10));
+
+                // 初始执行一次
+                updateActiveNav();
             }
         </script>
     </body>
