@@ -17,42 +17,60 @@ export function ToolReviews({ toolId }: ToolReviewsProps) {
   }, [fetchToolReviews, toolId]);
 
   return (
-    <section className="py-16 bg-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-10">
-          <h2 className="text-2xl font-bold text-gray-900">
-            用户评价
-          </h2>
-          <span className="text-gray-500">
-            共 {totalReviews} 条评价
-          </span>
+    <section className="pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="flex items-center gap-3 mb-10">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <span className="text-white text-2xl">⭐</span>
+          </div>
+          <h2 className="text-3xl font-bold text-brand-dark">用户评价</h2>
+          <span className="text-gray-500 ml-auto">共 {totalReviews} 条评价</span>
         </div>
 
-        {/* 加载状态 */}
+        {/* Loading */}
         {detailLoading && (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-dark" />
           </div>
         )}
 
-        {/* 评价列表 */}
+        {/* Empty State */}
         {!detailLoading && currentToolReviews.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 bg-white rounded-2xl border border-gray-200">
             暂无评价
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
             {currentToolReviews.map((review: Review) => (
-              <div key={review.id} className="review-card">
+              <div
+                key={review.id}
+                className="bg-white rounded-2xl p-6 border border-gray-200"
+              >
                 <div className="flex items-start gap-4">
-                  {/* 用户头像 */}
-                  <div className="flex-shrink-0 w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl">
-                    {review.userAvatar || '👤'}
+                  {/* User Avatar */}
+                  <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                    {review.userAvatar ? (
+                      <img
+                        src={review.userAvatar}
+                        alt={review.userName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`w-full h-full flex items-center justify-center ${review.userAvatar ? 'hidden' : ''}`}
+                    >
+                      <span className="text-xl text-gray-400">👤</span>
+                    </div>
                   </div>
 
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-gray-900">{review.userName}</h4>
+                      <h4 className="font-semibold text-brand-dark">{review.userName}</h4>
                       <span className="text-sm text-gray-400">
                         {new Date(review.createdAt).toLocaleDateString('zh-CN')}
                       </span>

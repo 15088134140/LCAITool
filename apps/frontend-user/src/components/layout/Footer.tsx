@@ -1,70 +1,150 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function Footer() {
-  const footerLinks = {
-    产品: [
-      { label: '所有工具', href: '/tools' },
-      { label: '定价方案', href: '/pricing' },
-      { label: 'API接口', href: '/api' },
-    ],
-    关于: [
-      { label: '关于我们', href: '/about' },
-      { label: '联系我们', href: '/contact' },
-      { label: '加入团队', href: '/careers' },
-    ],
-    帮助: [
-      { label: '帮助中心', href: '/help' },
-      { label: '使用文档', href: '/docs' },
-      { label: '意见反馈', href: '/feedback' },
-    ],
-    法律: [
-      { label: '服务条款', href: '/terms' },
-      { label: '隐私政策', href: '/privacy' },
-    ],
-  };
+  const pathname = usePathname();
+
+  // 登录、注册、验证页面不显示全局底部
+  const authPages = ['/login', '/register', '/verification'];
+  if (authPages.includes(pathname)) {
+    return null;
+  }
 
   return (
-    <footer className="bg-gray-50 border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+    <footer className="bg-[#0F172A] py-12 lg:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* 品牌信息 */}
-          <div className="col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-brand-dark to-brand-light rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">AI</span>
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
+                <span className="text-white font-bold text-lg">AI</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">灵创AI工具箱</span>
+              <span className="font-bold text-xl text-white">灵创AI工具箱</span>
             </div>
-            <p className="text-gray-600 text-sm mb-4 max-w-xs">
-              深耕专业场景的精品AI工具集合平台，为创作者和企业提供智能、高效的生产力工具。
+            <p className="text-[#94A3B8] mb-6 max-w-sm">
+              专业场景AI工具集合平台，深耕细分场景，做深做透每一个工具，让AI创作触手可及。
             </p>
+            <div className="flex gap-4">
+              <a
+                href="#"
+                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors focus-ring"
+              >
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+              </a>
+              <a
+                href="#"
+                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors focus-ring"
+              >
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                </svg>
+              </a>
+              <a
+                href="#"
+                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors focus-ring"
+              >
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c5.51 0 10-4.48 10-10S17.51 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                </svg>
+              </a>
+            </div>
           </div>
 
-          {/* 链接组 */}
-          {Object.entries(footerLinks).map(([title, links]) => (
-            <div key={title}>
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">{title}</h3>
-              <ul className="space-y-3">
-                {links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-600 hover:text-brand-dark transition-colors footer-link"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* 产品 */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">产品</h4>
+            <ul className="space-y-3">
+              <li>
+                <Link href="/tools" className="footer-link">
+                  工具列表
+                </Link>
+              </li>
+              <li>
+                <Link href="/tools" className="footer-link">
+                  新上线
+                </Link>
+              </li>
+              <li>
+                <Link href="/vote" className="footer-link">
+                  构思中
+                </Link>
+              </li>
+              <li>
+                <a href="#" className="footer-link">
+                  API文档
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* 支持 */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">支持</h4>
+            <ul className="space-y-3">
+              <li>
+                <Link href="/feedback" className="footer-link">
+                  帮助中心
+                </Link>
+              </li>
+              <li>
+                <Link href="/feedback" className="footer-link">
+                  反馈建议
+                </Link>
+              </li>
+              <li>
+                <a href="#" className="footer-link">
+                  商务合作
+                </a>
+              </li>
+              <li>
+                <a href="#" className="footer-link">
+                  开发者入驻
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* 账户 */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">账户</h4>
+            <ul className="space-y-3">
+              <li>
+                <Link href="/login" className="footer-link">
+                  登录
+                </Link>
+              </li>
+              <li>
+                <Link href="/register" className="footer-link">
+                  注册
+                </Link>
+              </li>
+              <li>
+                <Link href="/user-center" className="footer-link">
+                  个人中心
+                </Link>
+              </li>
+              <li>
+                <Link href="/orders" className="footer-link">
+                  消费明细
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
 
         {/* 底部版权 */}
-        <div className="border-t border-gray-200 mt-10 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-sm text-gray-500">
-            © {new Date().getFullYear()} 灵创AI工具箱. All rights reserved.
-          </p>
+        <div className="border-t border-white/10 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="text-[#64748B] text-sm">© 2024 灵创AI工具箱. 保留所有权利.</p>
+          <div className="flex items-center gap-6 text-sm text-[#64748B]">
+            <span>安全认证</span>
+            <span>ICP备案号</span>
+            <span>公安备案</span>
+          </div>
         </div>
       </div>
     </footer>

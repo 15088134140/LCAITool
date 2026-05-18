@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Tool, Review } from '../types';
+import type { Tool, Review, GetToolsParams } from '../types';
 import type { ToolProvider } from '../providers';
 import { MockToolProvider } from '../providers';
 
@@ -47,12 +47,12 @@ export const useToolStore = create<ToolState>((set, get) => ({
   fetchTools: async (params) => {
     try {
       set({ loading: true, error: null });
-      const queryParams: Record<string, string> = {};
+      const queryParams: GetToolsParams = {};
       const categoryId = params?.categoryId ?? get().categoryFilter;
       const search = params?.search || get().searchQuery;
       if (categoryId) queryParams['categoryId'] = categoryId;
       if (search) queryParams['search'] = search;
-      if (params?.isFeatured) queryParams['isFeatured'] = 'true';
+      if (params?.isFeatured) queryParams['isFeatured'] = true;
       const result = await provider.getTools(queryParams);
       set({ tools: result.items, totalTools: result.total, loading: false });
     } catch (err) {

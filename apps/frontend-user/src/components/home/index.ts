@@ -1,4 +1,9 @@
 export { HeroSection } from './HeroSection';
 export { BenchmarkTools } from './BenchmarkTools';
 export { CategoryGrid } from './CategoryGrid';
+export { NewAndHotTools } from './NewAndHotTools';
 export { SectionPlaceholder } from './SectionPlaceholder';
+export { VoteSection } from './VoteSection';
+export { StatsAndTestimonials } from './StatsAndTestimonials';
+export { EnterpriseServices } from './EnterpriseServices';
+export { CTASection } from './CTASection';
