@@ -66,6 +66,7 @@ const config: Config = {
         "accent-foreground": "hsl(222.2 47.4% 11.2%)",
         destructive: "hsl(0 84.2% 60.2%)",
         "destructive-foreground": "hsl(210 40% 98%)",
+        input: "hsl(214.3 31.8% 91.4%)",
         ring: "hsl(221.2 83.2% 53.3%)",
       },
       fontFamily: {
