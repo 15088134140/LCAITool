@@ -11,8 +11,12 @@
   },
   "dependencies": {
     "@lcaitool/ui": "workspace:*",
+    "axios": "^1.16.1",
+    "lucide-react": "^0.360.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.15.1",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@lcaitool/eslint-config": "workspace:*",

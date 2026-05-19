@@ -1,0 +1,130 @@
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { useUserStore } from '@/store';
+
+// 响应数据类型
+interface ApiResponse<T = any> {
+  code: number;
+  message: string;
+  data: T;
+}
+
+class Request {
+  private instance: AxiosInstance;
+  private baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+
+  constructor() {
+    this.instance = axios.create({
+      baseURL: this.baseURL,
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    this.setupInterceptors();
+  }
+
+  private setupInterceptors() {
+    // 请求拦截器：携带Token
+    this.instance.interceptors.request.use(
+      (config) => {
+        const token = useUserStore.getState().token;
+        if (token && config.headers) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // 响应拦截器：统一处理错误
+    this.instance.interceptors.response.use(
+      (response: AxiosResponse<ApiResponse>) => {
+        const { code, message, data } = response.data;
+
+        if (code === 0 || code === 200) {
+          return data;
+        }
+
+        // 业务错误
+        this.handleBusinessError(code, message);
+        return Promise.reject(new Error(message));
+      },
+      (error: AxiosError) => {
+        this.handleHttpError(error);
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  private handleBusinessError(code: number, message: string) {
+    switch (code) {
+      case 401:
+        // Token过期或无效，登出
+        useUserStore.getState().logout();
+        window.location.href = '/login';
+        break;
+      case 403:
+        console.error('权限不足:', message);
+        break;
+      case 404:
+        console.error('资源不存在:', message);
+        break;
+      default:
+        console.error('业务错误:', message);
+    }
+  }
+
+  private handleHttpError(error: AxiosError) {
+    if (error.response) {
+      const { status } = error.response;
+      switch (status) {
+        case 401:
+          useUserStore.getState().logout();
+          window.location.href = '/login';
+          break;
+        case 403:
+          console.error('权限不足');
+          break;
+        case 404:
+          console.error('请求的资源不存在');
+          break;
+        case 500:
+          console.error('服务器内部错误');
+          break;
+        default:
+          console.error('请求失败:', error.message);
+      }
+    } else if (error.request) {
+      console.error('网络错误，请检查网络连接');
+    } else {
+      console.error('请求配置错误:', error.message);
+    }
+  }
+
+  // 通用请求方法
+  get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return this.instance.get(url, config);
+  }
+
+  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return this.instance.post(url, data, config);
+  }
+
+  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return this.instance.put(url, data, config);
+  }
+
+  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return this.instance.delete(url, config);
+  }
+
+  patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return this.instance.patch(url, data, config);
+  }
+}
+
+export const request = new Request();
+export default request;
