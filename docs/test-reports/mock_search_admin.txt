@@ -1,0 +1,14 @@
+apps/frontend-admin/src/api/admin.ts:const mockAdmins: AdminUser[] = [
+apps/frontend-admin/src/api/admin.ts:      setTimeout(() => resolve([...mockAdmins]), 300);
+apps/frontend-admin/src/api/auth.ts:          access_token: 'mock-token-' + Date.now(),
+apps/frontend-admin/src/api/auth.ts:          refresh_token: 'mock-refresh-token-' + Date.now(),
+apps/frontend-admin/src/api/role.ts:const mockPermissions: Permission[] = [
+apps/frontend-admin/src/api/role.ts:const mockRoles: Role[] = [
+apps/frontend-admin/src/api/role.ts:      setTimeout(() => resolve([...mockRoles]), 300);
+apps/frontend-admin/src/api/role.ts:      setTimeout(() => resolve(JSON.parse(JSON.stringify(mockPermissions))), 200);
+apps/frontend-admin/src/api/user.ts:const mockUsers: User[] = Array.from({ length: 50 }, (_, i) => ({
+apps/frontend-admin/src/api/user.ts:        let filtered = [...mockUsers];
+apps/frontend-admin/src/api/user.ts:    const user = mockUsers.find((u) => u.id === data.id) || mockUsers[0];
+apps/frontend-admin/src/api/user.ts:    const user = mockUsers.find((u) => u.id === data.userId) || mockUsers[0];
+apps/frontend-admin/src/api/user.ts:    return Promise.resolve(mockUsers.find((u) => u.id === id) || mockUsers[0]);
+apps/frontend-admin/src/api/user.ts:    const user = mockUsers.find((u) => u.id === id) || mockUsers[0];
