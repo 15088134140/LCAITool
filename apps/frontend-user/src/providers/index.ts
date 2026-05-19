@@ -1,2 +1,2 @@
 export type { ToolProvider } from './ToolProvider';
-export { MockToolProvider } from './MockToolProvider';
+export { ApiToolProvider } from './ApiToolProvider';

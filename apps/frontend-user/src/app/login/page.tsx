@@ -2,12 +2,56 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store';
+import { authApi } from '@/lib/api';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login, isAuthenticated } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [showWeChatModal, setShowWeChatModal] = useState(false);
   const [countdown, setCountdown] = useState(60);
-  const [modalState, setModalState] = useState('qr'); // 'qr', 'scanning', 'success'
+  const [modalState, setModalState] = useState<'qr' | 'scanning' | 'success'>('qr');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+  });
+
+  // If already authenticated, redirect to user center
+  if (isAuthenticated) {
+    router.push('/user-center');
+    return null;
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      // Call login API
+      const tokens = await authApi.login(formData.username, formData.password);
+
+      // Fetch current user info using the new token
+      const user = await authApi.getCurrentUser(tokens.access_token);
+
+      login(tokens, user);
+      router.push('/user-center');
+    } catch (err: any) {
+      setError(err.message || '登录失败，请检查用户名和密码');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Password visibility toggle
   const togglePassword = () => {
@@ -48,10 +92,8 @@ export default function LoginPage() {
     setTimeout(() => {
       setModalState('scanning');
       setTimeout(() => {
-        setModalState('success');
-        setTimeout(() => {
-          closeWeChatLogin();
-        }, 2000);
+        closeWeChatLogin();
+        setError('微信登录功能暂未开放，请使用账号密码登录');
       }, 2000);
     }, 3000);
   };
@@ -208,6 +250,18 @@ export default function LoginPage() {
                   <p className="text-blue-200/60">登录您的灵创AI账号，继续创作之旅</p>
                 </div>
 
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-6 p-4 bg-red-500/20 border border-red-400/30 rounded-xl text-red-200">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      {error}
+                    </div>
+                  </div>
+                )}
+
                 {/* Social Login */}
                 <div className="space-y-3 mb-8">
                   <button
@@ -238,12 +292,16 @@ export default function LoginPage() {
                 </div>
 
                 {/* Login Form */}
-                <form className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-white/90 mb-2">手机号 / 邮箱</label>
                     <input
                       type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
                       placeholder="请输入手机号或邮箱"
+                      autoComplete="username"
                       className="w-full px-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 bg-white/90 border border-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-200"
                     />
                   </div>
@@ -253,7 +311,11 @@ export default function LoginPage() {
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
                         placeholder="请输入密码"
+                        autoComplete="current-password"
                         className="w-full px-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 bg-white/90 border border-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-200 pr-12"
                       />
                       <button
@@ -287,9 +349,18 @@ export default function LoginPage() {
 
                   <button
                     type="submit"
-                    className="w-full py-3 px-6 text-white font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 shadow-lg shadow-blue-500/25 hover:shadow-blue-400/30 transition-all duration-200 focus:ring-2 focus:ring-blue-400/30 focus:outline-none"
+                    disabled={loading}
+                    className="w-full py-3 px-6 text-white font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 focus:ring-2 focus:ring-blue-400/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    登录
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                        </svg>
+                        登录中...
+                      </span>
+                    ) : '登录'}
                   </button>
                 </form>
 

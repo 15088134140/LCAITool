@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useToolStore } from '../../../store';
-import { Breadcrumb } from '../../../components/layout';
 import {
   ToolHero,
   ToolFeatures,

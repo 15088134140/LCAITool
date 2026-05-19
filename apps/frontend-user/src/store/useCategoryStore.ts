@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Category } from '../types';
 import type { ToolProvider } from '../providers';
-import { MockToolProvider } from '../providers';
+import { ApiToolProvider } from '../providers';
 
 interface CategoryState {
   categories: Category[];
@@ -14,7 +14,7 @@ interface CategoryState {
   setSelectedCategory: (categoryId: string | null) => void;
 }
 
-const provider: ToolProvider = new MockToolProvider();
+const provider: ToolProvider = new ApiToolProvider();
 
 export const useCategoryStore = create<CategoryState>((set) => ({
   categories: [],

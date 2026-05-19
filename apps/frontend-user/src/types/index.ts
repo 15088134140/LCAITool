@@ -42,6 +42,7 @@ export interface Tool {
   tags: string[];
   status: 'active' | 'coming_soon' | 'maintenance';
   createdAt: string;
+  heroImage?: string;
 }
 
 /**

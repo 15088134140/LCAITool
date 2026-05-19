@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Tool, Review, GetToolsParams } from '../types';
 import type { ToolProvider } from '../providers';
-import { MockToolProvider } from '../providers';
+import { ApiToolProvider } from '../providers';
 
 interface ToolState {
   // 列表状态
@@ -27,7 +27,7 @@ interface ToolState {
   clearCurrentTool: () => void;
 }
 
-const provider: ToolProvider = new MockToolProvider();
+const provider: ToolProvider = new ApiToolProvider();
 
 export const useToolStore = create<ToolState>((set, get) => ({
   // 列表状态
