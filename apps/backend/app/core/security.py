@@ -1,10 +1,12 @@
+import base64
+import hashlib
 from datetime import datetime, timedelta
 from typing import Any, Union, Optional
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
 from jose import jwt
-from passlib.context import CryptContext
+import bcrypt
 from app.core.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:
@@ -28,8 +30,44 @@ def create_refresh_token(subject: Union[str, Any], expires_delta: Optional[timed
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    # bcrypt has a 72-byte limit, truncate if necessary
+    truncated_password = plain_password[:72]
+    return bcrypt.checkpw(truncated_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    # bcrypt has a 72-byte limit, truncate if necessary
+    truncated_password = password[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(truncated_password.encode('utf-8'), salt).decode('utf-8')
+
+
+def get_aes_key() -> bytes:
+    """从SECRET_KEY生成AES-256密钥"""
+    return hashlib.sha256(settings.SECRET_KEY.encode()).digest()
+
+
+def aes_encrypt(plain_text: str) -> str:
+    """AES-256-CBC加密"""
+    key = get_aes_key()
+    iv = b"0123456789abcdef"  # 固定IV，可根据需要调整
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    encrypted = cipher.encrypt(pad(plain_text.encode("utf-8"), AES.block_size))
+    return base64.b64encode(encrypted).decode("utf-8")
+
+
+def aes_decrypt(encrypted_text: str) -> str:
+    """AES-256-CBC解密"""
+    key = get_aes_key()
+    iv = b"0123456789abcdef"
+    encrypted = base64.b64decode(encrypted_text.encode("utf-8"))
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    decrypted = unpad(cipher.decrypt(encrypted), AES.block_size)
+    return decrypted.decode("utf-8")
+
+
+def mask_id_card(id_card: str) -> str:
+    """脱敏身份证号：只显示前4位和后4位，中间用星号代替，保持原长度"""
+    if not id_card or len(id_card) < 8:
+        return id_card
+    return id_card[:4] + "*" * (len(id_card) - 8) + id_card[-4:]
