@@ -1,0 +1,141 @@
+"""Initial migration - create users, roles, point_transactions tables
+
+Revision ID: 001
+Revises:
+Create Date: 2026-01-01 00:00:00.000000
+
+"""
+import time
+import uuid
+from alembic import op
+import sqlalchemy as sa
+import bcrypt
+
+
+# revision identifiers, used by Alembic.
+revision = '001'
+down_revision = None
+branch_labels = None
+depends_on = None
+
+
+def get_password_hash(password: str) -> str:
+    """生成bcrypt密码哈希"""
+    truncated_password = password[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(truncated_password.encode('utf-8'), salt).decode('utf-8')
+
+
+def upgrade() -> None:
+    now = int(time.time())
+    # Users table
+    op.create_table(
+        'users',
+        sa.Column('id', sa.UUID(), nullable=False),
+        sa.Column('openid', sa.String(length=100), nullable=True),
+        sa.Column('phone', sa.String(length=20), nullable=True),
+        sa.Column('email', sa.String(length=100), nullable=True),
+        sa.Column('nickname', sa.String(length=50), nullable=True),
+        sa.Column('avatar', sa.String(length=255), nullable=True),
+        sa.Column('password_hash', sa.String(length=255), nullable=True),
+        sa.Column('id_card_name', sa.String(length=50), nullable=True),
+        sa.Column('id_card_number_encrypted', sa.String(length=255), nullable=True),
+        sa.Column('id_card_verified', sa.Boolean(), nullable=False, default=False),
+        sa.Column('balance', sa.Integer(), nullable=False, default=0),
+        sa.Column('status', sa.Integer(), nullable=False, default=1),
+        sa.Column('created_at', sa.Integer(), nullable=False),
+        sa.Column('updated_at', sa.Integer(), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('openid'),
+        sa.UniqueConstraint('phone'),
+        sa.UniqueConstraint('email'),
+    )
+    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    op.create_index(op.f('ix_users_openid'), 'users', ['openid'], unique=True)
+    op.create_index(op.f('ix_users_phone'), 'users', ['phone'], unique=True)
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+
+    # Roles table
+    op.create_table(
+        'roles',
+        sa.Column('id', sa.UUID(), nullable=False),
+        sa.Column('name', sa.String(length=50), nullable=False),
+        sa.Column('description', sa.String(length=255), nullable=True),
+        sa.Column('permissions', sa.Text(), nullable=True),
+        sa.Column('created_at', sa.Integer(), nullable=False),
+        sa.Column('updated_at', sa.Integer(), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name'),
+    )
+    op.create_index(op.f('ix_roles_id'), 'roles', ['id'], unique=False)
+    op.create_index(op.f('ix_roles_name'), 'roles', ['name'], unique=True)
+
+    # User roles association table
+    op.create_table(
+        'user_roles',
+        sa.Column('user_id', sa.UUID(), nullable=False),
+        sa.Column('role_id', sa.UUID(), nullable=False),
+        sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('user_id', 'role_id'),
+    )
+
+    # Point transactions table
+    op.create_table(
+        'point_transactions',
+        sa.Column('id', sa.UUID(), nullable=False),
+        sa.Column('user_id', sa.UUID(), nullable=False),
+        sa.Column('amount', sa.Integer(), nullable=False),
+        sa.Column('type', sa.String(length=20), nullable=False),
+        sa.Column('reason', sa.String(length=255), nullable=True),
+        sa.Column('related_id', sa.String(length=100), nullable=True),
+        sa.Column('created_at', sa.Integer(), nullable=False),
+        sa.Column('updated_at', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('id'),
+    )
+    op.create_index(op.f('ix_point_transactions_id'), 'point_transactions', ['id'], unique=False)
+    op.create_index(op.f('ix_point_transactions_user_id'), 'point_transactions', ['user_id'], unique=False)
+
+    # Insert default admin role
+    op.execute(
+        "INSERT INTO roles (id, name, description, created_at, updated_at) "
+        f"VALUES ('00000000-0000-0000-0000-000000000001', 'admin', '系统管理员', {now}, {now})"
+    )
+
+    # Insert default admin user
+    admin_password_hash = get_password_hash("admin123")
+    admin_user_id = str(uuid.uuid4())
+    op.execute(
+        "INSERT INTO users (id, nickname, email, password_hash, balance, status, created_at, updated_at) "
+        f"VALUES ('{admin_user_id}', 'admin', 'admin@lcaitool.com', '{admin_password_hash}', 1000, 1, {now}, {now})"
+    )
+
+    # Assign admin role to admin user
+    op.execute(
+        "INSERT INTO user_roles (user_id, role_id) "
+        f"VALUES ('{admin_user_id}', '00000000-0000-0000-0000-000000000001')"
+    )
+
+    # Insert test user
+    test_password_hash = get_password_hash("test123")
+    test_user_id = str(uuid.uuid4())
+    op.execute(
+        "INSERT INTO users (id, nickname, email, password_hash, balance, status, created_at, updated_at) "
+        f"VALUES ('{test_user_id}', 'testuser', 'test@lcaitool.com', '{test_password_hash}', 100, 1, {now}, {now})"
+    )
+
+
+def downgrade() -> None:
+    op.drop_index(op.f('ix_point_transactions_user_id'), table_name='point_transactions')
+    op.drop_index(op.f('ix_point_transactions_id'), table_name='point_transactions')
+    op.drop_table('point_transactions')
+    op.drop_table('user_roles')
+    op.drop_index(op.f('ix_roles_name'), table_name='roles')
+    op.drop_index(op.f('ix_roles_id'), table_name='roles')
+    op.drop_table('roles')
+    op.drop_index(op.f('ix_users_email'), table_name='users')
+    op.drop_index(op.f('ix_users_phone'), table_name='users')
+    op.drop_index(op.f('ix_users_openid'), table_name='users')
+    op.drop_index(op.f('ix_users_id'), table_name='users')
+    op.drop_table('users')
