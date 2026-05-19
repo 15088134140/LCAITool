@@ -7,8 +7,9 @@ export function Navbar() {
   const pathname = usePathname();
 
   // 登录、注册、验证页面不显示全局导航栏，使用页面自己的导航
-  const authPages = ['/login', '/register', '/verification'];
-  if (authPages.includes(pathname)) {
+  // 用户中心及其子页面、订单页面也不显示全局导航栏
+  const hideNavPages = ['/login', '/register', '/verification', '/user-center', '/orders'];
+  if (hideNavPages.some(page => pathname === page || pathname.startsWith(page + '/'))) {
     return null;
   }
 

@@ -2,16 +2,35 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { authApi } from '@/lib/api';
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // 表单状态
+  const [formData, setFormData] = useState({
+    phone: '',
+    code: '',
+    password: '',
+    confirmPassword: '',
+    nickname: '',
+    agreed: false
+  });
 
   const togglePassword = () => {
     setShowPassword(!showPassword);
   };
 
   const handleSendSms = () => {
+    if (!formData.phone) {
+      alert('请先输入手机号');
+      return;
+    }
+    // 开发环境不实际发送短信，直接启动倒计时
     setCountdown(60);
     const interval = setInterval(() => {
       setCountdown(prev => {
@@ -22,6 +41,60 @@ export default function RegisterPage() {
         return prev - 1;
       });
     }, 1000);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // 表单验证
+    if (!formData.phone) {
+      alert('请输入手机号');
+      return;
+    }
+    if (!formData.code) {
+      alert('请输入验证码');
+      return;
+    }
+    if (!formData.password) {
+      alert('请输入密码');
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      alert('两次输入的密码不一致');
+      return;
+    }
+    if (!formData.agreed) {
+      alert('请阅读并同意用户协议');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // 调用注册API
+      await authApi.register({
+        phone: formData.phone,
+        password: formData.password,
+        nickname: formData.nickname || `user_${formData.phone.slice(-4)}`,
+        code: formData.code
+      } as any);
+
+      alert('注册成功！请登录');
+      router.push('/login');
+    } catch (error: any) {
+      console.error('注册错误:', error);
+      alert(error.message || '注册失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -169,11 +242,14 @@ export default function RegisterPage() {
                   <p className="text-blue-200/60">只需30秒，开启AI创作</p>
                 </div>
 
-                <form className="space-y-5">
+                <form className="space-y-5" onSubmit={handleRegister}>
                   <div>
                     <label className="block text-sm font-medium text-white/90 mb-2">手机号码</label>
                     <input
                       type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
                       placeholder="请输入手机号码"
                       autoComplete="off"
                       className="w-full h-12 px-4 rounded-xl text-slate-800 placeholder-slate-400 bg-white/90 border border-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-200"
@@ -186,6 +262,9 @@ export default function RegisterPage() {
                       <div className="flex-1">
                         <input
                           type="text"
+                          name="code"
+                          value={formData.code}
+                          onChange={handleInputChange}
                           placeholder="请输入验证码"
                           autoComplete="one-time-code"
                           className="w-full h-12 px-4 rounded-xl text-slate-800 placeholder-slate-400 bg-white/90 border border-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-200"
@@ -207,6 +286,9 @@ export default function RegisterPage() {
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
                         placeholder="6-20位字母、数字或符号"
                         autoComplete="new-password"
                         className="w-full h-12 px-4 rounded-xl text-slate-800 placeholder-slate-400 bg-white/90 border border-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-200 pr-12"
@@ -235,6 +317,9 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-white/90 mb-2">确认密码</label>
                     <input
                       type="password"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
                       placeholder="请再次输入密码"
                       autoComplete="new-password"
                       className="w-full h-12 px-4 rounded-xl text-slate-800 placeholder-slate-400 bg-white/90 border border-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-200"
@@ -245,6 +330,9 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-white/90 mb-2">昵称（选填）</label>
                     <input
                       type="text"
+                      name="nickname"
+                      value={formData.nickname}
+                      onChange={handleInputChange}
                       placeholder="给自己起个好听的名字"
                       autoComplete="off"
                       className="w-full h-12 px-4 rounded-xl text-slate-800 placeholder-slate-400 bg-white/90 border border-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-200"
@@ -252,7 +340,13 @@ export default function RegisterPage() {
                   </div>
 
                   <label className="flex items-start gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 mt-0.5 rounded border-white/20 bg-white/8 text-blue-400 focus:ring-blue-400/30 focus:ring-offset-0 focus:outline-none"/>
+                    <input
+                      type="checkbox"
+                      name="agreed"
+                      checked={formData.agreed}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 mt-0.5 rounded border-white/20 bg-white/8 text-blue-400 focus:ring-blue-400/30 focus:ring-offset-0 focus:outline-none"
+                    />
                     <span className="text-sm text-blue-200/50">
                       我已阅读并同意
                       <Link href="#" className="text-blue-300 hover:text-blue-200 hover:underline">《用户协议》</Link>
@@ -263,9 +357,10 @@ export default function RegisterPage() {
 
                   <button
                     type="submit"
-                    className="w-full py-3 px-6 text-white font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 shadow-lg shadow-blue-500/25 hover:shadow-blue-400/30 transition-all duration-200 focus:ring-2 focus:ring-blue-400/30 focus:outline-none"
+                    disabled={loading}
+                    className="w-full py-3 px-6 text-white font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 shadow-lg shadow-blue-500/25 hover:shadow-blue-400/30 transition-all duration-200 focus:ring-2 focus:ring-blue-400/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    立即注册
+                    {loading ? '注册中...' : '立即注册'}
                   </button>
                 </form>
 
