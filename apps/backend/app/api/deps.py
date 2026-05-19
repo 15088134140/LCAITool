@@ -3,16 +3,24 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from pydantic import ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import AsyncSessionLocal
 from app.core.exceptions import InvalidTokenException
 from app.models.user import User
 from app.schemas.token import TokenPayload
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
 
 
 async def get_current_user(
@@ -27,12 +35,12 @@ async def get_current_user(
     except (jwt.JWTError, ValidationError):
         raise InvalidTokenException()
 
-    result = await db.execute(select(User).where(User.id == token_data.sub))
-    user = result.scalar_one_or_none()
+    from app.services.user_service import UserService
+    user = await UserService.get_by_id(db, token_data.sub)
 
     if not user:
         raise InvalidTokenException()
-    if not user.is_active:
+    if user.status != 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="用户已被禁用",
@@ -41,12 +49,37 @@ async def get_current_user(
 
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
-    if not current_user.is_active:
+    if current_user.status != 1:
         raise HTTPException(status_code=400, detail="用户已被禁用")
     return current_user
 
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    if not current_user.is_admin:
+async def get_current_admin_user(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> User:
+    # Eager load roles to avoid lazy loading issues
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(User).where(User.id == current_user.id).options(selectinload(User.roles))
+    )
+    user_with_roles = result.scalar_one_or_none()
+    if not user_with_roles:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    # Check if user has admin role
+    if not any(role.name == "admin" for role in user_with_roles.roles):
         raise HTTPException(status_code=403, detail="需要管理员权限")
-    return current_user
+    return user_with_roles
+
+
+def requires_roles(*role_names: str):
+    """权限校验装饰器工厂"""
+    async def decorator(
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        user_role_names = [role.name for role in current_user.roles]
+        for role_name in role_names:
+            if role_name in user_role_names:
+                return current_user
+        raise HTTPException(status_code=403, detail="权限不足")
+    return decorator

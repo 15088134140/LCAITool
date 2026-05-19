@@ -20,6 +20,15 @@ class UserService:
         return result.scalar_one_or_none()
 
     @staticmethod
+    async def get_by_username_or_phone(db: AsyncSession, username: str) -> Optional[User]:
+        result = await db.execute(
+            select(User).where(
+                or_(User.nickname == username, User.phone == username, User.email == username)
+            )
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
     async def get_by_email(db: AsyncSession, email: str) -> Optional[User]:
         result = await db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
@@ -71,22 +80,42 @@ class UserService:
 
     @staticmethod
     async def create(db: AsyncSession, obj_in: UserCreate) -> User:
-        # 校验验证码：开发环境万能验证码 8888
-        if obj_in.code != "8888":
-            raise InvalidVerificationCodeException()
+        # 手机号注册模式：校验手机号和验证码
+        if obj_in.phone:
+            # 校验验证码：开发环境万能验证码 8888
+            if obj_in.code != "8888":
+                raise InvalidVerificationCodeException()
 
-        # Check if phone exists
-        existing_phone = await UserService.get_by_phone(db, obj_in.phone)
-        if existing_phone:
-            raise UserAlreadyExistsException()
+            # Check if phone exists
+            existing_phone = await UserService.get_by_phone(db, obj_in.phone)
+            if existing_phone:
+                raise UserAlreadyExistsException()
 
-        db_obj = User(
-            nickname=obj_in.nickname or f"用户{obj_in.phone[-4:]}",
-            phone=obj_in.phone,
-            password_hash=get_password_hash(obj_in.password),
-            balance=100,  # 赠送新人积分
-            status=1,
-        )
+            db_obj = User(
+                nickname=obj_in.nickname or obj_in.username or f"用户{obj_in.phone[-4:]}",
+                phone=obj_in.phone,
+                email=obj_in.email,
+                password_hash=get_password_hash(obj_in.password),
+                balance=100,  # 赠送新人积分
+                status=1,
+            )
+        # 用户名注册模式
+        elif obj_in.username:
+            # Check if username exists
+            existing_user = await UserService.get_by_username(db, obj_in.username)
+            if existing_user:
+                raise UserAlreadyExistsException()
+
+            db_obj = User(
+                nickname=obj_in.nickname or obj_in.username,
+                email=obj_in.email,
+                password_hash=get_password_hash(obj_in.password),
+                balance=100,  # 赠送新人积分
+                status=1,
+            )
+        else:
+            raise ValueError("注册需要提供用户名或手机号")
+
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
@@ -210,7 +239,11 @@ class UserService:
 
     @staticmethod
     async def assign_roles(db: AsyncSession, user_id: uuid.UUID, role_ids: List[uuid.UUID]) -> User:
-        user = await UserService.get_by_id(db, user_id)
+        from sqlalchemy.orm import selectinload
+        result = await db.execute(
+            select(User).where(User.id == user_id).options(selectinload(User.roles))
+        )
+        user = result.scalar_one_or_none()
         if not user:
             raise UserNotFoundException()
 
@@ -219,8 +252,8 @@ class UserService:
 
         # Add new roles
         for role_id in role_ids:
-            result = await db.execute(select(Role).where(Role.id == role_id))
-            role = result.scalar_one_or_none()
+            role_result = await db.execute(select(Role).where(Role.id == role_id))
+            role = role_result.scalar_one_or_none()
             if role:
                 user.roles.append(role)
 

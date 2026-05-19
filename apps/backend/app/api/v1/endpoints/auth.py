@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
@@ -7,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.core.config import settings
 from app.core.exceptions import InvalidTokenException
-from app.core.security import create_access_token
+from app.core.security import create_access_token, create_refresh_token
 from app.schemas.token import Token, RefreshTokenRequest, TokenPayload
-from app.schemas.user import UserCreate, User
+from app.schemas.user import UserCreate, User, UserLogin, WechatLoginRequest
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
 
@@ -35,6 +36,17 @@ async def login(
     )
 
 
+@router.post("/wechat", response_model=Token, summary="微信OAuth登录")
+async def wechat_login(
+    request: WechatLoginRequest,
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    # TODO: 调用微信API获取openid
+    # 这里模拟openid，实际需要调用微信OAuth接口
+    mock_openid = f"wechat_{request.code}"
+    return await AuthService.login_by_wechat(db, openid=mock_openid)
+
+
 @router.post("/refresh", response_model=Token, summary="刷新令牌")
 async def refresh_token(
     request: RefreshTokenRequest,
@@ -53,5 +65,11 @@ async def refresh_token(
         raise InvalidTokenException()
 
     new_access_token = create_access_token(subject=str(user.id))
-    new_refresh_token = create_access_token(subject=str(user.id))
+    new_refresh_token = create_refresh_token(subject=str(user.id))
     return Token(access_token=new_access_token, refresh_token=new_refresh_token)
+
+
+@router.post("/logout", summary="登出")
+async def logout() -> Any:
+    # 前端删除token即可，后端可以加入token黑名单机制
+    return {"message": "登出成功"}

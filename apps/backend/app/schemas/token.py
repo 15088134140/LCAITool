@@ -1,3 +1,4 @@
+import uuid
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -9,7 +10,7 @@ class Token(BaseModel):
 
 
 class TokenPayload(BaseModel):
-    sub: Optional[str] = Field(None, description="用户ID")
+    sub: Optional[uuid.UUID] = Field(None, description="用户ID")
     type: Optional[str] = Field(None, description="令牌类型")
 
 
