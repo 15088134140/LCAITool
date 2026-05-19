@@ -8,6 +8,7 @@ from app.core.exceptions import (
     InvalidCredentialsException,
     InvalidTokenException,
     InsufficientPermissionsException,
+    InvalidIdCardFormatException,
 )
 from app.api.v1.api import api_router
 
@@ -70,6 +71,14 @@ async def insufficient_permissions_exception_handler(request: Request, exc: Insu
     return JSONResponse(
         status_code=403,
         content={"code": 403, "message": exc.detail, "data": None},
+    )
+
+
+@app.exception_handler(InvalidIdCardFormatException)
+async def invalid_id_card_format_exception_handler(request: Request, exc: InvalidIdCardFormatException):
+    return JSONResponse(
+        status_code=400,
+        content={"code": 400, "message": exc.detail, "data": None},
     )
 
 

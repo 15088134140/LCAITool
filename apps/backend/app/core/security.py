@@ -71,3 +71,38 @@ def mask_id_card(id_card: str) -> str:
     if not id_card or len(id_card) < 8:
         return id_card
     return id_card[:4] + "*" * (len(id_card) - 8) + id_card[-4:]
+
+
+def mask_id_card_encrypted(encrypted_id_card: str) -> Optional[str]:
+    """脱敏加密的身份证号：先解密再脱敏"""
+    if not encrypted_id_card:
+        return None
+    try:
+        decrypted = aes_decrypt(encrypted_id_card)
+        return mask_id_card(decrypted)
+    except:
+        # 解密失败返回None
+        return None
+
+
+def validate_id_card_format(id_card: str) -> bool:
+    """
+    验证身份证号格式
+    18位身份证：前17位数字，最后一位可以是数字或X
+    15位身份证：全部数字
+    """
+    if not id_card:
+        return False
+
+    # 18位身份证
+    if len(id_card) == 18:
+        if not id_card[:17].isdigit():
+            return False
+        if not (id_card[17].isdigit() or id_card[17].upper() == 'X'):
+            return False
+        return True
+    # 15位身份证
+    elif len(id_card) == 15:
+        return id_card.isdigit()
+
+    return False
