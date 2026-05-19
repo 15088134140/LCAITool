@@ -1,4 +1,11 @@
 # apps/backend/tests/e2e/conftest.py
+"""
+E2E测试配置文件
+⚠️ 重要：本E2E测试使用阿里云PostgreSQL数据库进行测试
+运行前请确保：
+1. 已执行 alembic upgrade head 初始化数据库表结构
+2. 已运行 python scripts/init_e2e_users.py 初始化测试用户
+"""
 import os
 import sys
 import pytest
