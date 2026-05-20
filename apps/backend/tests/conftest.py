@@ -7,8 +7,8 @@ from app.main import app
 from app.api.deps import get_db
 
 
-# 使用阿里云PostgreSQL测试数据库
-TEST_DATABASE_URL = "postgresql+asyncpg://shuqitec:Shuqi%242026@pgm-7xv29038ivah5apreo.pg.cn-guangzhou.rds.aliyuncs.com:5432/lcaitool"
+# 使用SQLite内存数据库进行单元测试
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
 @pytest.fixture(scope="function")
