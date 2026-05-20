@@ -161,3 +161,30 @@ class ResourceNotFoundException(HTTPException):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail,
         )
+
+
+class IdeaNotFoundException(HTTPException):
+    """创意不存在异常"""
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="创意不存在",
+        )
+
+
+class UserNotVerifiedException(HTTPException):
+    """用户未实名认证异常"""
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="需要实名认证才能执行此操作",
+        )
+
+
+class AlreadyVotedException(HTTPException):
+    """已经投票过异常"""
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="您已经对该创意投过票了",
+        )
