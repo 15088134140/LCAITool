@@ -152,3 +152,12 @@ class ToolCategoryNotFoundException(HTTPException):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="工具分类不存在",
         )
+
+
+class ResourceNotFoundException(HTTPException):
+    """资源不存在异常"""
+    def __init__(self, detail: str = "资源不存在"):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=detail,
+        )
