@@ -12,12 +12,12 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
 
-  // 搜索和筛选
+  // 搜索和筛选 - status: undefined=全部, 'active'=正常, 'disabled'=禁用
   const [params, setParams] = useState<UserListParams>({
     page: 1,
     pageSize: 10,
     keyword: '',
-    status: '',
+    status: undefined,
     idCardVerified: undefined,
   });
 
@@ -139,7 +139,8 @@ const UserManagement = () => {
   // 切换用户状态
   const handleToggleStatus = async (user: User) => {
     try {
-      const newStatus = user.status === 'active' ? 'disabled' : 'active';
+      // 前端: 1=正常, 0=禁用 -> 后端: active/disabled
+      const newStatus = user.status === 1 ? 'disabled' : 'active';
       await userApi.toggleStatus(user.id, newStatus);
       loadUsers();
     } catch (err) {
@@ -277,7 +278,7 @@ const UserManagement = () => {
                     </td>
                     <td className="px-6 py-4 text-gray-600">{formatPhone(user.phone)}</td>
                     <td className="px-6 py-4">
-                      {user.idCardVerified ? (
+                      {user.id_card_verified ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           已认证
                         </span>
@@ -288,10 +289,10 @@ const UserManagement = () => {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-semibold text-[#1E3A5F]">{user.points}</span>
+                      <span className="font-semibold text-[#1E3A5F]">{user.balance}</span>
                     </td>
                     <td className="px-6 py-4">
-                      {user.status === 'active' ? (
+                      {user.status === 1 ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           正常
                         </span>
@@ -301,7 +302,7 @@ const UserManagement = () => {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{formatDate(user.createdAt)}</td>
+                    <td className="px-6 py-4 text-gray-600 text-sm">{formatDate(user.created_at)}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <button
@@ -328,13 +329,13 @@ const UserManagement = () => {
                         <button
                           onClick={() => handleToggleStatus(user)}
                           className={`p-1.5 rounded-lg transition-colors ${
-                            user.status === 'active'
+                            user.status === 1
                               ? 'text-red-500 hover:bg-red-50'
                               : 'text-green-500 hover:bg-green-50'
                           }`}
-                          title={user.status === 'active' ? '禁用' : '启用'}
+                          title={user.status === 1 ? '禁用' : '启用'}
                         >
-                          {user.status === 'active' ? <UserX size={16} /> : <UserCheck size={16} />}
+                          {user.status === 1 ? <UserX size={16} /> : <UserCheck size={16} />}
                         </button>
                       </div>
                     </td>
@@ -503,7 +504,7 @@ const UserManagement = () => {
                 当前用户：<span className="font-medium text-gray-800">{selectedUser?.nickname}</span>
               </p>
               <p className="text-sm text-gray-600 mt-1">
-                当前积分：<span className="font-semibold text-[#1E3A5F]">{selectedUser?.points}</span>
+                当前积分：<span className="font-semibold text-[#1E3A5F]">{selectedUser?.balance}</span>
               </p>
             </div>
             <div>
@@ -575,12 +576,12 @@ const UserManagement = () => {
                   </div>
                   <div>
                     <span className="text-gray-500">积分余额</span>
-                    <p className="text-gray-800 mt-0.5 font-semibold text-[#1E3A5F]">{selectedUser.points}</p>
+                    <p className="text-gray-800 mt-0.5 font-semibold text-[#1E3A5F]">{selectedUser.balance}</p>
                   </div>
                   <div>
                     <span className="text-gray-500">实名认证</span>
                     <p className="mt-0.5">
-                      {selectedUser.idCardVerified ? (
+                      {selectedUser.id_card_verified ? (
                         <span className="text-green-600">已认证</span>
                       ) : (
                         <span className="text-gray-500">未认证</span>
@@ -590,7 +591,7 @@ const UserManagement = () => {
                   <div>
                     <span className="text-gray-500">账号状态</span>
                     <p className="mt-0.5">
-                      {selectedUser.status === 'active' ? (
+                      {selectedUser.status === 1 ? (
                         <span className="text-green-600">正常</span>
                       ) : (
                         <span className="text-red-600">禁用</span>
@@ -599,7 +600,7 @@ const UserManagement = () => {
                   </div>
                   <div className="col-span-2">
                     <span className="text-gray-500">注册时间</span>
-                    <p className="text-gray-800 mt-0.5">{formatDate(selectedUser.createdAt)}</p>
+                    <p className="text-gray-800 mt-0.5">{formatDate(selectedUser.created_at)}</p>
                   </div>
                 </div>
               </div>

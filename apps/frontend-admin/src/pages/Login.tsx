@@ -48,7 +48,15 @@ const Login = () => {
     setLoading(true);
     try {
       const result = await authApi.login(formData);
-      login(result.user, result.token);
+
+      // 先设置token到store（这样后续请求才能携带token）
+      login({ id: '', username: formData.username, nickname: '', role: '', permissions: [] }, result.access_token);
+
+      // 获取用户信息
+      const user = await authApi.getCurrentUser();
+
+      // 更新用户信息
+      useUserStore.getState().updateUser(user);
 
       // 记住密码
       if (formData.rememberMe) {

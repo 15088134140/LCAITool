@@ -42,15 +42,24 @@ class Request {
     // 响应拦截器：统一处理错误
     this.instance.interceptors.response.use(
       (response: AxiosResponse<ApiResponse>) => {
-        const { code, message, data } = response.data;
+        const responseData = response.data;
 
-        if (code === 0 || code === 200) {
-          return data;
+        // 处理两种响应格式：
+        // 1. 统一响应格式: { code, message, data }
+        // 2. 直接数据格式: 如 { access_token, refresh_token, token_type }
+        if ('code' in responseData) {
+          // 统一响应格式
+          const { code, message, data } = responseData;
+          if (code === 0 || code === 200) {
+            return data;
+          }
+          // 业务错误
+          this.handleBusinessError(code, message);
+          return Promise.reject(new Error(message));
+        } else {
+          // 直接数据格式（如登录响应）
+          return responseData;
         }
-
-        // 业务错误
-        this.handleBusinessError(code, message);
-        return Promise.reject(new Error(message));
       },
       (error: AxiosError) => {
         this.handleHttpError(error);

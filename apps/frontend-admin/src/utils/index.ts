@@ -1,6 +1,8 @@
-// 格式化日期
-export const formatDate = (date: string | Date, format = 'YYYY-MM-DD HH:mm:ss') => {
-  const d = new Date(date);
+// 格式化日期（支持秒级时间戳和毫秒级时间戳）
+export const formatDate = (date: string | number | Date, format = 'YYYY-MM-DD HH:mm:ss') => {
+  // 如果是数字且小于1e12（2001-09-09），则视为秒级时间戳，转换为毫秒
+  const timestamp = typeof date === 'number' && date < 1000000000000 ? date * 1000 : date;
+  const d = new Date(timestamp);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');

@@ -5,11 +5,11 @@ export interface User {
   avatar?: string | null;
   nickname: string | null;
   phone: string | null;
-  idCardVerified: boolean;
-  points: number;
-  status: string; // 'active'=正常, 'disabled'=禁用
-  createdAt: number;
-  updatedAt: number;
+  id_card_verified: boolean;
+  balance: number;
+  status: number; // 1=正常, 0=禁用
+  created_at: number;
+  updated_at: number;
 }
 
 export interface UserListParams {
@@ -49,7 +49,22 @@ export interface AdjustBalanceParams {
 export const userApi = {
   // 获取用户列表
   getList: (params: UserListParams) => {
-    return request.get<UserListResponse>('/admin/users', { params });
+    // 过滤空值参数，转换为后端期望的格式
+    const filteredParams: Record<string, any> = {
+      page: params.page,
+      page_size: params.pageSize,
+    };
+    if (params.keyword && params.keyword.trim()) {
+      filteredParams.search = params.keyword.trim();
+    }
+    if (params.status && params.status.trim()) {
+      // 前端字符串 'active'/'disabled' -> 后端整数 1/0
+      filteredParams.status = params.status === 'active' ? 1 : 0;
+    }
+    if (params.idCardVerified !== undefined && params.idCardVerified !== null) {
+      filteredParams.idCardVerified = params.idCardVerified;
+    }
+    return request.get<UserListResponse>('/admin/users', { params: filteredParams });
   },
 
   // 创建用户
