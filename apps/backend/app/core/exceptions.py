@@ -136,3 +136,19 @@ class InvalidIdCardFormatException(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="身份证号格式不正确",
         )
+
+
+class ToolNotFoundException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="工具不存在",
+        )
+
+
+class ToolCategoryNotFoundException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="工具分类不存在",
+        )
