@@ -248,7 +248,13 @@
       "Bash(curl -s http://127.0.0.1:3000/)",
       "Bash(curl -s -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzkxODUxODAsInN1YiI6ImRkZjJkYTRiLTE4MzItNDMwYS1iNmY3LWQ5ZGJiYTdlMzczYyIsInR5cGUiOiJhY2Nlc3MifQ.oRUm9K2vFIXlOJBnECe2uYUoDRW4qU4YEoi6LAUYpYY\" http://127.0.0.1:8000/api/v1/users/me)",
       "Bash(findstr python *)",
-      "Bash(curl -s -w ' %{http_code}' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzkxODUzMDAsInN1YiI6ImRkZjJkYTRiLTE4MzItNDMwYS1iNmY3LWQ5ZGJiYTdlMzczYyIsInR5cGUiOiJhY2Nlc3MifQ.1MZgvjFbvb_11FDs93KW2DcW_SCzgRa6xdqAhpULQ8E' http://127.0.0.1:8000/api/v1/users/me)"
+      "Bash(curl -s -w ' %{http_code}' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzkxODUzMDAsInN1YiI6ImRkZjJkYTRiLTE4MzItNDMwYS1iNmY3LWQ5ZGJiYTdlMzczYyIsInR5cGUiOiJhY2Nlc3MifQ.1MZgvjFbvb_11FDs93KW2DcW_SCzgRa6xdqAhpULQ8E' http://127.0.0.1:8000/api/v1/users/me)",
+      "Bash(Select-Object -Last 20)",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs taskkill //F //PID)",
+      "Bash(PORT=3002 npm run dev)",
+      "Bash(taskkill //F //PID 13564)",
+      "Bash(grep -v \"^0$\")"
     ],
     "additionalDirectories": [
       "c:\\MyProject\\LCAiTool",
