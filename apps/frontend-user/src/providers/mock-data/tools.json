@@ -21,7 +21,47 @@
     "isHot": true,
     "tags": ["绘本", "AI绘画", "语音合成", "儿童教育"],
     "status": "active",
-    "createdAt": "2026-05-01T10:00:00Z"
+    "createdAt": "2026-05-01T10:00:00Z",
+    "reviewCount": 328,
+    "demos": [
+      {
+        "title": "精美绘本示例1",
+        "description": "AI生成的高质量儿童绘本，包含多页精美插图",
+        "image": "/images/tool-illustration.png"
+      },
+      {
+        "title": "精美绘本示例2",
+        "description": "不同艺术风格的AI绘本作品展示",
+        "image": "/images/tool-education.png"
+      },
+      {
+        "title": "精美绘本示例3",
+        "description": "专业配音的有声绘本示例",
+        "image": "/images/tool-content.png"
+      },
+      {
+        "title": "精美绘本示例4",
+        "description": "完整的可下载源文件包展示",
+        "image": "/images/tool-illustration.png"
+      }
+    ],
+    "stats": [
+      {
+        "value": "2-5",
+        "label": "分钟生成",
+        "color": "#1E3A5F"
+      },
+      {
+        "value": "10+",
+        "label": "艺术风格",
+        "color": "#059669"
+      },
+      {
+        "value": "5种",
+        "label": "配音音色",
+        "color": "#2563EB"
+      }
+    ]
   },
   {
     "id": "ecommerce-detail",
@@ -44,7 +84,25 @@
     "isHot": true,
     "tags": ["电商", "商品描述", "营销文案", "主图生成"],
     "status": "active",
-    "createdAt": "2026-04-15T08:30:00Z"
+    "createdAt": "2026-04-15T08:30:00Z",
+    "reviewCount": 256,
+    "stats": [
+      {
+        "value": "1-3",
+        "label": "分钟生成",
+        "color": "#1E3A5F"
+      },
+      {
+        "value": "8+",
+        "label": "视觉风格",
+        "color": "#059669"
+      },
+      {
+        "value": "PSD",
+        "label": "源文件导出",
+        "color": "#2563EB"
+      }
+    ]
   },
   {
     "id": "marketing-copywriter",
@@ -64,6 +122,24 @@
     "isHot": false,
     "tags": ["营销文案", "广告投放", "社交媒体", "SEO"],
     "status": "active",
-    "createdAt": "2026-03-20T14:00:00Z"
+    "createdAt": "2026-03-20T14:00:00Z",
+    "reviewCount": 198,
+    "stats": [
+      {
+        "value": "0.5-1",
+        "label": "分钟生成",
+        "color": "#1E3A5F"
+      },
+      {
+        "value": "4+",
+        "label": "平台适配",
+        "color": "#059669"
+      },
+      {
+        "value": "5种",
+        "label": "文案风格",
+        "color": "#2563EB"
+      }
+    ]
   }
 ]
