@@ -179,3 +179,31 @@ class RechargePackageListResponse(BaseModel):
     """充值档位列表响应"""
     packages: list[RechargePackage]
     total: int
+
+
+class PaymentRequest(BaseModel):
+    """发起支付请求"""
+    order_id: uuid.UUID
+
+
+class PaymentResponse(BaseModel):
+    """支付响应（前端接收）"""
+    success: bool
+    order_id: uuid.UUID
+    order_no: str
+    total_points: int
+    payment_provider: str
+    is_simulated: bool = True
+    message: str = "模拟支付环境，支付已自动完成"
+
+
+class TransactionHistoryResponse(BaseModel):
+    """交易历史记录响应"""
+    transactions: list[PointTransaction]
+    total: int
+
+
+class OrderListResponse(BaseModel):
+    """订单列表响应"""
+    orders: list[Order]
+    total: int
