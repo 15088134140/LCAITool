@@ -120,26 +120,6 @@ class Role(RoleBase):
     model_config = {"from_attributes": True}
 
 
-class PointTransactionBase(BaseModel):
-    amount: int = Field(..., description="变更数量")
-    type: str = Field(..., max_length=20, description="类型")
-    reason: Optional[str] = Field(None, max_length=255, description="变更原因")
-    related_id: Optional[str] = Field(None, max_length=100, description="关联ID")
-
-
-class PointTransactionCreate(PointTransactionBase):
-    user_id: uuid.UUID = Field(..., description="用户ID")
-
-
-class PointTransaction(PointTransactionBase):
-    id: uuid.UUID
-    user_id: uuid.UUID
-    created_at: int
-    updated_at: int
-
-    model_config = {"from_attributes": True}
-
-
 class UserRoleAssignRequest(BaseModel):
     """分配用户角色"""
     role_ids: list[uuid.UUID] = Field(..., description="角色ID列表")

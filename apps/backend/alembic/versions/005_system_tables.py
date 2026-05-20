@@ -1,7 +1,7 @@
 """Add system tables - real_name_verifications, idea_submissions, idea_votes, admin_audit_logs
 
-Revision ID: 004
-Revises: 003
+Revision ID: 005
+Revises: 004
 Create Date: 2026-05-20 00:00:00.000000
 
 """
@@ -12,8 +12,8 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 
 # revision identifiers, used by Alembic.
-revision = '004'
-down_revision = '003'
+revision = '005'
+down_revision = '004'
 branch_labels = None
 depends_on = None
 

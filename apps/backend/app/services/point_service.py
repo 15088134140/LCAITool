@@ -2,8 +2,9 @@ import uuid
 from typing import Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
-from app.models.user import PointTransaction, User
-from app.schemas.user import PointTransactionCreate
+from app.models.payment import PointTransaction, PointTransactionType
+from app.models.user import User
+from app.schemas.payment import PointTransactionCreate
 from app.core.exceptions import UserNotFoundException, InsufficientBalanceException, OptimisticLockException
 
 
@@ -36,12 +37,27 @@ class PointService:
 
     @staticmethod
     async def create(db: AsyncSession, obj_in: PointTransactionCreate) -> PointTransaction:
+        # Get user's current balance first
+        user_result = await db.execute(select(User).where(User.id == obj_in.user_id))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            raise UserNotFoundException()
+
+        balance_before = user.balance
+        balance_after = balance_before + obj_in.amount
+
         db_obj = PointTransaction(
             user_id=obj_in.user_id,
             amount=obj_in.amount,
             type=obj_in.type,
             reason=obj_in.reason,
             related_id=obj_in.related_id,
+            related_type=obj_in.related_type,
+            idempotency_key=obj_in.idempotency_key,
+            balance_before=balance_before,
+            balance_after=balance_after,
+            operator=obj_in.operator,
+            remark=obj_in.remark,
         )
         db.add(db_obj)
         await db.commit()
@@ -55,15 +71,34 @@ class PointService:
         amount: int,
         transaction_type: str,
         reason: str,
-        related_id: Optional[str] = None
+        related_id: Optional[str] = None,
+        related_type: Optional[str] = None,
+        idempotency_key: Optional[str] = None,
+        operator: Optional[str] = None,
+        remark: Optional[str] = None,
     ) -> PointTransaction:
         """创建积分流水的便捷方法"""
+        # Get user's current balance first
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            raise UserNotFoundException()
+
+        balance_before = user.balance
+        balance_after = balance_before + amount
+
         db_obj = PointTransaction(
             user_id=user_id,
             amount=amount,
             type=transaction_type,
             reason=reason,
             related_id=related_id,
+            related_type=related_type,
+            idempotency_key=idempotency_key,
+            balance_before=balance_before,
+            balance_after=balance_after,
+            operator=operator,
+            remark=remark,
         )
         db.add(db_obj)
         await db.commit()

@@ -11,8 +11,8 @@ from app.schemas.user import (
     RoleUpdate,
     UserRoleAssignRequest,
     AdjustBalanceRequest,
-    PointTransaction,
 )
+from app.schemas.payment import PointTransaction
 from app.services.user_service import UserService
 from app.services.role_service import RoleService
 from app.services.point_service import PointService

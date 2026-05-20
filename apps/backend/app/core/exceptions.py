@@ -1,4 +1,58 @@
 from fastapi import HTTPException, status
+from typing import Optional, Any
+
+
+class BusinessException(HTTPException):
+    """业务异常基类"""
+    def __init__(
+        self,
+        detail: str = "业务操作失败",
+        error_code: Optional[str] = None,
+        status_code: int = status.HTTP_400_BAD_REQUEST,
+        headers: Optional[dict] = None
+    ):
+        self.error_code = error_code
+        self.headers = headers
+        super().__init__(
+            status_code=status_code,
+            detail=detail,
+            headers=headers
+        )
+
+
+class ValidationException(HTTPException):
+    """数据验证异常"""
+    def __init__(
+        self,
+        detail: str = "数据验证失败",
+        error_code: Optional[str] = "VALIDATION_ERROR",
+        validation_errors: Optional[Any] = None,
+        status_code: int = status.HTTP_422_UNPROCESSABLE_ENTITY,
+        headers: Optional[dict] = None
+    ):
+        self.error_code = error_code
+        self.validation_errors = validation_errors
+        self.headers = headers
+        super().__init__(
+            status_code=status_code,
+            detail=detail,
+            headers=headers
+        )
+
+
+class IdempotentTokenException(HTTPException):
+    """幂等性Token异常"""
+    def __init__(
+        self,
+        detail: str = "幂等性Token无效",
+        error_code: Optional[str] = "IDEMPOTENT_TOKEN_ERROR",
+        status_code: int = status.HTTP_400_BAD_REQUEST,
+    ):
+        self.error_code = error_code
+        super().__init__(
+            status_code=status_code,
+            detail=detail
+        )
 
 
 class UserAlreadyExistsException(HTTPException):

@@ -46,15 +46,3 @@ class User(BaseModel):
     roles = relationship("Role", secondary=user_roles, back_populates="users")
     transactions = relationship("PointTransaction", back_populates="user", cascade="all, delete-orphan")
 
-
-class PointTransaction(BaseModel):
-    __tablename__ = "point_transactions"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, comment="用户ID")
-    amount = Column(Integer, nullable=False, comment="变更数量（正数增加，负数扣减）")
-    type = Column(String(20), nullable=False, comment="类型：recharge充值 consume消费 refund退款 adjust调整")
-    reason = Column(String(255), nullable=True, comment="变更原因")
-    related_id = Column(String(100), nullable=True, comment="关联ID（订单ID、任务ID等）")
-
-    user = relationship("User", back_populates="transactions")

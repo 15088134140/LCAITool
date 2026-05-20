@@ -8,8 +8,9 @@ from sqlalchemy import select, and_
 from datetime import datetime
 
 from app.api.deps import get_db, get_current_active_user
-from app.models.user import User, PointTransaction
-from app.schemas.user import PointTransaction as PointTransactionSchema
+from app.models.user import User
+from app.models.payment import PointTransaction
+from app.schemas.payment import PointTransaction as PointTransactionSchema
 from app.schemas.common import PaginatedResponse
 from app.services.user_service import UserService
 from app.services.point_service import PointService

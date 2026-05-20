@@ -37,6 +37,9 @@ coverage/
 # Docker
 docker-compose.override.yml
 
+# Alembic
+apps/backend/alembic.ini
+
 # Python
 __pycache__/
 *.pyc
@@ -44,3 +47,4 @@ __pycache__/
 *.pyd
 venv/
 env/
+.gstack/
