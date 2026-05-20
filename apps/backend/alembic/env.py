@@ -20,7 +20,12 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from app.core.database import Base
 from app.core.config import settings
-from app.models import BaseModel, User, Role, PointTransaction
+from app.models import (
+    BaseModel, User, Role, PointTransaction,
+    Tool, ToolCategory, ToolFavorite, ToolRating, ToolDemo,
+    Task, TaskLog, Work, WorkFile, WorkShare,
+    RealNameVerification, IdeaSubmission, IdeaVote, AdminAuditLog
+)
 
 target_metadata = Base.metadata
 
