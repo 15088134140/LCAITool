@@ -42,7 +42,9 @@ def upgrade() -> None:
         sa.Column('id_card_number_encrypted', sa.String(length=255), nullable=True),
         sa.Column('id_card_verified', sa.Boolean(), nullable=False, default=False),
         sa.Column('balance', sa.Integer(), nullable=False, default=0),
+        sa.Column('frozen_balance', sa.Integer(), nullable=False, default=0),
         sa.Column('status', sa.Integer(), nullable=False, default=1),
+        sa.Column('version', sa.Integer(), nullable=False, default=0),
         sa.Column('created_at', sa.Integer(), nullable=False),
         sa.Column('updated_at', sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint('id'),
@@ -97,32 +99,95 @@ def upgrade() -> None:
     op.create_index(op.f('ix_point_transactions_id'), 'point_transactions', ['id'], unique=False)
     op.create_index(op.f('ix_point_transactions_user_id'), 'point_transactions', ['user_id'], unique=False)
 
+    # Get table references for bulk inserts
+    roles_table = sa.table(
+        'roles',
+        sa.column('id', sa.UUID()),
+        sa.column('name', sa.String()),
+        sa.column('description', sa.String()),
+        sa.column('created_at', sa.Integer()),
+        sa.column('updated_at', sa.Integer()),
+    )
+
+    users_table = sa.table(
+        'users',
+        sa.column('id', sa.UUID()),
+        sa.column('nickname', sa.String()),
+        sa.column('email', sa.String()),
+        sa.column('password_hash', sa.String()),
+        sa.column('balance', sa.Integer()),
+        sa.column('status', sa.Integer()),
+        sa.column('created_at', sa.Integer()),
+        sa.column('updated_at', sa.Integer()),
+    )
+
+    user_roles_table = sa.table(
+        'user_roles',
+        sa.column('user_id', sa.UUID()),
+        sa.column('role_id', sa.UUID()),
+    )
+
     # Insert default admin role
-    op.execute(
-        "INSERT INTO roles (id, name, description, created_at, updated_at) "
-        f"VALUES ('00000000-0000-0000-0000-000000000001', 'admin', '系统管理员', {now}, {now})"
+    op.bulk_insert(
+        roles_table,
+        [
+            {
+                'id': '00000000-0000-0000-0000-000000000001',
+                'name': 'admin',
+                'description': '系统管理员',
+                'created_at': now,
+                'updated_at': now,
+            }
+        ]
     )
 
     # Insert default admin user
     admin_password_hash = get_password_hash("admin123")
     admin_user_id = str(uuid.uuid4())
-    op.execute(
-        "INSERT INTO users (id, nickname, email, password_hash, balance, status, created_at, updated_at) "
-        f"VALUES ('{admin_user_id}', 'admin', 'admin@lcaitool.com', '{admin_password_hash}', 1000, 1, {now}, {now})"
+    op.bulk_insert(
+        users_table,
+        [
+            {
+                'id': admin_user_id,
+                'nickname': 'admin',
+                'email': 'admin@lcaitool.com',
+                'password_hash': admin_password_hash,
+                'balance': 1000,
+                'status': 1,
+                'created_at': now,
+                'updated_at': now,
+            }
+        ]
     )
 
     # Assign admin role to admin user
-    op.execute(
-        "INSERT INTO user_roles (user_id, role_id) "
-        f"VALUES ('{admin_user_id}', '00000000-0000-0000-0000-000000000001')"
+    op.bulk_insert(
+        user_roles_table,
+        [
+            {
+                'user_id': admin_user_id,
+                'role_id': '00000000-0000-0000-0000-000000000001',
+            }
+        ]
     )
 
     # Insert test user
     test_password_hash = get_password_hash("test123")
     test_user_id = str(uuid.uuid4())
-    op.execute(
-        "INSERT INTO users (id, nickname, email, password_hash, balance, status, created_at, updated_at) "
-        f"VALUES ('{test_user_id}', 'testuser', 'test@lcaitool.com', '{test_password_hash}', 100, 1, {now}, {now})"
+    op.bulk_insert(
+        users_table,
+        [
+            {
+                'id': test_user_id,
+                'nickname': 'testuser',
+                'email': 'test@lcaitool.com',
+                'password_hash': test_password_hash,
+                'balance': 100,
+                'status': 1,
+                'created_at': now,
+                'updated_at': now,
+            }
+        ]
     )
 
 

@@ -38,3 +38,6 @@ htmlcov/
 
 # Environment files
 .env
+
+# Alembic - don't commit configuration with secrets
+alembic.ini
