@@ -340,17 +340,126 @@ async def _execute_with_async_session(
 
 @celery_app.task(queue='fast')
 def check_timeout_tasks() -> Dict[str, Any]:
-    """检查超时任务（每分钟执行一次）"""
-    # TODO: 实现检查超时任务的逻辑
-    # 查找 running 状态且超过一定时间未更新的任务，标记为 timeout
-    return {'status': 'ok', 'message': '超时任务检查完成'}
+    """检查超时任务（每分钟执行一次）
+
+    查找 running 状态且超过 30 分钟未更新的任务，标记为 timeout，
+    解冻预冻结的积分，并通过 Redis Pub/Sub 发送超时通知。
+    """
+    session = _get_sync_session()
+    try:
+        from app.models.task import Task
+        from app.models.user import User
+        from app.models.payment import PointTransaction, PointTransactionType
+
+        now = int(time.time())
+        timeout_threshold = 1800  # 30 分钟
+        timeout_count = 0
+
+        # 查找 running 状态且 started_at 超过阈值的任务
+        tasks = session.query(Task).filter(
+            Task.status == 'running',
+            Task.started_at.isnot(None),
+            (now - Task.started_at) > timeout_threshold
+        ).all()
+
+        for task in tasks:
+            # 标记任务为超时
+            task.timeout()
+            task.error_message = f'任务执行超时（超过{timeout_threshold // 60}分钟未完成）'
+
+            # 如果有冻结积分，解冻并创建交易流水
+            if task.estimated_cost and task.estimated_cost > 0:
+                user = session.query(User).with_for_update().filter(
+                    User.id == task.user_id
+                ).first()
+                if user:
+                    actual_unfreeze = min(task.estimated_cost, user.frozen_balance)
+                    if actual_unfreeze > 0:
+                        user.balance += actual_unfreeze
+                        user.frozen_balance -= actual_unfreeze
+                        user.version += 1
+
+                        # 记录解冻流水
+                        session.add(PointTransaction(
+                            user_id=task.user_id,
+                            amount=actual_unfreeze,
+                            type=PointTransactionType.UNFREEZE,
+                            reason=f'任务超时自动解冻: {task.id}',
+                            related_id=str(task.id),
+                            related_type='task_timeout',
+                            balance_before=user.balance - actual_unfreeze,
+                            balance_after=user.balance,
+                            operator='system',
+                            remark='超时任务自动解冻预冻结积分',
+                        ))
+
+            # 发布超时消息到 Redis Pub/Sub
+            try:
+                publish_task_message(
+                    task_id=task.id,
+                    msg_type='failed',
+                    message=f'任务已超时（超过{timeout_threshold // 60}分钟未完成）',
+                    data={'reason': 'timeout', 'task_status': 'timeout'}
+                )
+            except Exception:
+                pass
+
+            timeout_count += 1
+
+        session.commit()
+        return {
+            'status': 'ok',
+            'message': f'超时任务检查完成，已处理 {timeout_count} 个超时任务',
+            'checked_count': timeout_count,
+            'timeout_count': timeout_count,
+        }
+    except Exception as e:
+        session.rollback()
+        return {'status': 'error', 'message': str(e)}
+    finally:
+        session.close()
 
 
 @celery_app.task(queue='fast')
 def cleanup_expired_results() -> Dict[str, Any]:
-    """清理过期的任务结果（每天凌晨执行）"""
-    # TODO: 实现清理过期任务结果的逻辑
-    return {'status': 'ok', 'message': '过期结果清理完成'}
+    """清理过期的任务结果（每天凌晨执行）
+
+    查询超过 30 天的已完成/失败/取消/超时任务，
+    清理 snapshot_data 和 result_preview 字段以释放存储空间。
+    """
+    session = _get_sync_session()
+    try:
+        from app.models.task import Task
+
+        now = int(time.time())
+        retention_days = 30
+        retention_seconds = retention_days * 86400
+        cleanup_count = 0
+
+        # 查找超过保留期的已完成/失败/取消/超时任务
+        expired_tasks = session.query(Task).filter(
+            Task.status.in_(['completed', 'failed', 'cancelled', 'timeout']),
+            Task.completed_at.isnot(None),
+            (now - Task.completed_at) > retention_seconds
+        ).all()
+
+        for task in expired_tasks:
+            # 清理快照数据和结果预览（释放空间，保留记录）
+            task.snapshot_data = None
+            task.result_preview = None
+            cleanup_count += 1
+
+        session.commit()
+        return {
+            'status': 'ok',
+            'message': f'过期结果清理完成，已清理 {cleanup_count} 条记录',
+            'cleaned_count': cleanup_count,
+        }
+    except Exception as e:
+        session.rollback()
+        return {'status': 'error', 'message': str(e)}
+    finally:
+        session.close()
 
 
 def get_executor_for_tool(tool_type: str) -> Optional[type[BaseToolExecutor]]:
