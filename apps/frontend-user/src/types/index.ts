@@ -101,7 +101,7 @@ export interface User {
   nickname?: string;
   avatar?: string;
   username?: string;
-  is_verified?: boolean;
+  id_card_verified?: boolean;
   points?: number;
   id_card?: string;
   avatar_url?: string;

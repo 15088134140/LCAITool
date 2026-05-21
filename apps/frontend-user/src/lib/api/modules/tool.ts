@@ -27,7 +27,7 @@ export const toolApi = {
   /**
    * 获取工具列表
    */
-  getTools: async (params?: ListToolsParams & { sort_by?: string }): Promise<PaginatedResponse<Tool>> => {
+  getTools: async (params?: ListToolsParams & { sort_by?: string }) => {
     const mappedParams: Record<string, any> = {
       page: params?.page,
       page_size: params?.page_size,
@@ -35,6 +35,9 @@ export const toolApi = {
       search: params?.search,
       sort_by: params?.sort_by,
     };
+    if (params?.is_featured !== undefined) mappedParams['is_featured'] = params.is_featured;
+    if (params?.is_hot !== undefined) mappedParams['is_hot'] = params.is_hot;
+    if (params?.is_new !== undefined) mappedParams['is_new'] = params.is_new;
     return api.get<PaginatedResponse<Tool>>('/tools', { params: mappedParams });
   },
 
@@ -58,6 +61,15 @@ export const toolApi = {
    * 获取工具评价
    */
   getToolRatings: async (toolId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<ToolRating>> => {
+    return api.get<PaginatedResponse<ToolRating>>(`/tools/${toolId}/ratings`, {
+      params: { page, page_size: pageSize },
+    });
+  },
+
+  /**
+   * 获取工具评价（兼容旧名）
+   */
+  getToolReviews: async (toolId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<ToolRating>> => {
     return api.get<PaginatedResponse<ToolRating>>(`/tools/${toolId}/ratings`, {
       params: { page, page_size: pageSize },
     });

@@ -66,6 +66,23 @@ export interface RefreshTokenRequest {
   refresh_token: string;
 }
 
+// 账号密码注册
+export interface RegisterRequest {
+  username?: string;
+  password: string;
+  phone?: string;
+  email?: string;
+  nickname?: string;
+  code?: string;
+}
+
+export interface RegisterResponse {
+  id: UUID;
+  phone?: string;
+  email?: string;
+  nickname?: string;
+}
+
 export interface RefreshTokenResponse {
   access_token: string;
   refresh_token: string;
@@ -472,6 +489,7 @@ export interface ListToolsParams {
   search?: string;
   is_featured?: boolean;
   is_hot?: boolean;
+  is_new?: boolean;
   page?: number;
   page_size?: number;
 }

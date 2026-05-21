@@ -185,28 +185,48 @@ export const apiClient = createApiClient();
 // 通用请求方法
 export const api = {
   get: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-    const response = await apiClient.get<ApiResponse<T>>(url, config);
-    return response.data.data as T;
+    const response = await apiClient.get<any>(url, config);
+    const body = response.data;
+    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+      return body.data as T;
+    }
+    return body as T;
   },
 
   post: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-    const response = await apiClient.post<ApiResponse<T>>(url, data, config);
-    return response.data.data as T;
+    const response = await apiClient.post<any>(url, data, config);
+    const body = response.data;
+    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+      return body.data as T;
+    }
+    return body as T;
   },
 
   put: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-    const response = await apiClient.put<ApiResponse<T>>(url, data, config);
-    return response.data.data as T;
+    const response = await apiClient.put<any>(url, data, config);
+    const body = response.data;
+    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+      return body.data as T;
+    }
+    return body as T;
   },
 
   patch: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-    const response = await apiClient.patch<ApiResponse<T>>(url, data, config);
-    return response.data.data as T;
+    const response = await apiClient.patch<any>(url, data, config);
+    const body = response.data;
+    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+      return body.data as T;
+    }
+    return body as T;
   },
 
   delete: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-    const response = await apiClient.delete<ApiResponse<T>>(url, config);
-    return response.data.data as T;
+    const response = await apiClient.delete<any>(url, config);
+    const body = response.data;
+    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+      return body.data as T;
+    }
+    return body as T;
   },
 };
 

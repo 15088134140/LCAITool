@@ -2,7 +2,7 @@
  * 用户模块 API
  */
 
-import { api } from '../client';
+import { api, apiClient } from '../client';
 import type {
   User,
   LoginRequest,
@@ -14,7 +14,12 @@ import type {
   PointTransaction,
   ListTransactionsParams,
   PaginatedResponse,
+  RegisterRequest,
+  RegisterResponse,
 } from '../types';
+
+// API基础URL
+const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || 'http://localhost:8000/api/v1';
 
 // 用户认证相关
 export const authApi = {
@@ -26,10 +31,47 @@ export const authApi = {
   },
 
   /**
+   * 账号密码登录（form-urlencoded，兼容 OAuth2PasswordRequestForm）
+   */
+  login: async (username: string, password: string): Promise<LoginResponse> => {
+    const params = new URLSearchParams();
+    params.append('username', username);
+    params.append('password', password);
+    const response = await apiClient.post<LoginResponse>('/auth/login', params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    return response.data;
+  },
+
+  /**
+   * 用户注册
+   */
+  register: async (data: RegisterRequest): Promise<RegisterResponse> => {
+    return api.post<RegisterResponse>('/auth/register', data);
+  },
+
+  /**
    * 刷新Token
    */
   refreshToken: async (data: RefreshTokenRequest): Promise<RefreshTokenResponse> => {
     return api.post<RefreshTokenResponse>('/auth/refresh', data);
+  },
+
+  /**
+   * 获取当前用户信息（支持可选显式token）
+   */
+  getCurrentUser: async (accessToken?: string): Promise<User> => {
+    if (accessToken) {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || err.detail || '获取用户信息失败');
+      }
+      return response.json();
+    }
+    return api.get<User>('/users/me');
   },
 
   /**

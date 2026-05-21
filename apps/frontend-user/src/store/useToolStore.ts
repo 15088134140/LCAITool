@@ -19,7 +19,7 @@ interface ToolState {
   detailLoading: boolean;
 
   // Actions
-  fetchTools: (params?: { categoryId?: string | null; search?: string; isFeatured?: boolean }) => Promise<void>;
+  fetchTools: (params?: { categoryId?: string | null; search?: string; isFeatured?: boolean; page?: number; pageSize?: number }) => Promise<void>;
   fetchToolDetail: (id: string) => Promise<void>;
   fetchToolReviews: (toolId: string, page?: number) => Promise<void>;
   setSearchQuery: (query: string) => void;
