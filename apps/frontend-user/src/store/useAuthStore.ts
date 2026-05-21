@@ -101,8 +101,26 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      // 恢复持久化数据后同步到 tokenStorage
+      onRehydrateStorage: () => (state) => {
+        if (state?.tokens) {
+          syncTokensToStorage(state.tokens);
+        }
+      },
     }
   )
 );
 
 export default useAuthStore;
+
+// 监听 axios 拦截器发出的强制登出事件
+// 当 token 过期且刷新失败时，axios 拦截器清除 localStorage 并派发 auth:logout
+// 此监听确保 Zustand store 状态同步更新
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth:logout', () => {
+    const state = useAuthStore.getState();
+    if (state.isAuthenticated) {
+      state.logout();
+    }
+  });
+}
