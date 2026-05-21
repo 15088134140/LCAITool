@@ -88,6 +88,27 @@
     box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.3);
   }
 
+  /* 输入框基本样式 */
+  .input-field {
+    border: 1.5px solid #E4E7EB;
+    background: #FFFFFF;
+    transition: all 0.2s ease;
+  }
+  .input-field:hover {
+    border-color: #CBD5E1;
+  }
+  .input-field:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+  }
+  .input-field::placeholder {
+    color: #94A3B8;
+  }
+  textarea.input-field {
+    line-height: 1.6;
+  }
+
   /* 功能卡片 */
   .feature-card {
     background: white;
