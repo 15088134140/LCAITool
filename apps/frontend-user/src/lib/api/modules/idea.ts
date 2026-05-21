@@ -7,7 +7,6 @@ import type {
   IdeaSubmission,
   IdeaVote,
   CreateIdeaRequest,
-  VoteIdeaRequest,
   ListIdeasParams,
   PaginatedResponse,
 } from '../types';
@@ -23,52 +22,35 @@ export const ideaApi = {
   /**
    * 获取创意列表
    */
-  getIdeas: async (params?: ListIdeasParams): Promise<PaginatedResponse<IdeaSubmission>> => {
-    return api.get<PaginatedResponse<IdeaSubmission>>('/ideas', { params });
+  getIdeas: async (params?: ListIdeasParams & { sort?: string }): Promise<PaginatedResponse<IdeaSubmission>> => {
+    const mappedParams: Record<string, any> = {
+      page: params?.page,
+      page_size: params?.page_size,
+      category: params?.category,
+      sort: params?.sort || 'votes',
+    };
+    return api.get<PaginatedResponse<IdeaSubmission>>('/ideas', { params: mappedParams });
   },
 
   /**
    * 获取创意详情
    */
-  getIdea: async (id: string): Promise<IdeaSubmission> => {
-    return api.get<IdeaSubmission>(`/ideas/${id}`);
+  getIdea: async (id: string): Promise<IdeaSubmission & { has_voted: boolean }> => {
+    return api.get<IdeaSubmission & { has_voted: boolean }>(`/ideas/${id}`);
   },
 
   /**
    * 投票
    */
-  voteIdea: async (data: VoteIdeaRequest): Promise<IdeaVote> => {
-    return api.post<IdeaVote>('/ideas/vote', data);
+  voteIdea: async (ideaId: string, vote_type: 'up' | 'down' = 'up'): Promise<IdeaVote> => {
+    return api.post<IdeaVote>(`/ideas/${ideaId}/vote`, undefined, { params: { vote_type } });
   },
 
   /**
    * 取消投票
    */
-  cancelVote: async (ideaId: string): Promise<void> => {
-    return api.delete<void>(`/ideas/${ideaId}/vote`);
-  },
-
-  /**
-   * 获取热门创意
-   */
-  getHotIdeas: async (limit: number = 10): Promise<IdeaSubmission[]> => {
-    return api.get<IdeaSubmission[]>('/ideas/hot', { params: { limit } });
-  },
-
-  /**
-   * 获取用户提交的创意
-   */
-  getMyIdeas: async (page: number = 1, pageSize: number = 20): Promise<PaginatedResponse<IdeaSubmission>> => {
-    return api.get<PaginatedResponse<IdeaSubmission>>('/ideas/my', {
-      params: { page, page_size: pageSize },
-    });
-  },
-
-  /**
-   * 增加创意浏览量
-   */
-  incrementIdeaView: async (id: string): Promise<void> => {
-    return api.post<void>(`/ideas/${id}/view`);
+  cancelVote: async (ideaId: string): Promise<{ message: string; idea_id: string }> => {
+    return api.delete<{ message: string; idea_id: string }>(`/ideas/${ideaId}/vote`);
   },
 };
 

@@ -65,6 +65,7 @@ export const tokenStorage = createTokenStorage();
 // 扩展Axios配置，支持跳过401处理
 interface CustomAxiosRequestConfig extends AxiosRequestConfig {
   _skipAutoRefresh?: boolean;
+  headers?: any;
 }
 
 // 创建Axios实例

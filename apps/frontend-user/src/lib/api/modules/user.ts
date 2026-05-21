@@ -46,35 +46,63 @@ export const userApi = {
    * 获取当前用户信息
    */
   getCurrentUser: async (): Promise<User> => {
-    return api.get<User>('/user/me');
+    return api.get<User>('/users/me');
   },
 
   /**
    * 更新用户信息
    */
   updateUser: async (data: Partial<Pick<User, 'nickname' | 'avatar' | 'email' | 'phone'>>): Promise<User> => {
-    return api.put<User>('/user/me', data);
+    return api.put<User>('/users/me', data);
   },
 
   /**
    * 提交实名认证
    */
   submitRealNameVerification: async (data: RealNameVerificationRequest): Promise<RealNameVerification> => {
-    return api.post<RealNameVerification>('/user/real-name-verification', data);
+    return api.post<RealNameVerification>('/users/verify-id', data);
   },
 
   /**
    * 获取实名认证状态
    */
   getRealNameVerification: async (): Promise<RealNameVerification | null> => {
-    return api.get<RealNameVerification | null>('/user/real-name-verification');
+    return api.get<RealNameVerification | null>('/users/verify-id');
+  },
+
+  /**
+   * 获取用户积分余额
+   */
+  getBalance: async (): Promise<{ balance: number }> => {
+    return api.get<{ balance: number }>('/users/balance');
   },
 
   /**
    * 获取积分交易记录
    */
   getTransactions: async (params?: ListTransactionsParams): Promise<PaginatedResponse<PointTransaction>> => {
-    return api.get<PaginatedResponse<PointTransaction>>('/user/transactions', { params });
+    return api.get<PaginatedResponse<PointTransaction>>('/users/transactions', { params });
+  },
+
+  /**
+   * 修改密码
+   */
+  changePassword: async (old_password: string, new_password: string): Promise<{ message: string }> => {
+    return api.post<{ message: string }>('/users/change-password', { old_password, new_password });
+  },
+
+  /**
+   * 发送手机验证码
+   */
+  sendVerificationCode: async (phone: string): Promise<{ message: string; expire_minutes: number }> => {
+    return api.post<{ message: string; expire_minutes: number }>('/users/send-code', { phone });
+  },
+
+  /**
+   * 更换手机号
+   */
+  changePhone: async (phone: string, code: string): Promise<{ message: string; phone: string }> => {
+    return api.post<{ message: string; phone: string }>('/users/change-phone', { phone, code });
   },
 };
 

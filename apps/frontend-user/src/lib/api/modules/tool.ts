@@ -8,7 +8,6 @@ import type {
   ToolCategory,
   ToolDemo,
   ToolRating,
-  ToolFavorite,
   ListToolsParams,
   PaginatedResponse,
 } from '../types';
@@ -18,15 +17,8 @@ export const categoryApi = {
   /**
    * 获取所有分类
    */
-  getCategories: async (): Promise<ToolCategory[]> => {
-    return api.get<ToolCategory[]>('/categories');
-  },
-
-  /**
-   * 获取单个分类详情
-   */
-  getCategory: async (id: string): Promise<ToolCategory> => {
-    return api.get<ToolCategory>(`/categories/${id}`);
+  getCategories: async (): Promise<PaginatedResponse<ToolCategory>> => {
+    return api.get<PaginatedResponse<ToolCategory>>('/tools/categories/list');
   },
 };
 
@@ -35,8 +27,15 @@ export const toolApi = {
   /**
    * 获取工具列表
    */
-  getTools: async (params?: ListToolsParams): Promise<PaginatedResponse<Tool>> => {
-    return api.get<PaginatedResponse<Tool>>('/tools', { params });
+  getTools: async (params?: ListToolsParams & { sort_by?: string }): Promise<PaginatedResponse<Tool>> => {
+    const mappedParams: Record<string, any> = {
+      page: params?.page,
+      page_size: params?.page_size,
+      category: params?.category_id,
+      search: params?.search,
+      sort_by: params?.sort_by,
+    };
+    return api.get<PaginatedResponse<Tool>>('/tools', { params: mappedParams });
   },
 
   /**
@@ -47,38 +46,12 @@ export const toolApi = {
   },
 
   /**
-   * 根据slug获取工具详情
-   */
-  getToolBySlug: async (slug: string): Promise<Tool> => {
-    return api.get<Tool>(`/tools/slug/${slug}`);
-  },
-
-  /**
-   * 获取热门工具
-   */
-  getHotTools: async (limit: number = 10): Promise<Tool[]> => {
-    return api.get<Tool[]>('/tools/hot', { params: { limit } });
-  },
-
-  /**
-   * 获取新品工具
-   */
-  getNewTools: async (limit: number = 10): Promise<Tool[]> => {
-    return api.get<Tool[]>('/tools/new', { params: { limit } });
-  },
-
-  /**
-   * 获取推荐工具
-   */
-  getFeaturedTools: async (limit: number = 10): Promise<Tool[]> => {
-    return api.get<Tool[]>('/tools/featured', { params: { limit } });
-  },
-
-  /**
    * 获取工具演示案例
    */
-  getToolDemos: async (toolId: string): Promise<ToolDemo[]> => {
-    return api.get<ToolDemo[]>(`/tools/${toolId}/demos`);
+  getToolDemos: async (toolId: string, page: number = 1, pageSize: number = 20): Promise<PaginatedResponse<ToolDemo>> => {
+    return api.get<PaginatedResponse<ToolDemo>>(`/tools/${toolId}/demos`, {
+      params: { page, page_size: pageSize },
+    });
   },
 
   /**
@@ -91,24 +64,28 @@ export const toolApi = {
   },
 
   /**
-   * 收藏工具
+   * 创建工具评价
    */
-  favoriteTool: async (toolId: string): Promise<ToolFavorite> => {
-    return api.post<ToolFavorite>(`/tools/${toolId}/favorite`);
+  createToolRating: async (toolId: string, data: {
+    rating: number;
+    content?: string;
+    images?: string[];
+  }): Promise<ToolRating> => {
+    return api.post<ToolRating>(`/tools/${toolId}/ratings`, data);
   },
 
   /**
-   * 取消收藏工具
+   * 收藏/取消收藏工具
    */
-  unfavoriteTool: async (toolId: string): Promise<void> => {
-    return api.delete<void>(`/tools/${toolId}/favorite`);
+  toggleFavorite: async (toolId: string): Promise<{ is_favorited: boolean; message: string }> => {
+    return api.post<{ is_favorited: boolean; message: string }>(`/tools/${toolId}/favorite`);
   },
 
   /**
    * 获取用户收藏的工具
    */
   getFavorites: async (page: number = 1, pageSize: number = 20): Promise<PaginatedResponse<Tool>> => {
-    return api.get<PaginatedResponse<Tool>>('/tools/favorites', {
+    return api.get<PaginatedResponse<Tool>>('/tools/favorites/list', {
       params: { page, page_size: pageSize },
     });
   },

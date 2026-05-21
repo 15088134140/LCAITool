@@ -3,10 +3,9 @@
  * 支持自动重连、断线重连状态恢复、事件分发等功能
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import type {
   SSEEvent,
-  SSEEventType,
   TaskProgressEvent,
   TaskCompletedEvent,
   TaskFailedEvent,
@@ -25,7 +24,7 @@ type SSEEventCallback<T = any> = (data: T) => void;
 // 事件订阅器类型
 interface SSESubscription {
   id: string;
-  eventType: SSEEventType | '*';
+  eventType: string | '*';
   callback: SSEEventCallback;
 }
 
@@ -36,10 +35,10 @@ interface UseSSEReturn {
   reconnectAttempts: number;
   lastEvent: SSEEvent | null;
   error: Error | null;
-  connect: () => void;
+  connect: (taskId: string) => void;
   disconnect: () => void;
-  subscribe: <T = any>(eventType: SSEEventType | '*', callback: SSEEventCallback<T>) => () => void;
-  subscribeToTask: (taskId: string, callback: SSEEventCallback<TaskProgressEvent | TaskCompletedEvent | TaskFailedEvent>) => () => void;
+  subscribe: <T = any>(eventType: string | '*', callback: SSEEventCallback<T>) => () => void;
+  getEventSource: () => EventSource | null;
 }
 
 // 计算重连延迟（指数退避）
@@ -66,8 +65,9 @@ export const useSSE = (): UseSSEReturn => {
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const subscriptionsRef = useRef<SSESubscription[]>([]);
-  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastEventIdRef = useRef<string>('');
+  const currentTaskIdRef = useRef<string | null>(null);
 
   // 清理重连定时器
   const clearReconnectTimer = useCallback(() => {
@@ -95,7 +95,7 @@ export const useSSE = (): UseSSEReturn => {
   // 处理消息
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
-      // 更新最后一个事件ID
+      // 更新最后一个事件ID（EventSource 自动通过 Last-Event-ID 头发送）
       if (event.lastEventId) {
         lastEventIdRef.current = event.lastEventId;
       }
@@ -128,6 +128,11 @@ export const useSSE = (): UseSSEReturn => {
       eventSourceRef.current = null;
     }
 
+    // 只在有当前任务ID时尝试重连
+    if (!currentTaskIdRef.current) {
+      return;
+    }
+
     // 尝试重连
     const attemptReconnect = (attempt: number) => {
       if (attempt >= MAX_RECONNECT_ATTEMPTS) {
@@ -143,7 +148,9 @@ export const useSSE = (): UseSSEReturn => {
       console.log(`SSE reconnecting in ${delay}ms (attempt ${attempt + 1}/${MAX_RECONNECT_ATTEMPTS})`);
 
       reconnectTimerRef.current = setTimeout(() => {
-        connect();
+        if (currentTaskIdRef.current) {
+          connect(currentTaskIdRef.current);
+        }
       }, delay);
     };
 
@@ -151,35 +158,53 @@ export const useSSE = (): UseSSEReturn => {
   }, [clearReconnectTimer, reconnectAttempts]);
 
   // 连接SSE
-  const connect = useCallback(() => {
+  const connect = useCallback((taskId: string) => {
     // 如果已经连接，先断开
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
 
     clearReconnectTimer();
+    currentTaskIdRef.current = taskId;
 
     // 构建URL
     const token = tokenStorage.getToken();
-    const url = new URL(`${SSE_BASE_URL}/events`);
+    const url = new URL(`${SSE_BASE_URL}/stream/tasks/${taskId}/stream`);
 
-    // 添加认证token
+    // 添加认证token到查询参数（因为EventSource不支持headers）
     if (token) {
       url.searchParams.append('token', token);
     }
 
-    // 添加最后一个事件ID用于断线恢复
-    if (lastEventIdRef.current) {
-      url.searchParams.append('lastEventId', lastEventIdRef.current);
-    }
-
     try {
-      const eventSource = new EventSource(url.toString());
+      const eventSource = new EventSource(url.toString(), {
+        withCredentials: true,
+      });
       eventSourceRef.current = eventSource;
 
       eventSource.onopen = handleOpen;
       eventSource.onmessage = handleMessage;
       eventSource.onerror = handleError;
+
+      // 监听特定事件类型
+      eventSource.addEventListener('progress', (event) => handleMessage(event as MessageEvent));
+      eventSource.addEventListener('completed', (event) => {
+        handleMessage(event as MessageEvent);
+        // 任务完成后自动断开连接
+        setTimeout(() => disconnect(), 1000);
+      });
+      eventSource.addEventListener('failed', (event) => {
+        handleMessage(event as MessageEvent);
+        setTimeout(() => disconnect(), 1000);
+      });
+      eventSource.addEventListener('cancelled', (event) => {
+        handleMessage(event as MessageEvent);
+        setTimeout(() => disconnect(), 1000);
+      });
+      eventSource.addEventListener('timeout', (event) => {
+        handleMessage(event as MessageEvent);
+        setTimeout(() => disconnect(), 1000);
+      });
     } catch (err) {
       console.error('Failed to create EventSource:', err);
       setError(err instanceof Error ? err : new Error('Failed to create EventSource'));
@@ -195,6 +220,7 @@ export const useSSE = (): UseSSEReturn => {
       eventSourceRef.current = null;
     }
 
+    currentTaskIdRef.current = null;
     setIsConnected(false);
     setIsReconnecting(false);
     setReconnectAttempts(0);
@@ -202,7 +228,7 @@ export const useSSE = (): UseSSEReturn => {
 
   // 订阅事件
   const subscribe = useCallback(<T = any>(
-    eventType: SSEEventType | '*',
+    eventType: string | '*',
     callback: SSEEventCallback<T>
   ): (() => void) => {
     const subscription: SSESubscription = {
@@ -222,53 +248,17 @@ export const useSSE = (): UseSSEReturn => {
     };
   }, []);
 
-  // 订阅特定任务的事件
-  const subscribeToTask = useCallback((
-    taskId: string,
-    callback: SSEEventCallback<TaskProgressEvent | TaskCompletedEvent | TaskFailedEvent>
-  ): (() => void) => {
-    return subscribe('*', (data) => {
-      // 检查事件是否与该任务相关
-      if (
-        data.task_id === taskId &&
-        (data.status || data.work_id || data.error_message)
-      ) {
-        callback(data);
-      }
-    });
-  }, [subscribe]);
+  // 获取当前EventSource实例
+  const getEventSource = useCallback(() => {
+    return eventSourceRef.current;
+  }, []);
 
-  // 组件挂载时自动连接，卸载时断开
+  // 组件卸载时断开连接
   useEffect(() => {
-    // 只在客户端连接
-    if (typeof window === 'undefined') return;
-
-    // 监听认证登出事件
-    const handleAuthLogout = () => {
-      disconnect();
-    };
-
-    window.addEventListener('auth:logout', handleAuthLogout);
-
-    // 监听认证登录事件
-    const handleAuthLogin = () => {
-      connect();
-    };
-
-    window.addEventListener('auth:login', handleAuthLogin);
-
-    // 如果用户已认证，自动连接
-    const token = tokenStorage.getToken();
-    if (token) {
-      connect();
-    }
-
     return () => {
-      window.removeEventListener('auth:logout', handleAuthLogout);
-      window.removeEventListener('auth:login', handleAuthLogin);
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, [disconnect]);
 
   return {
     isConnected,
@@ -279,7 +269,7 @@ export const useSSE = (): UseSSEReturn => {
     connect,
     disconnect,
     subscribe,
-    subscribeToTask,
+    getEventSource,
   };
 };
 

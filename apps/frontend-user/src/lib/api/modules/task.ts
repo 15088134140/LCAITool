@@ -7,8 +7,6 @@ import type {
   Task,
   TaskLog,
   CreateTaskRequest,
-  EstimateCostRequest,
-  EstimateCostResponse,
   ListTasksParams,
   PaginatedResponse,
 } from '../types';
@@ -19,13 +17,6 @@ export const taskApi = {
    */
   createTask: async (data: CreateTaskRequest): Promise<Task> => {
     return api.post<Task>('/tasks', data);
-  },
-
-  /**
-   * 预估费用
-   */
-  estimateCost: async (data: EstimateCostRequest): Promise<EstimateCostResponse> => {
-    return api.post<EstimateCostResponse>('/tasks/estimate', data);
   },
 
   /**
@@ -45,22 +36,17 @@ export const taskApi = {
   /**
    * 获取任务日志
    */
-  getTaskLogs: async (taskId: string): Promise<TaskLog[]> => {
-    return api.get<TaskLog[]>(`/tasks/${taskId}/logs`);
+  getTaskLogs: async (taskId: string, page: number = 1, pageSize: number = 50): Promise<PaginatedResponse<TaskLog>> => {
+    return api.get<PaginatedResponse<TaskLog>>(`/tasks/${taskId}/logs`, {
+      params: { page, page_size: pageSize },
+    });
   },
 
   /**
    * 取消任务
    */
-  cancelTask: async (id: string): Promise<Task> => {
-    return api.post<Task>(`/tasks/${id}/cancel`);
-  },
-
-  /**
-   * 重试失败的任务
-   */
-  retryTask: async (id: string): Promise<Task> => {
-    return api.post<Task>(`/tasks/${id}/retry`);
+  cancelTask: async (id: string, reason?: string): Promise<Task> => {
+    return api.post<Task>(`/tasks/${id}/cancel`, undefined, { params: { reason } });
   },
 };
 
