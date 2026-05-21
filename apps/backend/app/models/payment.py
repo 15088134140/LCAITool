@@ -40,6 +40,7 @@ class PointTransactionType(str, enum.Enum):
     ADJUST = "adjust"
     FREEZE = "freeze"
     UNFREEZE = "unfreeze"
+    REWARD = "reward"
 
 
 class Order(BaseModel):
