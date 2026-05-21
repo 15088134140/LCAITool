@@ -78,7 +78,8 @@ export const useToolStore = create<ToolState>((set, get) => ({
         totalReviews: result.total
       });
     } catch (err) {
-      set({ error: '获取评价失败' });
+      // Reviews error is non-critical, don't overwrite global error state
+      console.error('获取评价失败:', err);
     }
   },
 

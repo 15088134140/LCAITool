@@ -206,6 +206,6 @@ export const toolsApi = {
   },
 
   getToolReviews: async (toolId: string, page: number = 1, pageSize: number = 10) => {
-    return api.get(`/tools/${toolId}/reviews?page=${page}&pageSize=${pageSize}`);
+    return api.get(`/tools/${toolId}/ratings?page=${page}&page_size=${pageSize}`);
   },
 };

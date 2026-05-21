@@ -54,6 +54,7 @@ export interface Tool {
     label: string;
     color: string;
   }>;
+  slug?: string;
 }
 
 /**

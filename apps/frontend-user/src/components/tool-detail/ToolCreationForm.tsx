@@ -63,7 +63,7 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
     let cost = tool.pricing.baseFee;
 
     // Storybook
-    if (tool.id === 'storybook-generator') {
+    if (tool.slug === 'ai-storybook') {
       const imageCost = tool.pricing.resourceFees?.image || 1;
       cost += imageCost * (formState.pageCount || 10);
 
@@ -74,13 +74,13 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
     }
 
     // Ecommerce
-    if (tool.id === 'ecommerce-detail') {
+    if (tool.slug === 'ecommerce-detail') {
       const imageCost = tool.pricing.resourceFees?.image || 2;
       cost += imageCost * (formState.imageCount || 5);
     }
 
     // Marketing
-    if (tool.id === 'marketing-copywriter') {
+    if (tool.slug === 'product-description') {
       const platformCost = tool.pricing.resourceFees?.image || 1;
       cost += platformCost * (formState.platformCount || 3);
     }
@@ -94,7 +94,7 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
     setCurrentStep(1);
 
     // Simulate progress
-    const steps = tool.id === 'storybook-generator' ? 4 : tool.id === 'ecommerce-detail' ? 3 : 2;
+    const steps = tool.slug === 'ai-storybook' ? 4 : tool.slug === 'ecommerce-detail' ? 3 : 2;
     let step = 1;
     const interval = setInterval(() => {
       const progress = Math.min((step / steps) * 100, 100);
@@ -602,7 +602,7 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
           <span className="font-medium text-brand-dark text-lg">{tool.pricing.baseFee} 积分</span>
         </div>
 
-        {tool.id === 'storybook-generator' && (
+        {tool.slug === 'ai-storybook' && (
           <>
             <div className="flex justify-between items-center py-3 border-b border-gray-200">
               <span className="text-gray-500 text-lg">插图生成 ({formState.pageCount}张 × {(tool.pricing.resourceFees?.image || 1).toFixed(1)}积分)</span>
@@ -617,14 +617,14 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
           </>
         )}
 
-        {tool.id === 'ecommerce-detail' && (
+        {tool.slug === 'ecommerce-detail' && (
           <div className="flex justify-between items-center py-3 border-b border-gray-200">
             <span className="text-gray-500 text-lg">详情图生成 ({formState.imageCount}张 × {(tool.pricing.resourceFees?.image || 2).toFixed(1)}积分)</span>
             <span className="font-medium text-brand-dark text-lg">{((formState.imageCount || 5) * (tool.pricing.resourceFees?.image || 2)).toFixed(1)} 积分</span>
           </div>
         )}
 
-        {tool.id === 'marketing-copywriter' && (
+        {tool.slug === 'product-description' && (
           <div className="flex justify-between items-center py-3 border-b border-gray-200">
             <span className="text-gray-500 text-lg">多平台适配 ({formState.platformCount}个 × {(tool.pricing.resourceFees?.image || 1).toFixed(1)}积分)</span>
             <span className="font-medium text-brand-dark text-lg">{((formState.platformCount || 3) * (tool.pricing.resourceFees?.image || 1)).toFixed(1)} 积分</span>
@@ -653,7 +653,7 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
       >
         {isGenerating ? '⏳ 生成中...' : '🚀 开始生成'}
       </button>
-      <p className="text-center text-sm text-gray-500 mt-4">预计耗时：{tool.id === 'storybook-generator' ? '2-5' : tool.id === 'ecommerce-detail' ? '1-3' : '0.5-1'} 分钟</p>
+      <p className="text-center text-sm text-gray-500 mt-4">预计耗时：{tool.slug === 'ai-storybook' ? '2-5' : tool.slug === 'ecommerce-detail' ? '1-3' : '0.5-1'} 分钟</p>
     </div>
   );
 
@@ -661,9 +661,9 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
   const renderProgressModal = () => {
     if (!isGenerating) return null;
 
-    const steps = tool.id === 'storybook-generator'
+    const steps = tool.slug === 'ai-storybook'
       ? ['故事内容创作', '批量生成插图', '语音合成', '打包交付']
-      : tool.id === 'ecommerce-detail'
+      : tool.slug === 'ecommerce-detail'
       ? ['文案创作', '主图生成', '详情图合成']
       : ['需求分析', '多平台文案生成'];
 
@@ -766,9 +766,9 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
           <div className="lg:col-span-2">
             {mode === 'form' ? (
               <>
-                {tool.id === 'storybook-generator' && renderStorybookForm()}
-                {tool.id === 'ecommerce-detail' && renderEcommerceForm()}
-                {tool.id === 'marketing-copywriter' && renderMarketingForm()}
+                {tool.slug === 'ai-storybook' && renderStorybookForm()}
+                {tool.slug === 'ecommerce-detail' && renderEcommerceForm()}
+                {tool.slug === 'product-description' && renderMarketingForm()}
               </>
             ) : (
               renderChatMode()

@@ -13,7 +13,7 @@ import {
 } from '../../../components/tool-detail';
 
 // 工具配置
-const TOOL_ID = 'marketing-copywriter';
+const TOOL_ID = 'product-description';
 
 export default function MarketingCopywriterPage() {
   const { currentTool, detailLoading, error, fetchToolDetail, clearCurrentTool } = useToolStore();

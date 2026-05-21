@@ -12,7 +12,7 @@ import {
 } from '../../../components/tool-detail';
 
 // 工具配置
-const TOOL_ID = 'storybook-generator';
+const TOOL_ID = 'ai-storybook';
 
 export default function StorybookGeneratorPage() {
   const { currentTool, detailLoading, error, fetchToolDetail, clearCurrentTool } = useToolStore();

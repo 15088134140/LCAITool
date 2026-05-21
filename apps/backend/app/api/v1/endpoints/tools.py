@@ -56,9 +56,9 @@ async def get_tools(
 
 # ============== 2. 工具详情 API ==============
 
-@router.get("/{tool_id}", summary="获取工具详情")
+@router.get("/{tool_identifier}", summary="获取工具详情")
 async def get_tool_detail(
-    tool_id: uuid.UUID,
+    tool_identifier: str,
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """
@@ -67,8 +67,15 @@ async def get_tool_detail(
     - 评分统计
     - 使用计数
     - 收藏计数
+    支持通过UUID或slug查询
     """
-    tool = await ToolService.get_tool_by_id(db, tool_id)
+    # 先尝试UUID解析，失败则按slug查询
+    try:
+        tool_id = uuid.UUID(tool_identifier)
+        tool = await ToolService.get_tool_by_id(db, tool_id)
+    except ValueError:
+        tool = await ToolService.get_tool_by_slug(db, tool_identifier)
+
     if not tool:
         raise ToolNotFoundException()
 
