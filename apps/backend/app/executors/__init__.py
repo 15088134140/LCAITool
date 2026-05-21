@@ -4,8 +4,10 @@
 """
 from .base import BaseToolExecutor
 from .storybook import StorybookExecutor
+from .ecommerce import EcommerceExecutor
 
 __all__ = [
     "BaseToolExecutor",
     "StorybookExecutor",
+    "EcommerceExecutor",
 ]
