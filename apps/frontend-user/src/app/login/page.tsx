@@ -47,7 +47,7 @@ export default function LoginPage() {
       login(tokens, user as any);
       router.push('/user-center');
     } catch (err: any) {
-      setError(err.message || '登录失败，请检查用户名和密码');
+      setError(err.response?.data?.message || err.message || '登录失败，请检查用户名和密码');
     } finally {
       setLoading(false);
     }

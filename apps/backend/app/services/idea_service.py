@@ -1,6 +1,7 @@
 import uuid
 import json
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Set, Dict
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 from app.models.system import IdeaSubmission, IdeaVote
@@ -176,6 +177,109 @@ class IdeaService:
         votes = result.scalars().all()
 
         return votes, total
+
+    @staticmethod
+    async def get_user_voted_idea_ids(
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        idea_ids: List[uuid.UUID],
+    ) -> Set[uuid.UUID]:
+        """批量查询用户对哪些构思投过票"""
+        if not idea_ids:
+            return set()
+        result = await db.execute(
+            select(IdeaVote.idea_id).where(
+                IdeaVote.user_id == user_id,
+                IdeaVote.idea_id.in_(idea_ids),
+            )
+        )
+        return {row[0] for row in result.fetchall()}
+
+    @staticmethod
+    async def get_idea_voters(
+        db: AsyncSession,
+        idea_ids: List[uuid.UUID],
+        limit: int = 3,
+    ) -> Dict[uuid.UUID, List[dict]]:
+        """批量查询每个构思的最新投票用户信息"""
+        if not idea_ids:
+            return {}
+
+        from sqlalchemy import text
+
+        # 使用窗口函数为每个构思的投票按时间排序，取前 N 条
+        subquery = (
+            select(
+                IdeaVote.idea_id,
+                IdeaVote.user_id,
+                func.row_number()
+                .over(partition_by=IdeaVote.idea_id, order_by=IdeaVote.created_at.desc())
+                .label("rn"),
+            )
+            .where(IdeaVote.idea_id.in_(idea_ids))
+            .subquery()
+        )
+
+        query = (
+            select(subquery.c.idea_id, subquery.c.user_id, User.nickname, User.avatar)
+            .join(User, User.id == subquery.c.user_id)
+            .where(subquery.c.rn <= limit)
+        )
+        result = await db.execute(query)
+        rows = result.fetchall()
+
+        voters_map: Dict[uuid.UUID, List[dict]] = {}
+        for row in rows:
+            idea_id = row.idea_id
+            if idea_id not in voters_map:
+                voters_map[idea_id] = []
+            voters_map[idea_id].append(
+                {
+                    "user_id": str(row.user_id),
+                    "nickname": row.nickname,
+                    "avatar": row.avatar,
+                }
+            )
+        return voters_map
+
+    @staticmethod
+    async def get_user_voted_ideas(
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> Tuple[List[IdeaSubmission], int]:
+        """获取用户投票过的创意列表"""
+        # 1. 获取用户投票记录（按投票时间倒序）
+        vote_query = (
+            select(IdeaVote)
+            .where(IdeaVote.user_id == user_id)
+            .order_by(IdeaVote.created_at.desc())
+        )
+        vote_count_query = select(func.count()).select_from(vote_query.subquery())
+        total_result = await db.execute(vote_count_query)
+        total = total_result.scalar()
+
+        vote_query = vote_query.offset(skip).limit(limit)
+        vote_result = await db.execute(vote_query)
+        votes = vote_result.scalars().all()
+
+        if not votes:
+            return [], total
+
+        # 2. 提取 idea_ids 并按投票顺序保留
+        idea_ids = [vote.idea_id for vote in votes]
+
+        # 3. 查询对应的创意
+        idea_result = await db.execute(
+            select(IdeaSubmission).where(IdeaSubmission.id.in_(idea_ids))
+        )
+        ideas_map = {idea.id: idea for idea in idea_result.scalars().all()}
+
+        # 4. 按投票时间顺序返回
+        ideas = [ideas_map[iid] for iid in idea_ids if iid in ideas_map]
+
+        return ideas, total
 
     @staticmethod
     async def has_user_voted(

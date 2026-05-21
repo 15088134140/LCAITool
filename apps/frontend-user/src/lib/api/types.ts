@@ -385,6 +385,12 @@ export interface CreateOrderResponse {
 
 export type IdeaStatus = 'pending' | 'reviewing' | 'approved' | 'implemented' | 'rejected';
 
+export interface VoterInfo {
+  user_id: UUID;
+  nickname?: string;
+  avatar?: string;
+}
+
 export interface IdeaSubmission {
   id: UUID;
   user_id: UUID;
@@ -396,6 +402,8 @@ export interface IdeaSubmission {
   contact_info?: string;
   vote_count: number;
   view_count: number;
+  has_voted?: boolean;
+  voters?: VoterInfo[];
   status: IdeaStatus;
   admin_remark?: string;
   admin_id?: UUID;

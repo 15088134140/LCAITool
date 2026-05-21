@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { IdeaCard } from '@/components/idea/IdeaCard';
 import type { IdeaSubmission } from '@/lib/api/types';
 import { ideaApi } from '@/lib/api/modules/idea';
+import { toolApi } from '@/lib/api/modules/tool';
 import { useAuthStore } from '@/store/useAuthStore';
 
 const categories = ['全部', '内容创作', '设计工具', '视频音频', '办公效率'];
@@ -15,10 +16,12 @@ const sortOptions = [
 ];
 
 export default function IdeasPage() {
-  useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 const [selectedCategory, setSelectedCategory] = useState('全部');
   const [sortBy, setSortBy] = useState('votes');
   const [ideas, setIdeas] = useState<IdeaSubmission[]>([]);
+  const [totalIdeas, setTotalIdeas] = useState(0);
+  const [totalTools, setTotalTools] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [page] = useState(1);
 
@@ -33,6 +36,7 @@ const [selectedCategory, setSelectedCategory] = useState('全部');
           sort: sortMap[sortBy] || 'vote_count',
         });
         setIdeas(result.items || []);
+        setTotalIdeas(result.total || 0);
       } catch (err) {
         console.error('获取构思列表失败:', err);
       } finally {
@@ -40,7 +44,14 @@ const [selectedCategory, setSelectedCategory] = useState('全部');
       }
     };
     fetchIdeas();
-  }, [page, sortBy]);
+  }, [page, sortBy, isAuthenticated]);
+
+  // 获取已上线工具数量
+  useEffect(() => {
+    toolApi.getTools({ page: 1, page_size: 1 }).then((res) => {
+      setTotalTools(res.total || 0);
+    }).catch(() => {});
+  }, []);
 
   // 过滤和排序思路
   const filteredIdeas = ideas.filter(idea => selectedCategory === '全部' || idea.category === selectedCategory);
@@ -51,7 +62,7 @@ const [selectedCategory, setSelectedCategory] = useState('全部');
   const handleVoteSuccess = useCallback((ideaId: string, newVoteCount: number) => {
     setIdeas(prev => prev.map(idea =>
       idea.id === ideaId
-        ? { ...idea, vote_count: newVoteCount }
+        ? { ...idea, vote_count: newVoteCount, has_voted: true }
         : idea
     ));
   }, []);
@@ -72,15 +83,18 @@ const [selectedCategory, setSelectedCategory] = useState('全部');
             >
               💡 提交我的创意
             </Link>
-            <button className="px-8 py-4 border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-colors focus-ring">
+            <Link
+              href="/ideas/my-votes"
+              className="px-8 py-4 border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-colors focus-ring inline-block text-center"
+            >
               查看我的投票
-            </button>
+            </Link>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
             <div className="text-center">
-              <div className="text-4xl font-bold text-white">{ideas.length}</div>
+              <div className="text-4xl font-bold text-white">{totalIdeas}</div>
               <div className="text-blue-200 text-sm">构思中工具</div>
             </div>
             <div className="text-center">
@@ -90,7 +104,7 @@ const [selectedCategory, setSelectedCategory] = useState('全部');
               <div className="text-blue-200 text-sm">累计投票数</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-white">15</div>
+              <div className="text-4xl font-bold text-white">{totalTools}</div>
               <div className="text-blue-200 text-sm">已上线工具</div>
             </div>
           </div>

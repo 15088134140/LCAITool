@@ -13,6 +13,9 @@ from app.models.user import User
 from app.schemas.token import TokenPayload
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False
+)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -45,6 +48,29 @@ async def get_current_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="用户已被禁用",
         )
+    return user
+
+
+async def get_optional_current_user(
+    db: AsyncSession = Depends(get_db),
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+) -> Optional[User]:
+    """获取当前用户（可选）— 无 token 时返回 None 而非抛 401"""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        token_data = TokenPayload(**payload)
+        if token_data.type != "access":
+            return None
+    except (jwt.JWTError, ValidationError):
+        return None
+
+    from app.services.user_service import UserService
+
+    user = await UserService.get_by_id(db, token_data.sub)
+    if not user or user.status != 1:
+        return None
     return user
 
 

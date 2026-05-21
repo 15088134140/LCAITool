@@ -3,6 +3,13 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
+class VoterInfo(BaseModel):
+    """投票用户信息"""
+    user_id: uuid.UUID
+    nickname: Optional[str] = None
+    avatar: Optional[str] = None
+
+
 class IdeaSubmissionCreate(BaseModel):
     """创意提交请求"""
     title: str = Field(..., min_length=2, max_length=200, description="创意标题")
@@ -25,6 +32,8 @@ class IdeaSubmissionResponse(BaseModel):
     vote_count: int
     view_count: int
     status: str
+    has_voted: bool = False
+    voters: List[VoterInfo] = []
     created_at: int
     updated_at: int
 

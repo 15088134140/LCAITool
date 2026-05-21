@@ -116,6 +116,11 @@ const createApiClient = (): AxiosInstance => {
 
       // 如果是401且不是刷新Token请求
       if (error.response?.status === 401 && !originalRequest._skipAutoRefresh) {
+        // 没有Authorization header的请求返回401，是凭证错误而非token过期
+        // 直接透传原始错误，不进入refresh逻辑
+        if (!originalRequest.headers?.Authorization) {
+          return Promise.reject(error);
+        }
         if (isRefreshing) {
           // 如果正在刷新Token，等待刷新完成后重试
           return new Promise((resolve) => {

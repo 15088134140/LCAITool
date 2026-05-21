@@ -22,7 +22,7 @@ export function VoteSection() {
 
   const handleVoteSuccess = (ideaId: string, newVoteCount: number) => {
     setIdeas(prev => prev.map(idea =>
-      idea.id === ideaId ? { ...idea, vote_count: newVoteCount } : idea
+      idea.id === ideaId ? { ...idea, vote_count: newVoteCount, has_voted: true } : idea
     ));
   };
 

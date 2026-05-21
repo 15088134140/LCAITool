@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/store';
 
 export function Navbar() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuthStore();
 
   // 登录、注册、验证页面不显示全局导航栏，使用页面自己的导航
   // 用户中心及其子页面、订单页面也不显示全局导航栏
@@ -54,18 +56,37 @@ export function Navbar() {
 
           {/* 操作按钮 */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/user-center"
-              className="hidden sm:block px-4 py-2 text-[#1E3A5F] font-medium hover:bg-[#F1F3F5] rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-2"
-            >
-              个人中心
-            </Link>
-            <Link
-              href="/pricing"
-              className="btn-primary px-5 py-2 text-white font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 focus-visible:ring-offset-2"
-            >
-              充值套餐
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/user-center"
+                  className="hidden sm:block px-4 py-2 text-[#1E3A5F] font-medium hover:bg-[#F1F3F5] rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-2"
+                >
+                  个人中心
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="btn-primary px-5 py-2 text-white font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 focus-visible:ring-offset-2"
+                >
+                  充值套餐
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden sm:block px-4 py-2 text-[#1E3A5F] font-medium hover:bg-[#F1F3F5] rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-2"
+                >
+                  登录
+                </Link>
+                <Link
+                  href="/register"
+                  className="btn-primary px-5 py-2 text-white font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 focus-visible:ring-offset-2"
+                >
+                  注册
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

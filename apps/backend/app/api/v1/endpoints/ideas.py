@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, get_optional_current_user
 from app.models.user import User
 from app.schemas.idea import (
     IdeaSubmissionCreate,
@@ -47,6 +47,7 @@ async def get_ideas(
     sort: str = Query("votes", description="排序方式: votes(最多票), newest(最新发布)"),
     category: Optional[str] = Query(None, description="分类筛选"),
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> Any:
     """
     分页获取创意列表，支持排序和分类筛选
@@ -66,6 +67,18 @@ async def get_ideas(
         status="approved"  # 默认只显示已审核通过的创意
     )
 
+    # 批量查询当前用户的投票状态
+    voted_ids = set()
+    if current_user:
+        voted_ids = await IdeaService.get_user_voted_idea_ids(
+            db=db,
+            user_id=current_user.id,
+            idea_ids=[idea.id for idea in ideas],
+        )
+
+    # 批量查询投票用户信息（每人最多取前3位）
+    voters_map = await IdeaService.get_idea_voters(db, [idea.id for idea in ideas])
+
     return {
         "success": True,
         "data": {
@@ -80,6 +93,69 @@ async def get_ideas(
                     "vote_count": idea.vote_count,
                     "view_count": idea.view_count,
                     "status": idea.status,
+                    "has_voted": idea.id in voted_ids,
+                    "voters": voters_map.get(idea.id, []),
+                    "created_at": idea.created_at,
+                    "updated_at": idea.updated_at,
+                }
+                for idea in ideas
+            ],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        },
+    }
+
+
+@router.get("/my-votes", summary="获取我投票过的创意")
+async def get_my_votes(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+) -> Any:
+    """
+    获取当前用户投票过的创意列表
+    """
+    if not current_user:
+        return {
+            "success": True,
+            "data": {
+                "items": [],
+                "total": 0,
+                "page": page,
+                "page_size": page_size,
+            },
+        }
+
+    skip = (page - 1) * page_size
+
+    ideas, total = await IdeaService.get_user_voted_ideas(
+        db=db,
+        user_id=current_user.id,
+        skip=skip,
+        limit=page_size,
+    )
+
+    # 批量查询投票用户信息
+    voters_map = await IdeaService.get_idea_voters(db, [idea.id for idea in ideas])
+
+    return {
+        "success": True,
+        "data": {
+            "items": [
+                {
+                    "id": str(idea.id),
+                    "user_id": str(idea.user_id),
+                    "title": idea.title,
+                    "description": idea.description,
+                    "category": idea.category,
+                    "tags": idea.tags,
+                    "vote_count": idea.vote_count,
+                    "view_count": idea.view_count,
+                    "status": idea.status,
+                    "has_voted": True,
+                    "voters": voters_map.get(idea.id, []),
                     "created_at": idea.created_at,
                     "updated_at": idea.updated_at,
                 }
@@ -127,6 +203,10 @@ async def get_idea_detail(
             idea_id=idea_id
         )
 
+    # 查询投票用户信息
+    voters_map = await IdeaService.get_idea_voters(db, [idea_id])
+    voters = voters_map.get(idea_id, [])
+
     return {
         "id": str(idea.id),
         "user_id": str(idea.user_id),
@@ -138,6 +218,7 @@ async def get_idea_detail(
         "view_count": idea.view_count,
         "status": idea.status,
         "has_voted": has_voted,
+        "voters": voters,
         "created_at": idea.created_at,
         "updated_at": idea.updated_at,
     }

@@ -1,4 +1,9 @@
+'use client';
+
+import { useAuthStore } from '@/store';
+
 export function HeroSection() {
+  const { isAuthenticated } = useAuthStore();
 
   return (
     <section className="py-16 lg:py-24 section-bg-blobs hero-enhanced">
@@ -14,8 +19,8 @@ export function HeroSection() {
               无需AI专业知识，简单几步，获得专业级可商用的完整成果。让每一个创意都能通过AI高效实现。
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <a href="/register" className="btn-primary px-8 py-4 text-white font-semibold rounded-xl text-lg focus-ring inline-block text-center">
-                立即免费体验
+              <a href={isAuthenticated ? "/tools" : "/register"} className="btn-primary px-8 py-4 text-white font-semibold rounded-xl text-lg focus-ring inline-block text-center">
+                {isAuthenticated ? '开始使用工具' : '立即免费体验'}
               </a>
               <a href="/tools" className="btn-secondary px-8 py-4 text-[#1E3A5F] font-semibold rounded-xl text-lg focus-ring inline-block text-center">
                 浏览全部工具

@@ -47,6 +47,13 @@ export const ideaApi = {
   },
 
   /**
+   * 获取我投票过的创意
+   */
+  getMyVotes: async (params?: ListIdeasParams): Promise<PaginatedResponse<IdeaSubmission>> => {
+    return api.get<PaginatedResponse<IdeaSubmission>>('/ideas/my-votes', { params });
+  },
+
+  /**
    * 取消投票
    */
   cancelVote: async (ideaId: string): Promise<{ message: string; idea_id: string }> => {

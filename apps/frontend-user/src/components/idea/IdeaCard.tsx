@@ -24,7 +24,7 @@ const categoryColors: Record<string, { bg: string; text: string; fill: string }>
 export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'default', className = '' }: IdeaCardProps & { className?: string }) {
   const { isAuthenticated } = useAuthStore();
   const [isVoting, setIsVoting] = useState(false);
-  const [hasVoted, setHasVoted] = useState(false);
+  const [hasVoted, setHasVoted] = useState(idea.has_voted || false);
   const [voteAnimation, setVoteAnimation] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
   const [localVoteCount, setLocalVoteCount] = useState(idea.vote_count);
@@ -112,24 +112,38 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
 
       <div className="flex items-center justify-between mb-4">
         <div className="avatar-stack flex items-center">
-          {/* 占位头像 */}
-          {[1, 2, 3].map((i) => (
-            <img
-              key={i}
-              src={`https://i.pravatar.cc/32?img=${parseInt(idea.id.slice(-2)) + i}`}
-              className="w-8 h-8 rounded-full border-2 border-white"
-              alt="投票用户"
-              style={{ marginLeft: i > 1 ? '-10px' : '0' }}
-            />
-          ))}
-          {localVoteCount > 3 && (
-            <span
-              className="w-8 h-8 rounded-full bg-[#F1F5F9] flex items-center justify-center text-xs text-[#64748B]"
-              style={{ marginLeft: '-10px' }}
-            >
-              +{localVoteCount - 3}
-            </span>
+          {idea.voters && idea.voters.length > 0 ? (
+            idea.voters.map((voter, i) => (
+              <img
+                key={voter.user_id}
+                src={voter.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(voter.nickname || '用户')}&background=random`}
+                className="w-8 h-8 rounded-full border-2 border-white"
+                alt={voter.nickname || '投票用户'}
+                style={{ marginLeft: i > 0 ? '-10px' : '0' }}
+              />
+            ))
+          ) : (
+            [1, 2, 3].map((i) => (
+              <img
+                key={i}
+                src={`https://i.pravatar.cc/32?img=${parseInt(idea.id.slice(-2)) + i}`}
+                className="w-8 h-8 rounded-full border-2 border-white"
+                alt="投票用户"
+                style={{ marginLeft: i > 1 ? '-10px' : '0' }}
+              />
+            ))
           )}
+          {(() => {
+            const displayCount = (idea.voters && idea.voters.length > 0) ? idea.voters.length : 3;
+            return localVoteCount > displayCount ? (
+              <span
+                className="w-8 h-8 rounded-full bg-[#F1F5F9] flex items-center justify-center text-xs text-[#64748B]"
+                style={{ marginLeft: '-10px' }}
+              >
+                +{localVoteCount - displayCount}
+              </span>
+            ) : null;
+          })()}
         </div>
       </div>
 
