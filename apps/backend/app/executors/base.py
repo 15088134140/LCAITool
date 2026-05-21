@@ -4,7 +4,7 @@
 """
 import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Callable, Awaitable
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.task_service import TaskService
 
@@ -12,15 +12,22 @@ from app.services.task_service import TaskService
 class BaseToolExecutor(ABC):
     """工具执行器抽象基类"""
 
-    def __init__(self, task_id: uuid.UUID, db: AsyncSession):
+    def __init__(
+        self,
+        task_id: uuid.UUID,
+        db: AsyncSession,
+        progress_callback: Optional[Callable[[int, str, Optional[Dict[str, Any]]], Awaitable[None]]] = None
+    ):
         """
         初始化执行器
         :param task_id: 任务ID
         :param db: 数据库会话
+        :param progress_callback: 进度回调函数 (percent, message, data) -> None
         """
         self.task_id = task_id
         self.db = db
         self._snapshot: Optional[Dict[str, Any]] = None
+        self._progress_callback = progress_callback
 
     @abstractmethod
     def estimate_cost(self, params: Dict[str, Any]) -> int:
@@ -40,11 +47,12 @@ class BaseToolExecutor(ABC):
         """
         pass
 
-    async def update_progress(self, percent: int, message: str) -> None:
+    async def update_progress(self, percent: int, message: str, data: Optional[Dict[str, Any]] = None) -> None:
         """
         更新任务进度
         :param percent: 进度百分比 0-100
         :param message: 进度消息
+        :param data: 附加数据（用于回调）
         """
         await TaskService.update_task_status(
             db=self.db,
@@ -52,6 +60,10 @@ class BaseToolExecutor(ABC):
             progress=percent,
             message=message
         )
+
+        # 如果有进度回调函数，调用它
+        if self._progress_callback:
+            await self._progress_callback(percent, message, data)
 
     async def add_log(self, level: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
         """

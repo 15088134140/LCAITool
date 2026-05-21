@@ -66,8 +66,13 @@ class EcommerceExecutor(BaseToolExecutor):
         }
     }
 
-    def __init__(self, task_id: uuid.UUID, db: AsyncSession):
-        super().__init__(task_id, db)
+    def __init__(
+        self,
+        task_id: uuid.UUID,
+        db: AsyncSession,
+        progress_callback=None
+    ):
+        super().__init__(task_id, db, progress_callback)
         self.ai_provider = AIProviderFactory.get_provider("doubao")
 
     def estimate_cost(self, params: Dict[str, Any]) -> int:

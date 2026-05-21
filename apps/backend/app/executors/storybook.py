@@ -37,8 +37,13 @@ class StorybookExecutor(BaseToolExecutor):
     MAX_PARALLEL_IMAGES = 3  # 最大并行图片生成数
     MAX_PARALLEL_AUDIOS = 5  # 最大并行音频生成数
 
-    def __init__(self, task_id: uuid.UUID, db: AsyncSession):
-        super().__init__(task_id, db)
+    def __init__(
+        self,
+        task_id: uuid.UUID,
+        db: AsyncSession,
+        progress_callback=None
+    ):
+        super().__init__(task_id, db, progress_callback)
         self.ai_provider = AIProviderFactory.get_provider("doubao")
         self.pdf_generator = PDFGenerator()
 
