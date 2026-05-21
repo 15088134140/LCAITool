@@ -68,10 +68,11 @@ class Request {
     );
   }
 
-  private handleBusinessError(code: number, message: string) {
+  private handleBusinessError(code: number, message: string, url?: string) {
     switch (code) {
       case 401:
-        // Token过期或无效，登出
+        // 如果已经在登录页，不重复跳转（否则会清除登录页的 error state）
+        if (window.location.pathname === '/login') return;
         useUserStore.getState().logout();
         window.location.href = '/login';
         break;
@@ -91,6 +92,8 @@ class Request {
       const { status } = error.response;
       switch (status) {
         case 401:
+          // 登录接口返回 401 时不跳转（让 Login 组件显示错误信息）
+          if (error.config?.url?.includes('/auth/login') || window.location.pathname === '/login') return;
           useUserStore.getState().logout();
           window.location.href = '/login';
           break;

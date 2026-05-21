@@ -71,7 +71,8 @@ const Login = () => {
       const from = (location.state as any)?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err.message || '登录失败，请检查用户名和密码');
+      const detail = err?.response?.data?.detail || err.message;
+      setError(detail || '登录失败，请检查用户名和密码');
     } finally {
       setLoading(false);
     }

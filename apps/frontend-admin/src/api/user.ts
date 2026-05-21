@@ -136,7 +136,7 @@ export interface OrderListResponse {
 
 export const userApi = {
   // 获取用户列表
-  getList: (params: UserListParams) => {
+  getList: async (params: UserListParams) => {
     // 过滤空值参数，转换为后端期望的格式
     const filteredParams: Record<string, any> = {
       page: params.page,
@@ -152,7 +152,14 @@ export const userApi = {
     if (params.idCardVerified !== undefined && params.idCardVerified !== null) {
       filteredParams.idCardVerified = params.idCardVerified;
     }
-    return request.get<UserListResponse>('/admin/users', { params: filteredParams });
+    const res: any = await request.get('/admin/users', { params: filteredParams });
+    // 后端返回 { items, total, page, page_size }，前端需要 { list, total, page, pageSize }
+    return {
+      list: res.items || [],
+      total: res.total || 0,
+      page: res.page || params.page,
+      pageSize: res.page_size || params.pageSize,
+    } as UserListResponse;
   },
 
   // 创建用户

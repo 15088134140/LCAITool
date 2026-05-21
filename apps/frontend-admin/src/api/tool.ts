@@ -16,6 +16,7 @@ export interface Tool {
   token_fee: number;
   config?: any;
   status: number; // 0下线 1上线 2维护中
+  is_featured?: boolean;
   use_count: number;
   favorite_count: number;
   rating_count: number;
@@ -86,6 +87,7 @@ export interface CreateToolParams {
   token_fee?: number;
   config?: any;
   status?: number;
+  is_featured?: boolean;
 }
 
 export interface UpdateToolParams {
@@ -104,6 +106,7 @@ export interface UpdateToolParams {
   token_fee?: number;
   config?: any;
   status?: number;
+  is_featured?: boolean;
 }
 
 export interface CreateDemoParams {
@@ -136,7 +139,7 @@ const ADMIN_PREFIX = '/admin';
 
 export const toolApi = {
   // 获取工具列表（公开接口）
-  getList: (params: ToolListParams) => {
+  getList: async (params: ToolListParams) => {
     const filteredParams: Record<string, any> = {
       page: params.page,
       page_size: params.pageSize,
@@ -150,7 +153,14 @@ export const toolApi = {
     if (params.category_id) {
       filteredParams.category_id = params.category_id;
     }
-    return request.get<ToolListResponse>('/tools', { params: filteredParams });
+    const res: any = await request.get('/tools', { params: filteredParams });
+    // 后端返回 { items, total, page, page_size }，前端需要 { list, total, page, pageSize }
+    return {
+      list: res.items || [],
+      total: res.total || 0,
+      page: res.page || params.page,
+      pageSize: res.page_size || params.pageSize,
+    } as ToolListResponse;
   },
 
   // 获取工具详情（公开接口）
@@ -188,8 +198,10 @@ export const toolApi = {
   },
 
   // 获取分类列表（公开接口）
-  getCategories: () => {
-    return request.get<ToolCategory[]>('/tools/categories/list');
+  getCategories: async () => {
+    const res: any = await request.get('/tools/categories/list');
+    // 后端返回 { items, total }，前端需要 ToolCategory[]
+    return Array.isArray(res) ? res : (res?.items || []);
   },
 
   // 创建分类

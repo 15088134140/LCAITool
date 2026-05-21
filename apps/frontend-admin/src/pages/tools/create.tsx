@@ -55,7 +55,7 @@ const CreateTool = () => {
 
   const handleInputChange = (
     field: keyof CreateToolParams,
-    value: string | number | string[]
+    value: string | number | boolean | string[]
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -269,6 +269,19 @@ const CreateTool = () => {
                   <option value="1">上线</option>
                   <option value="2">维护中</option>
                 </select>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <input
+                  type="checkbox"
+                  id="is_featured"
+                  checked={!!formData.is_featured}
+                  onChange={(e) => handleInputChange('is_featured', e.target.checked)}
+                  className="w-4 h-4 text-[#1E3A5F] border-gray-300 rounded focus:ring-[#1E3A5F]"
+                />
+                <label htmlFor="is_featured" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  推荐展示（显示在首页精品工具区域）
+                </label>
               </div>
             </div>
           </div>

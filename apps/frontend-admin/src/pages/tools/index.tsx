@@ -42,7 +42,7 @@ const ToolManagement = () => {
   const loadCategories = async () => {
     try {
       const data = await toolApi.getCategories();
-      setCategories(data);
+      setCategories(Array.isArray(data) ? data : data?.items || []);
     } catch (err) {
       console.error('加载分类列表失败:', err);
     }
