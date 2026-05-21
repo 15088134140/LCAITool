@@ -1,6 +1,9 @@
 export { ToolHero } from './ToolHero';
+export { ToolTabs } from './ToolTabs';
 export { ToolFeatures } from './ToolFeatures';
 export { ToolHowTo } from './ToolHowTo';
 export { ToolPricing } from './ToolPricing';
 export { ToolReviews } from './ToolReviews';
+export { ToolDemos } from './ToolDemos';
+export { FavoriteButton } from './FavoriteButton';
 export { ToolCreationForm } from './ToolCreationForm';

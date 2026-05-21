@@ -43,6 +43,17 @@ export interface Tool {
   status: 'active' | 'coming_soon' | 'maintenance';
   createdAt: string;
   heroImage?: string;
+  reviewCount: number;
+  demos?: Array<{
+    title?: string;
+    description?: string;
+    image?: string;
+  }>;
+  stats?: Array<{
+    value: string;
+    label: string;
+    color: string;
+  }>;
 }
 
 /**
@@ -78,4 +89,21 @@ export interface GetToolsParams {
 export interface PaginatedResult<T> {
   items: T[];
   total: number;
+}
+
+/**
+ * 用户类型 - 用户基本信息
+ */
+export interface User {
+  id: string;
+  email: string;
+  nickname?: string;
+  avatar?: string;
+  username?: string;
+  is_verified?: boolean;
+  points?: number;
+  id_card?: string;
+  avatar_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }

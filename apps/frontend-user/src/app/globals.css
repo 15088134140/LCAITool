@@ -467,6 +467,61 @@
     box-shadow: 0 20px 40px rgba(30, 58, 95, 0.12);
   }
 
+  /* 工具卡片 */
+  .tool-card {
+    transition: all 0.25s ease;
+    border: 1px solid #E4E7EB;
+  }
+  .tool-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(30, 58, 95, 0.12);
+    border-color: #2563EB;
+  }
+
+  /* 分类导航按钮 */
+  .category-btn {
+    transition: all 0.2s ease;
+    border: 1px solid #E4E7EB;
+  }
+  .category-btn:hover {
+    border-color: #2563EB;
+    background: #F0F7FF;
+  }
+  .category-btn.active {
+    background: #2563EB;
+    border-color: #2563EB;
+    color: white;
+  }
+
+  /* 热门标签 */
+  .tag-hot {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: white;
+  }
+  .tag-new {
+    background: linear-gradient(135deg, #F59E0B, #EF4444);
+    color: white;
+  }
+
+  /* 搜索输入框 */
+  .search-input {
+    transition: all 0.2s ease;
+    border: 1px solid #E4E7EB;
+  }
+  .search-input:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  /* 排序按钮 */
+  .sort-btn:hover {
+    color: #2563EB;
+  }
+  .sort-btn.active {
+    color: #2563EB;
+    font-weight: 600;
+  }
+
   /* 页脚链接样式 */
   .footer-link {
     color: #94A3B8;

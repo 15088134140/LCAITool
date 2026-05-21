@@ -16,7 +16,7 @@ export function Navbar() {
   const navLinks = [
     { href: '/', label: '首页' },
     { href: '/tools', label: '全部工具' },
-    { href: '/vote', label: '用户共创' },
+    { href: '/ideas', label: '用户共创' },
     { href: '/feedback', label: '帮助反馈' },
   ];
 

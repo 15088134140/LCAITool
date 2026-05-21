@@ -12,10 +12,11 @@ from app.schemas.user import (
     UserRoleAssignRequest,
     AdjustBalanceRequest,
 )
-from app.schemas.payment import PointTransaction
+from app.schemas.payment import PointTransaction, Order as OrderSchema, OrderStatus
 from app.services.user_service import UserService
 from app.services.role_service import RoleService
 from app.services.point_service import PointService
+from app.services.order_service import OrderService
 
 router = APIRouter()
 
@@ -395,3 +396,176 @@ async def reset_admin_password(
 ) -> Any:
     """重置管理员密码"""
     return {"message": "密码重置成功"}
+
+
+# ==================== 订单管理 ====================
+
+@router.get("/orders", summary="订单列表（分页、搜索、筛选）")
+async def get_orders(
+    page: int = 1,
+    page_size: int = 20,
+    search: str = None,
+    status: str = None,
+    start_date: int = None,
+    end_date: int = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    skip = (page - 1) * page_size
+    status_enum = OrderStatus(status) if status else None
+    orders, total = await OrderService.get_multi(
+        db, skip=skip, limit=page_size, search=search, status=status_enum,
+        start_date=start_date, end_date=end_date
+    )
+    # Convert models to schemas and add user info
+    order_list = []
+    for order in orders:
+        order_dict = {
+            "id": str(order.id),
+            "order_no": order.order_no,
+            "user_id": str(order.user_id),
+            "user_nickname": order.user.nickname if order.user else None,
+            "user_phone": order.user.phone if order.user else None,
+            "pay_amount": float(order.pay_amount),
+            "base_points": order.base_points,
+            "bonus_points": order.bonus_points,
+            "total_points": order.total_points,
+            "payment_provider": order.payment_provider.value,
+            "status": order.status.value,
+            "third_party_order_no": order.third_party_order_no,
+            "paid_at": order.paid_at,
+            "created_at": order.created_at,
+            "remark": order.remark,
+        }
+        order_list.append(order_dict)
+    return {
+        "list": order_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+@router.get("/orders/{order_id}", summary="订单详情")
+async def get_order(
+    order_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    import uuid
+    order = await OrderService.get_by_id(db, uuid.UUID(order_id))
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    # Return detailed order info with user
+    order_dict = {
+        "id": str(order.id),
+        "order_no": order.order_no,
+        "user_id": str(order.user_id),
+        "user": {
+            "id": str(order.user.id),
+            "nickname": order.user.nickname,
+            "phone": order.user.phone,
+            "avatar": order.user.avatar,
+        } if order.user else None,
+        "pay_amount": float(order.pay_amount),
+        "base_points": order.base_points,
+        "bonus_points": order.bonus_points,
+        "total_points": order.total_points,
+        "payment_provider": order.payment_provider.value,
+        "status": order.status.value,
+        "third_party_order_no": order.third_party_order_no,
+        "paid_at": order.paid_at,
+        "expired_at": order.expired_at,
+        "client_ip": order.client_ip,
+        "device_info": order.device_info,
+        "reconciliation_status": order.reconciliation_status.value,
+        "reconciled_at": order.reconciled_at,
+        "remark": order.remark,
+        "created_at": order.created_at,
+        "updated_at": order.updated_at,
+    }
+    return order_dict
+
+
+@router.post("/orders/{order_id}/refund", summary="订单退款")
+async def refund_order(
+    order_id: str,
+    refund_reason: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    import uuid
+    order, error = await OrderService.refund_order(
+        db, uuid.UUID(order_id), refund_reason
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return {"message": "退款成功", "order_id": order_id}
+
+
+@router.put("/orders/{order_id}/status", summary="更新订单状态")
+async def update_order_status(
+    order_id: str,
+    status: str = Body(..., embed=True),
+    remark: str = Body(None, embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    import uuid
+    try:
+        status_enum = OrderStatus(status)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="无效的订单状态")
+    order = await OrderService.update_status(
+        db, uuid.UUID(order_id), status_enum, remark
+    )
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    return {"message": "更新成功", "order_id": order_id}
+
+
+# ==================== 实名认证审核 ====================
+
+@router.put("/verifications/{user_id}/approve", summary="审核通过实名认证")
+async def approve_verification(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    import uuid
+    from app.models.user import User as UserModel
+    user_uuid = uuid.UUID(user_id)
+    result = await db.execute(select(UserModel).where(UserModel.id == user_uuid))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    user.id_card_verified = True
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return {"message": "审核通过"}
+
+
+@router.put("/verifications/{user_id}/reject", summary="驳回实名认证")
+async def reject_verification(
+    user_id: str,
+    reject_reason: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    import uuid
+    from app.models.user import User as UserModel
+    user_uuid = uuid.UUID(user_id)
+    result = await db.execute(select(UserModel).where(UserModel.id == user_uuid))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    user.id_card_verified = False
+    # 可以选择清除身份信息或保留作为记录
+    # user.id_card_name = None
+    # user.id_card_number_encrypted = None
+    user.remark = f"审核驳回：{reject_reason}" if hasattr(user, 'remark') else None
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return {"message": "审核已驳回"}
