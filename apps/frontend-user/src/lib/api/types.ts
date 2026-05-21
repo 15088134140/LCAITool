@@ -198,6 +198,8 @@ export interface Task {
   completed_at?: Timestamp;
   created_at: Timestamp;
   updated_at: Timestamp;
+  // 前端扩展字段
+  tool_name?: string;
 }
 
 export interface TaskLog {
@@ -253,6 +255,11 @@ export interface Work {
   share_count: number;
   created_at: Timestamp;
   updated_at: Timestamp;
+  // 前端扩展字段
+  task_type?: string;
+  tool_name?: string;
+  coverImage?: string; // 别名用于方便组件使用
+  file_count?: number;
 }
 
 export interface WorkFile {
