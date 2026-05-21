@@ -8,8 +8,20 @@ import Dashboard from '@/pages/Dashboard';
 import UserManagement from '@/pages/UserManagement';
 import RoleManagement from '@/pages/RoleManagement';
 import AdminConfig from '@/pages/AdminConfig';
-import ToolsPage from '@/pages/ToolsPage';
 import PlaceholderPage from '@/pages/PlaceholderPage';
+
+// 用户管理组件
+import UserDetail from '@/pages/users/Detail';
+
+// 订单管理组件
+import OrderList from '@/pages/orders/List';
+import OrderDetail from '@/pages/orders/Detail';
+
+// 工具管理组件
+import ToolManagement from '@/pages/tools';
+import CreateTool from '@/pages/tools/create';
+import EditTool from '@/pages/tools/[id]/edit';
+import DemoCaseManager from '@/pages/tools/DemoCaseManager';
 
 export const router = createBrowserRouter([
   {
@@ -39,20 +51,19 @@ export const router = createBrowserRouter([
       // 工具管理
       {
         path: 'tools',
-        element: <ToolsPage />,
+        element: <ToolManagement />,
       },
       {
         path: 'tools/create',
-        element: (
-          <PlaceholderPage
-            title="创建工具"
-            breadcrumbs={[
-              { label: '首页', path: '/dashboard' },
-              { label: '工具管理' },
-              { label: '创建工具' },
-            ]}
-          />
-        ),
+        element: <CreateTool />,
+      },
+      {
+        path: 'tools/:id/edit',
+        element: <EditTool />,
+      },
+      {
+        path: 'tools/:id/demos',
+        element: <DemoCaseManager />,
       },
       {
         path: 'categories',
@@ -73,6 +84,10 @@ export const router = createBrowserRouter([
         element: <UserManagement />,
       },
       {
+        path: 'users/:id',
+        element: <UserDetail />,
+      },
+      {
         path: 'verifications',
         element: (
           <PlaceholderPage
@@ -88,16 +103,11 @@ export const router = createBrowserRouter([
       // 订单管理
       {
         path: 'orders',
-        element: (
-          <PlaceholderPage
-            title="订单列表"
-            breadcrumbs={[
-              { label: '首页', path: '/dashboard' },
-              { label: '订单管理' },
-              { label: '订单列表' },
-            ]}
-          />
-        ),
+        element: <OrderList />,
+      },
+      {
+        path: 'orders/:id',
+        element: <OrderDetail />,
       },
       {
         path: 'refunds',
