@@ -199,3 +199,51 @@ async def check_download_permission(
         "has_permission": has_permission,
         "message": "有权限下载" if has_permission else "无下载权限"
     }
+
+
+@router.get("/{work_id}/files", summary="获取成果文件列表")
+async def get_work_files(
+    work_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """
+    获取成果的文件列表
+    """
+    from app.services.work_service import WorkService
+    from app.core.exceptions import ResourceNotFoundException
+
+    work = await WorkService.get_by_id(db=db, work_id=work_id)
+    if not work:
+        raise ResourceNotFoundException("成果不存在")
+
+    if work.user_id != current_user.id and not work.is_public:
+        from app.core.exceptions import InsufficientPermissionsException
+        raise InsufficientPermissionsException()
+
+    files = await WorkService.get_work_files(db=db, work_id=work_id)
+    return files
+
+
+@router.get("/{work_id}/versions", summary="获取成果版本历史")
+async def get_work_versions(
+    work_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """
+    获取成果的版本历史（基于父ID查找同源所有版本）
+    """
+    from app.services.work_service import WorkService
+    from app.core.exceptions import ResourceNotFoundException
+
+    work = await WorkService.get_by_id(db=db, work_id=work_id)
+    if not work:
+        raise ResourceNotFoundException("成果不存在")
+
+    if work.user_id != current_user.id and not work.is_public:
+        from app.core.exceptions import InsufficientPermissionsException
+        raise InsufficientPermissionsException()
+
+    versions = await WorkService.get_work_versions(db=db, work_id=work_id)
+    return versions

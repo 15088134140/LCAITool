@@ -7,140 +7,6 @@ import { IdeaSubmission } from '@/lib/api/types';
 import { ideaApi } from '@/lib/api/modules/idea';
 import { useAuthStore } from '@/store/useAuthStore';
 
-// 模拟数据 - 在真实API就绪前使用
-const mockIdeas: IdeaSubmission[] = [
-  {
-    id: '1',
-    user_id: 'user-1',
-    title: 'AI视频脚本生成器',
-    description: '自动生成短视频、宣传片、广告片专业脚本。支持多种风格、时长、平台定制，包含分镜建议和配乐推荐。',
-    category: '内容创作',
-    tags: ['视频', '脚本', 'AI生成'],
-    vote_count: 328,
-    view_count: 1256,
-    status: 'approved',
-    created_at: Date.now() - 86400000 * 7,
-    updated_at: Date.now() - 86400000 * 7,
-  },
-  {
-    id: '2',
-    user_id: 'user-2',
-    title: 'AI播客节目生成器',
-    description: '输入主题，自动生成对话稿+多角色配音+背景音乐。支持访谈、故事、知识分享等多种播客类型。',
-    category: '视频音频',
-    tags: ['播客', '音频', 'AI生成'],
-    vote_count: 256,
-    view_count: 892,
-    status: 'approved',
-    created_at: Date.now() - 86400000 * 5,
-    updated_at: Date.now() - 86400000 * 5,
-  },
-  {
-    id: '3',
-    user_id: 'user-3',
-    title: 'AI简历优化大师',
-    description: '智能分析简历，优化内容描述、排版格式，针对不同岗位定制优化，提供面试问题预测和回答建议。',
-    category: '办公效率',
-    tags: ['简历', '求职', 'AI优化'],
-    vote_count: 189,
-    view_count: 756,
-    status: 'approved',
-    created_at: Date.now() - 86400000 * 3,
-    updated_at: Date.now() - 86400000 * 3,
-  },
-  {
-    id: '4',
-    user_id: 'user-4',
-    title: 'AI菜谱创意生成',
-    description: '输入可用食材，智能生成创意菜谱，附带详细步骤、营养分析和高清美食图片，支持家常/餐厅等风格。',
-    category: '内容创作',
-    tags: ['菜谱', '烹饪', 'AI生成'],
-    vote_count: 156,
-    view_count: 543,
-    status: 'approved',
-    created_at: Date.now() - 86400000 * 2,
-    updated_at: Date.now() - 86400000 * 2,
-  },
-  {
-    id: '5',
-    user_id: 'user-5',
-    title: 'AI旅行规划助手',
-    description: '一键生成个性化旅行攻略，包含行程安排、预算规划、景点推荐、交通住宿建议，可导出详细PDF。',
-    category: '办公效率',
-    tags: ['旅行', '规划', 'AI助手'],
-    vote_count: 142,
-    view_count: 478,
-    status: 'approved',
-    created_at: Date.now() - 86400000 * 1.5,
-    updated_at: Date.now() - 86400000 * 1.5,
-  },
-  {
-    id: '6',
-    user_id: 'user-6',
-    title: 'AI表情包制作器',
-    description: '输入文字或上传图片，一键生成定制表情包。支持多种风格，自动添加文字效果和热门梗。',
-    category: '设计工具',
-    tags: ['表情包', '设计', 'AI生成'],
-    vote_count: 98,
-    view_count: 321,
-    status: 'approved',
-    created_at: Date.now() - 86400000,
-    updated_at: Date.now() - 86400000,
-  },
-  {
-    id: '7',
-    user_id: 'user-7',
-    title: 'AI艺术字生成器',
-    description: '输入文字生成各种风格的艺术字体设计，可用于海报、视频标题等。',
-    category: '设计工具',
-    tags: ['字体', '设计', 'AI生成'],
-    vote_count: 76,
-    view_count: 254,
-    status: 'approved',
-    created_at: Date.now() - 86400000 * 0.5,
-    updated_at: Date.now() - 86400000 * 0.5,
-  },
-  {
-    id: '8',
-    user_id: 'user-8',
-    title: 'AI合同撰写助手',
-    description: '根据需求自动生成各类合同模板，包含风险提示和法律条款建议。',
-    category: '办公效率',
-    tags: ['合同', '法律', 'AI助手'],
-    vote_count: 65,
-    view_count: 198,
-    status: 'approved',
-    created_at: Date.now() - 3600000 * 12,
-    updated_at: Date.now() - 3600000 * 12,
-  },
-  {
-    id: '9',
-    user_id: 'user-9',
-    title: 'AI理财规划师',
-    description: '分析收支情况，智能生成理财规划建议，包含投资组合和风险评估。',
-    category: '办公效率',
-    tags: ['理财', '规划', 'AI'],
-    vote_count: 58,
-    view_count: 167,
-    status: 'approved',
-    created_at: Date.now() - 3600000 * 6,
-    updated_at: Date.now() - 3600000 * 6,
-  },
-  {
-    id: '10',
-    user_id: 'user-10',
-    title: 'AI思维导图生成',
-    description: '输入主题自动生成思维导图，支持多种布局样式，可导出PNG/SVG。',
-    category: '设计工具',
-    tags: ['思维导图', '设计', 'AI生成'],
-    vote_count: 52,
-    view_count: 145,
-    status: 'approved',
-    created_at: Date.now() - 3600000 * 2,
-    updated_at: Date.now() - 3600000 * 2,
-  },
-];
-
 const categories = ['全部', '内容创作', '设计工具', '视频音频', '办公效率'];
 const sortOptions = [
   { value: 'votes', label: '票数最高' },
@@ -152,26 +18,34 @@ export default function IdeasPage() {
   const { isAuthenticated } = useAuthStore();
   const [selectedCategory, setSelectedCategory] = useState('全部');
   const [sortBy, setSortBy] = useState('votes');
-  const [ideas, setIdeas] = useState<IdeaSubmission[]>(mockIdeas);
+  const [ideas, setIdeas] = useState<IdeaSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // 过滤和排序思路
-  const filteredIdeas = ideas
-    .filter(idea => selectedCategory === '全部' || idea.category === selectedCategory)
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'votes':
-          return b.vote_count - a.vote_count;
-        case 'latest':
-          return b.created_at - a.created_at;
-        case 'progress':
-          return (b.vote_count / 500) - (a.vote_count / 500);
-        default:
-          return 0;
+  useEffect(() => {
+    const fetchIdeas = async () => {
+      setIsLoading(true);
+      try {
+        const sortMap: Record<string, string> = { votes: 'vote_count', latest: 'created_at', progress: 'vote_count' };
+        const result = await ideaApi.getIdeas({
+          page,
+          page_size: 20,
+          sort: sortMap[sortBy] || 'vote_count',
+        });
+        setIdeas(result.items || []);
+        setHasMore(result.total > result.page * result.page_size);
+      } catch (err) {
+        console.error('获取构思列表失败:', err);
+      } finally {
+        setIsLoading(false);
       }
-    });
+    };
+    fetchIdeas();
+  }, [page, sortBy]);
+
+  // 过滤和排序思路
+  const filteredIdeas = ideas.filter(idea => selectedCategory === '全部' || idea.category === selectedCategory);
 
   const hotIdeas = filteredIdeas.slice(0, 6);
   const moreIdeas = filteredIdeas.slice(6);

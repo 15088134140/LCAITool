@@ -6,6 +6,7 @@ import { api } from '../client';
 import type {
   Work,
   WorkShare,
+  WorkFile,
   ListWorksParams,
   PaginatedResponse,
 } from '../types';
@@ -55,6 +56,20 @@ export const workApi = {
       has_permission: boolean;
       message: string;
     }>(`/works/${id}/download-permission`);
+  },
+
+  /**
+   * 获取成果文件列表
+   */
+  getWorkFiles: async (id: string): Promise<WorkFile[]> => {
+    return api.get<WorkFile[]>(`/works/${id}/files`);
+  },
+
+  /**
+   * 获取成果版本历史
+   */
+  getWorkVersions: async (id: string): Promise<Work[]> => {
+    return api.get<Work[]>(`/works/${id}/versions`);
   },
 };
 

@@ -71,9 +71,7 @@ export default function SubmitIdeaPage() {
 
     setIsSubmitting(true);
     try {
-      // TODO: 实际API调用
-      // await ideaApi.submitIdea(formData);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟API调用
+      await ideaApi.submitIdea(formData);
       setShowSuccess(true);
 
       // 3秒后跳转到构思列表页

@@ -48,6 +48,13 @@ export const paymentApi = {
   getTransactions: async (params?: ListTransactionsParams): Promise<PaginatedResponse<PointTransaction>> => {
     return api.get<PaginatedResponse<PointTransaction>>('/payment/transactions', { params });
   },
+
+  /**
+   * 获取订单列表
+   */
+  getOrders: async (page: number = 1, pageSize: number = 20): Promise<PaginatedResponse<Order>> => {
+    return api.get<PaginatedResponse<Order>>('/payment/orders', { params: { page, page_size: pageSize } });
+  },
 };
 
 export default paymentApi;

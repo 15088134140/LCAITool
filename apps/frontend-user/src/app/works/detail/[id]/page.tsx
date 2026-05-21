@@ -31,115 +31,6 @@ const toolConfig = {
   },
 };
 
-// 模拟数据
-const mockWork: Work & { taskType?: string } = {
-  id: 'work-1',
-  userId: 'user-1',
-  taskId: 'task-1',
-  taskType: 'storybook',
-  toolId: 'tool-1',
-  title: '小兔子的奇幻冒险',
-  description: '一个关于勇气和友谊的温馨童话故事。小兔子在森林中迷路了，但通过帮助其他小动物，最终不仅找到了回家的路，还结交了许多好朋友。',
-  version: 2,
-  coverImage: 'https://picsum.photos/seed/story1/1200/675',
-  status: 'published',
-  isPublic: true,
-  viewCount: 128,
-  likeCount: 32,
-  shareCount: 8,
-  createdAt: Math.floor(Date.now() / 1000) - 86400 * 2,
-  updatedAt: Math.floor(Date.now() / 1000) - 86400,
-};
-
-const mockFiles: WorkFile[] = [
-  {
-    id: 'file-1',
-    workId: 'work-1',
-    fileType: 'pdf',
-    fileName: '小兔子的奇幻冒险_完整版.pdf',
-    fileUrl: '#',
-    fileSize: 15 * 1024 * 1024,
-    isPreview: true,
-    createdAt: Math.floor(Date.now() / 1000) - 86400,
-    updatedAt: Math.floor(Date.now() / 1000) - 86400,
-  },
-  {
-    id: 'file-2',
-    workId: 'work-1',
-    fileType: 'image',
-    fileName: '封面.png',
-    fileUrl: 'https://picsum.photos/seed/cover1/800/600',
-    fileSize: 2.5 * 1024 * 1024,
-    isPreview: true,
-    createdAt: Math.floor(Date.now() / 1000) - 86400,
-    updatedAt: Math.floor(Date.now() / 1000) - 86400,
-  },
-  {
-    id: 'file-3',
-    workId: 'work-1',
-    fileType: 'image',
-    fileName: '第1页.png',
-    fileUrl: 'https://picsum.photos/seed/page1/800/600',
-    fileSize: 1.8 * 1024 * 1024,
-    pageNumber: 1,
-    isPreview: true,
-    createdAt: Math.floor(Date.now() / 1000) - 86400,
-    updatedAt: Math.floor(Date.now() / 1000) - 86400,
-  },
-  {
-    id: 'file-4',
-    workId: 'work-1',
-    fileType: 'image',
-    fileName: '第2页.png',
-    fileUrl: 'https://picsum.photos/seed/page2/800/600',
-    fileSize: 2.1 * 1024 * 1024,
-    pageNumber: 2,
-    isPreview: true,
-    createdAt: Math.floor(Date.now() / 1000) - 86400,
-    updatedAt: Math.floor(Date.now() / 1000) - 86400,
-  },
-  {
-    id: 'file-5',
-    workId: 'work-1',
-    fileType: 'audio',
-    fileName: '旁白.m4a',
-    fileUrl: '#',
-    fileSize: 8.5 * 1024 * 1024,
-    duration: 245,
-    isPreview: false,
-    createdAt: Math.floor(Date.now() / 1000) - 86400,
-    updatedAt: Math.floor(Date.now() / 1000) - 86400,
-  },
-  {
-    id: 'file-6',
-    workId: 'work-1',
-    fileType: 'other',
-    fileName: '源文件.zip',
-    fileUrl: '#',
-    fileSize: 45 * 1024 * 1024,
-    isPreview: false,
-    createdAt: Math.floor(Date.now() / 1000) - 86400,
-    updatedAt: Math.floor(Date.now() / 1000) - 86400,
-  },
-];
-
-const mockVersions: WorkVersion[] = [
-  {
-    ...mockWork,
-    version: 1,
-    title: '小兔子的奇幻冒险 (初版)',
-    createdAt: Math.floor(Date.now() / 1000) - 86400 * 5,
-    updatedAt: Math.floor(Date.now() / 1000) - 86400 * 5,
-  },
-  {
-    ...mockWork,
-    version: 2,
-    title: '小兔子的奇幻冒险',
-    createdAt: Math.floor(Date.now() / 1000) - 86400 * 2,
-    updatedAt: Math.floor(Date.now() / 1000) - 86400,
-  },
-];
-
 // 格式化文件大小
 const formatFileSize = (bytes?: number) => {
   if (!bytes) return '未知大小';
@@ -230,21 +121,14 @@ export default function WorkDetailPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        // TODO: 启用真实API
-        // const [workData, filesData, versionsData] = await Promise.all([
-        //   workApi.getWork(workId),
-        //   workApi.getWorkFiles(workId),
-        //   workApi.getWorkVersions(workId),
-        // ]);
-        // setWork(workData);
-        // setFiles(filesData);
-        // setVersions(versionsData);
-
-        // 使用模拟数据
-        await new Promise(resolve => setTimeout(resolve, 600));
-        setWork(mockWork);
-        setFiles(mockFiles);
-        setVersions(mockVersions);
+        const [workData, filesData, versionsData] = await Promise.all([
+          workApi.getWork(workId),
+          workApi.getWorkFiles(workId),
+          workApi.getWorkVersions(workId),
+        ]);
+        setWork(workData);
+        setFiles(filesData ?? []);
+        setVersions(versionsData ?? []);
       } catch (err) {
         console.error('获取数据失败:', err);
       } finally {

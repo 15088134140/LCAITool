@@ -593,8 +593,32 @@ class WorkService:
     ) -> List[WorkFile]:
         """获取成果的文件列表"""
         result = await db.execute(
-            select(WorkFile).where(WorkFile.work_id == work_id)
+            select(WorkFile)
+            .where(WorkFile.work_id == work_id)
+            .order_by(WorkFile.page_number, WorkFile.created_at)
         )
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_work_versions(
+        db: AsyncSession,
+        work_id: uuid.UUID
+    ) -> List[Work]:
+        """获取成果的版本历史"""
+        from sqlalchemy import or_
+        # 先找到当前 work 的根 parent_id
+        stmt = select(Work).where(Work.id == work_id)
+        result = await db.execute(stmt)
+        current_work = result.scalar_one_or_none()
+        if not current_work:
+            return []
+
+        # 查找同根的所有版本（parent_id 链）
+        root_id = current_work.parent_id or current_work.id
+        stmt = select(Work).where(
+            or_(Work.id == root_id, Work.parent_id == root_id, Work.id == current_work.id)
+        ).order_by(Work.version)
+        result = await db.execute(stmt)
         return result.scalars().all()
 
     @staticmethod

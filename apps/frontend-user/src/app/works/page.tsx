@@ -43,86 +43,6 @@ export default function WorksPage() {
     { key: 'archived' as StatusFilter, label: '已归档' },
   ];
 
-  // 模拟数据 - 在实际API完成前使用
-  const mockWorks: typeof works = [
-    {
-      id: 'work-1',
-      userId: 'user-1',
-      taskId: 'task-1',
-      taskType: 'storybook',
-      toolId: 'tool-1',
-      title: '小兔子的奇幻冒险',
-      description: '一个关于勇气和友谊的温馨童话故事，讲述小兔子在森林中的奇妙旅程。',
-      version: 2,
-      coverImage: 'https://picsum.photos/seed/story1/800/450',
-      status: 'published',
-      isPublic: true,
-      viewCount: 128,
-      likeCount: 32,
-      shareCount: 8,
-      createdAt: Math.floor(Date.now() / 1000) - 86400 * 2,
-      updatedAt: Math.floor(Date.now() / 1000) - 86400,
-      toolName: '有声绘本生成',
-      fileCount: 12,
-    },
-    {
-      id: 'work-2',
-      userId: 'user-1',
-      taskId: 'task-2',
-      taskType: 'ecommerce',
-      toolId: 'tool-2',
-      title: '高端蓝牙耳机详情页',
-      description: '为无线蓝牙耳机设计的精美电商详情页，包含产品展示和营销文案。',
-      version: 1,
-      coverImage: 'https://picsum.photos/seed/ecom1/800/450',
-      status: 'published',
-      isPublic: false,
-      viewCount: 45,
-      likeCount: 12,
-      shareCount: 3,
-      createdAt: Math.floor(Date.now() / 1000) - 86400 * 5,
-      updatedAt: Math.floor(Date.now() / 1000) - 86400 * 3,
-      toolName: '电商详情页生成',
-      fileCount: 8,
-    },
-    {
-      id: 'work-3',
-      userId: 'user-1',
-      taskId: 'task-3',
-      taskType: 'marketing',
-      toolId: 'tool-3',
-      title: '618活动营销文案',
-      description: '为年中大促准备的系列营销文案，适用于社交媒体和电商平台。',
-      version: 3,
-      coverImage: 'https://picsum.photos/seed/market1/800/450',
-      status: 'draft',
-      isPublic: false,
-      viewCount: 0,
-      likeCount: 0,
-      shareCount: 0,
-      createdAt: Math.floor(Date.now() / 1000) - 86400 * 10,
-      updatedAt: Math.floor(Date.now() / 1000) - 3600,
-      toolName: '营销文案生成',
-      fileCount: 5,
-    },
-  ];
-
-  const mockPendingTasks: Task[] = [
-    {
-      id: 'task-pending-1',
-      userId: 'user-1',
-      toolId: 'tool-1',
-      taskType: 'storybook',
-      status: 'running',
-      progress: 45,
-      progressMessage: '正在生成插图...',
-      inputParams: { theme: 'friendship', pages: 8 },
-      estimatedCost: 25,
-      createdAt: Math.floor(Date.now() / 1000) - 1800,
-      updatedAt: Math.floor(Date.now() / 1000) - 120,
-    },
-  ];
-
   // 筛选作品
   const filteredWorks = works.filter(work => {
     // 类型筛选
@@ -149,20 +69,13 @@ export default function WorksPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        // TODO: 启用真实API
-        // const [worksData, tasksData] = await Promise.all([
-        //   workApi.getWorks({ page, pageSize: 12 }),
-        //   taskApi.getTasks({ status: 'pending' }),
-        // ]);
-        // setWorks(worksData.items);
-        // setHasMore(worksData.total > worksData.items.length);
-        // setPendingTasks(tasksData.items);
-
-        // 使用模拟数据
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setWorks(mockWorks);
-        setPendingTasks(mockPendingTasks);
-        setHasMore(false);
+        const [worksData, tasksData] = await Promise.all([
+          workApi.getWorks({ page, pageSize: 12 }),
+          taskApi.getTasks({ status: 'pending' }),
+        ]);
+        setWorks(worksData.items);
+        setHasMore(worksData.total > worksData.items.length);
+        setPendingTasks(tasksData.items);
       } catch (err) {
         console.error('获取数据失败:', err);
       } finally {
