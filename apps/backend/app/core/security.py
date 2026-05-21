@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import os
 from datetime import datetime, timedelta
 from typing import Any, Union, Optional
 from Crypto.Cipher import AES
@@ -48,21 +49,22 @@ def get_aes_key() -> bytes:
 
 
 def aes_encrypt(plain_text: str) -> str:
-    """AES-256-CBC加密"""
+    """AES-256-CBC加密（使用随机IV，前置到密文）"""
     key = get_aes_key()
-    iv = b"0123456789abcdef"  # 固定IV，可根据需要调整
+    iv = os.urandom(16)  # 每次加密使用随机IV
     cipher = AES.new(key, AES.MODE_CBC, iv)
     encrypted = cipher.encrypt(pad(plain_text.encode("utf-8"), AES.block_size))
-    return base64.b64encode(encrypted).decode("utf-8")
+    # 将IV前置到密文，方便解密时提取
+    return base64.b64encode(iv + encrypted).decode("utf-8")
 
 
 def aes_decrypt(encrypted_text: str) -> str:
-    """AES-256-CBC解密"""
+    """AES-256-CBC解密（从密文前16字节提取IV）"""
     key = get_aes_key()
-    iv = b"0123456789abcdef"
     encrypted = base64.b64decode(encrypted_text.encode("utf-8"))
+    iv = encrypted[:16]  # 提取前16字节作为IV
     cipher = AES.new(key, AES.MODE_CBC, iv)
-    decrypted = unpad(cipher.decrypt(encrypted), AES.block_size)
+    decrypted = unpad(cipher.decrypt(encrypted[16:]), AES.block_size)
     return decrypted.decode("utf-8")
 
 
