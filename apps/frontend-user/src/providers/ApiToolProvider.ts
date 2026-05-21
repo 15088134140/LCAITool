@@ -1,6 +1,6 @@
 import type { ToolProvider } from './ToolProvider';
 import type { Category, Tool, Review, GetToolsParams, PaginatedResult } from '../types';
-import { toolsApi } from '../lib/api';
+import { categoryApi, toolApi } from '../lib/api';
 
 /** 后端API工具响应中的标签字段可能是JSON字符串或数组 */
 function parseTags(tags: unknown): string[] {
@@ -12,7 +12,7 @@ function parseTags(tags: unknown): string[] {
 }
 
 /** 将后端snake_case工具数据映射为前端camelCase Tool类型 */
-function mapApiTool(apiItem: Record<string, any>): Tool {
+function mapApiTool(apiItem: any): Tool {
   const tags = parseTags(apiItem.tags);
   return {
     id: apiItem.id || apiItem.slug || '',
@@ -46,7 +46,7 @@ function mapApiTool(apiItem: Record<string, any>): Tool {
 }
 
 /** 将后端snake_case分类数据映射为前端camelCase Category类型 */
-function mapApiCategory(apiItem: Record<string, any>): Category {
+function mapApiCategory(apiItem: any): Category {
   return {
     id: apiItem.id || '',
     name: apiItem.name || '',
@@ -67,9 +67,9 @@ export class ApiToolProvider implements ToolProvider {
    * @returns 按 sortOrder 排序的分类列表
    */
   async getCategories(): Promise<Category[]> {
-    const response = await toolsApi.getCategories();
-    const items = (response as any).items || response || [];
-    return Array.isArray(items) ? items.map(mapApiCategory) : [];
+    const response = await categoryApi.getCategories();
+    const items = response.items || [];
+    return items.map(mapApiCategory);
   }
 
   /**
@@ -78,11 +78,24 @@ export class ApiToolProvider implements ToolProvider {
    * @returns 分页的工具列表
    */
   async getTools(params?: GetToolsParams): Promise<PaginatedResult<Tool>> {
-    const response: any = await toolsApi.getTools(params);
-    const items = response.list || response.items || response || [];
+    const response = await toolApi.getTools(
+      // 过滤 undefined 值以兼容 exactOptionalPropertyTypes
+      Object.fromEntries(
+        Object.entries({
+          category_id: params?.categoryId,
+          search: params?.search,
+          is_featured: params?.isFeatured,
+          is_new: params?.isNew,
+          is_hot: params?.isHot,
+          page: params?.page,
+          page_size: params?.pageSize,
+        }).filter(([_, v]) => v !== undefined)
+      )
+    );
+    const items = response.items || [];
     return {
-      items: Array.isArray(items) ? items.map(mapApiTool) : [],
-      total: response.total ?? items.length ?? 0,
+      items: items.map(mapApiTool),
+      total: response.total ?? items.length,
     };
   }
 
@@ -92,7 +105,7 @@ export class ApiToolProvider implements ToolProvider {
    * @returns 工具详情，不存在则返回 null
    */
   async getToolById(id: string): Promise<Tool | null> {
-    const response: any = await toolsApi.getToolById(id);
+    const response: any = await toolApi.getTool(id);
     if (!response) return null;
     return mapApiTool(response);
   }
@@ -109,9 +122,19 @@ export class ApiToolProvider implements ToolProvider {
     page: number = 1,
     pageSize: number = 10
   ): Promise<PaginatedResult<Review>> {
-    const response: any = await toolsApi.getToolReviews(toolId, page, pageSize);
+    const response = await toolApi.getToolRatings(toolId, page, pageSize);
+    const mappedItems: Review[] = (Array.isArray(response.items) ? response.items : []).map((r: any) => ({
+      id: r.id,
+      userId: r.user_id,
+      userName: r.user?.nickname || r.user_id || '',
+      userAvatar: r.user?.avatar || '',
+      rating: r.rating,
+      content: r.content || '',
+      createdAt: r.created_at ? new Date(r.created_at * 1000).toISOString() : '',
+      toolId: r.tool_id,
+    }));
     return {
-      items: Array.isArray(response.items) ? response.items : [],
+      items: mappedItems,
       total: response.total ?? 0,
     };
   }
