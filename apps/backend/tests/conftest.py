@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from unittest.mock import MagicMock, patch
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -6,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.database import Base
 from app.main import app
 from app.api.deps import get_db
+from app.models.user import User
 
 
 # 使用SQLite内存数据库进行单元测试
@@ -60,3 +62,20 @@ async def client(db_session: AsyncSession, mock_redis_client):
                 yield ac
             # 清理覆盖
             app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def verified_user_id(db_session: AsyncSession):
+    """创建一个已实名认证的用户用于测试"""
+    user_id = uuid.uuid4()
+    user = User(
+        id=user_id,
+        nickname="测试用户",
+        id_card_verified=True,
+        balance=1000,
+        status=1
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user_id
