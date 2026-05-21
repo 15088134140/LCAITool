@@ -14,6 +14,12 @@ from app.schemas.payment import (
     CreateOrderRequest, CreateOrderResponse, OrderPaymentCallback,
     RechargePackageListResponse,
 )
+from app.schemas.work import (
+    WorkBase, WorkCreate, WorkUpdate, WorkInDBBase, Work, WorkDetail,
+    WorkFileBase, WorkFileCreate, WorkFileInDBBase, WorkFile,
+    WorkShareBase, WorkShareCreate, WorkShareInDBBase, WorkShare,
+    WorkListQuery, IterationCreate
+)
 
 __all__ = [
     "Token", "TokenPayload", "RefreshTokenRequest",
@@ -28,4 +34,8 @@ __all__ = [
     "PointTransaction", "PointTransactionCreate",
     "CreateOrderRequest", "CreateOrderResponse", "OrderPaymentCallback",
     "RechargePackageListResponse",
+    "WorkBase", "WorkCreate", "WorkUpdate", "WorkInDBBase", "Work", "WorkDetail",
+    "WorkFileBase", "WorkFileCreate", "WorkFileInDBBase", "WorkFile",
+    "WorkShareBase", "WorkShareCreate", "WorkShareInDBBase", "WorkShare",
+    "WorkListQuery", "IterationCreate",
 ]

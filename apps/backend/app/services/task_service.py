@@ -3,11 +3,10 @@ import time
 from typing import Optional, List, Tuple, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
-from app.models.task import Task, TaskLog, Work, WorkFile
+from app.models.task import Task, TaskLog
 from app.models.user import User
 from app.schemas.task import (
-    TaskCreate, TaskUpdate, TaskLogCreate,
-    WorkCreate, WorkUpdate, WorkFileCreate
+    TaskCreate, TaskUpdate, TaskLogCreate
 )
 from app.services.point_service import PointService
 from app.core.exceptions import (
@@ -401,63 +400,3 @@ class TaskService:
             raise ResourceNotFoundException("任务不存在")
 
         return task.snapshot_data
-
-    # ============ Work Methods ============
-
-    @staticmethod
-    async def create_work(db: AsyncSession, work_in: WorkCreate) -> Work:
-        """创建成果"""
-        db_work = Work(**work_in.model_dump())
-        db.add(db_work)
-        await db.commit()
-        await db.refresh(db_work)
-        return db_work
-
-    @staticmethod
-    async def get_work_by_id(db: AsyncSession, work_id: uuid.UUID) -> Optional[Work]:
-        """根据ID获取成果"""
-        result = await db.execute(select(Work).where(Work.id == work_id))
-        return result.scalar_one_or_none()
-
-    @staticmethod
-    async def get_work_by_task_id(db: AsyncSession, task_id: uuid.UUID) -> Optional[Work]:
-        """根据任务ID获取成果"""
-        result = await db.execute(select(Work).where(Work.task_id == task_id))
-        return result.scalar_one_or_none()
-
-    @staticmethod
-    async def get_user_works(
-        db: AsyncSession,
-        user_id: uuid.UUID,
-        skip: int = 0,
-        limit: int = 100
-    ) -> Tuple[List[Work], int]:
-        """获取用户的成果列表"""
-        query = select(Work).where(Work.user_id == user_id)
-
-        count_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(count_query)
-        total = total_result.scalar()
-
-        query = query.offset(skip).limit(limit).order_by(Work.created_at.desc())
-        result = await db.execute(query)
-        works = result.scalars().all()
-
-        return works, total
-
-    # ============ Work File Methods ============
-
-    @staticmethod
-    async def create_work_file(db: AsyncSession, file_in: WorkFileCreate) -> WorkFile:
-        """创建成果文件"""
-        db_file = WorkFile(**file_in.model_dump())
-        db.add(db_file)
-        await db.commit()
-        await db.refresh(db_file)
-        return db_file
-
-    @staticmethod
-    async def get_work_files(db: AsyncSession, work_id: uuid.UUID) -> List[WorkFile]:
-        """获取成果的文件列表"""
-        result = await db.execute(select(WorkFile).where(WorkFile.work_id == work_id))
-        return result.scalars().all()

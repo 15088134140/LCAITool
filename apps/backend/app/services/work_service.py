@@ -1,0 +1,664 @@
+import uuid
+import time
+import secrets
+from typing import Optional, List, Tuple
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, and_
+from app.models.task import Work, WorkFile, WorkShare
+from app.schemas.work import (
+    WorkCreate, WorkUpdate, WorkFileCreate,
+    WorkShareCreate, WorkDetail, IterationCreate
+)
+from app.core.exceptions import (
+    ResourceNotFoundException,
+    BusinessException,
+    InsufficientPermissionsException
+)
+
+
+class WorkService:
+    """成果管理服务 - 处理成果创建、查询、分享、迭代等操作"""
+
+    # ============ Work CRUD Methods ============
+
+    @staticmethod
+    async def create_work(
+        db: AsyncSession,
+        work_in: WorkCreate
+    ) -> Work:
+        """
+        仅创建成果（无文件）
+
+        Args:
+            db: 数据库会话
+            work_in: 成果创建参数
+
+        Returns:
+            创建的成果对象
+        """
+        db_work = Work(**work_in.model_dump())
+        db.add(db_work)
+        await db.commit()
+        await db.refresh(db_work)
+        return db_work
+
+    @staticmethod
+    async def create_work_with_files(
+        db: AsyncSession,
+        work_in: WorkCreate,
+        file_list: List[WorkFileCreate]
+    ) -> Work:
+        """
+        批量创建成果和关联文件
+
+        Args:
+            db: 数据库会话
+            work_in: 成果创建参数
+            file_list: 文件列表
+
+        Returns:
+            创建的成果对象
+        """
+        # 创建成果
+        db_work = Work(**work_in.model_dump())
+        db.add(db_work)
+        await db.flush()  # 获取 work.id
+
+        # 批量创建文件
+        for file_in in file_list:
+            db_file = WorkFile(
+                work_id=db_work.id,
+                **file_in.model_dump(exclude={"work_id"})
+            )
+            db.add(db_file)
+
+        await db.commit()
+        await db.refresh(db_work)
+        return db_work
+
+    @staticmethod
+    async def get_by_id(db: AsyncSession, work_id: uuid.UUID) -> Optional[Work]:
+        """根据ID获取成果"""
+        result = await db.execute(select(Work).where(Work.id == work_id))
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_work_detail(
+        db: AsyncSession,
+        work_id: uuid.UUID,
+        current_user_id: Optional[uuid.UUID] = None
+    ) -> WorkDetail:
+        """
+        获取成果详情，包含文件列表和分享记录
+
+        Args:
+            db: 数据库会话
+            work_id: 成果ID
+            current_user_id: 当前用户ID，用于权限检查
+
+        Returns:
+            WorkDetail: 成果详情对象
+        """
+        # 查询成果及其关联数据
+        result = await db.execute(
+            select(Work)
+            .where(Work.id == work_id)
+        )
+        work = result.scalar_one_or_none()
+
+        if not work:
+            raise ResourceNotFoundException("成果不存在")
+
+        # 获取文件列表
+        files_result = await db.execute(
+            select(WorkFile).where(WorkFile.work_id == work_id)
+        )
+        files = files_result.scalars().all()
+
+        # 获取分享记录
+        shares_result = await db.execute(
+            select(WorkShare).where(WorkShare.work_id == work_id)
+        )
+        shares = shares_result.scalars().all()
+
+        # 检查下载权限
+        has_download_permission = WorkService._check_download_permission_internal(
+            work=work,
+            user_id=current_user_id
+        )
+
+        # 构建详情对象
+        work_dict = {c.name: getattr(work, c.name) for c in work.__table__.columns}
+        work_detail = WorkDetail(
+            **work_dict,
+            files=files,
+            shares=shares,
+            has_download_permission=has_download_permission
+        )
+
+        return work_detail
+
+    @staticmethod
+    async def list_user_works(
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        status: Optional[str] = None,
+        tool_id: Optional[uuid.UUID] = None,
+        skip: int = 0,
+        limit: int = 20
+    ) -> Tuple[List[Work], int]:
+        """
+        获取用户的成果列表（带筛选和分页）
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            status: 状态筛选
+            tool_id: 工具ID筛选
+            skip: 跳过数量
+            limit: 每页数量
+
+        Returns:
+            Tuple[List[Work], int]: (成果列表, 总数)
+        """
+        conditions = [Work.user_id == user_id]
+
+        if status is not None:
+            conditions.append(Work.status == status)
+
+        if tool_id is not None:
+            conditions.append(Work.tool_id == tool_id)
+
+        # 总数查询
+        count_query = select(func.count()).select_from(Work).where(and_(*conditions))
+        total_result = await db.execute(count_query)
+        total = total_result.scalar() or 0
+
+        # 分页查询
+        query = (
+            select(Work)
+            .where(and_(*conditions))
+            .order_by(Work.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await db.execute(query)
+        works = result.scalars().all()
+
+        return works, total
+
+    @staticmethod
+    async def list_public_works(
+        db: AsyncSession,
+        tool_id: Optional[uuid.UUID] = None,
+        skip: int = 0,
+        limit: int = 20
+    ) -> Tuple[List[Work], int]:
+        """
+        获取公开的成果列表
+
+        Args:
+            db: 数据库会话
+            tool_id: 工具ID筛选
+            skip: 跳过数量
+            limit: 每页数量
+
+        Returns:
+            Tuple[List[Work], int]: (成果列表, 总数)
+        """
+        conditions = [Work.is_public == True, Work.status == "published"]
+
+        if tool_id is not None:
+            conditions.append(Work.tool_id == tool_id)
+
+        # 总数查询
+        count_query = select(func.count()).select_from(Work).where(and_(*conditions))
+        total_result = await db.execute(count_query)
+        total = total_result.scalar() or 0
+
+        # 分页查询
+        query = (
+            select(Work)
+            .where(and_(*conditions))
+            .order_by(Work.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await db.execute(query)
+        works = result.scalars().all()
+
+        return works, total
+
+    @staticmethod
+    async def update_work(
+        db: AsyncSession,
+        work_id: uuid.UUID,
+        work_in: WorkUpdate,
+        current_user_id: uuid.UUID
+    ) -> Work:
+        """
+        更新成果信息
+
+        Args:
+            db: 数据库会话
+            work_id: 成果ID
+            work_in: 更新参数
+            current_user_id: 当前用户ID
+
+        Returns:
+            更新后的成果对象
+        """
+        work = await WorkService.get_by_id(db, work_id)
+        if not work:
+            raise ResourceNotFoundException("成果不存在")
+
+        # 权限检查：仅所有者可修改
+        if work.user_id != current_user_id:
+            raise InsufficientPermissionsException()
+
+        # 更新字段
+        update_data = work_in.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(work, field, value)
+
+        await db.commit()
+        await db.refresh(work)
+        return work
+
+    @staticmethod
+    async def delete_work(
+        db: AsyncSession,
+        work_id: uuid.UUID,
+        current_user_id: uuid.UUID
+    ) -> None:
+        """
+        删除成果
+
+        Args:
+            db: 数据库会话
+            work_id: 成果ID
+            current_user_id: 当前用户ID
+        """
+        work = await WorkService.get_by_id(db, work_id)
+        if not work:
+            raise ResourceNotFoundException("成果不存在")
+
+        # 权限检查：仅所有者可删除
+        if work.user_id != current_user_id:
+            raise InsufficientPermissionsException()
+
+        await db.delete(work)
+        await db.commit()
+
+    # ============ Public Status Methods ============
+
+    @staticmethod
+    async def set_public_status(
+        db: AsyncSession,
+        work_id: uuid.UUID,
+        is_public: bool,
+        current_user_id: uuid.UUID
+    ) -> Work:
+        """
+        设置成果公开/私有状态
+
+        Args:
+            db: 数据库会话
+            work_id: 成果ID
+            is_public: 是否公开
+            current_user_id: 当前用户ID
+
+        Returns:
+            更新后的成果对象
+        """
+        work = await WorkService.get_by_id(db, work_id)
+        if not work:
+            raise ResourceNotFoundException("成果不存在")
+
+        # 权限检查：仅所有者可修改公开状态
+        if work.user_id != current_user_id:
+            raise InsufficientPermissionsException()
+
+        work.is_public = is_public
+        await db.commit()
+        await db.refresh(work)
+        return work
+
+    # ============ Share Methods ============
+
+    @staticmethod
+    async def create_share_link(
+        db: AsyncSession,
+        work_id: uuid.UUID,
+        share_type: str = "link",
+        password: Optional[str] = None,
+        expire_days: Optional[int] = None
+    ) -> WorkShare:
+        """
+        生成分享链接
+
+        Args:
+            db: 数据库会话
+            work_id: 成果ID
+            share_type: 分享类型 public/link/friends
+            password: 分享密码
+            expire_days: 过期天数
+
+        Returns:
+            分享记录对象
+        """
+        work = await WorkService.get_by_id(db, work_id)
+        if not work:
+            raise ResourceNotFoundException("成果不存在")
+
+        # 生成唯一分享令牌
+        share_token = secrets.token_urlsafe(16)
+        share_url = f"/share/{share_token}"
+
+        # 计算过期时间
+        expire_at = None
+        if expire_days:
+            expire_at = int(time.time()) + expire_days * 24 * 3600
+
+        # 创建分享记录
+        db_share = WorkShare(
+            work_id=work_id,
+            share_type=share_type,
+            share_url=share_url,
+            password=password,
+            expire_at=expire_at,
+            status="pending",  # 待审核
+            view_count=0,
+            like_count=0,
+            comment_count=0
+        )
+        db.add(db_share)
+
+        # 更新成果的分享计数
+        work.share_count += 1
+
+        await db.commit()
+        await db.refresh(db_share)
+        return db_share
+
+    @staticmethod
+    async def get_share_by_token(
+        db: AsyncSession,
+        share_token: str
+    ) -> Optional[WorkShare]:
+        """根据分享令牌获取分享记录"""
+        share_url = f"/share/{share_token}"
+        result = await db.execute(
+            select(WorkShare).where(WorkShare.share_url == share_url)
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def increment_share_view_count(
+        db: AsyncSession,
+        share_id: uuid.UUID
+    ) -> None:
+        """增加分享的查看次数"""
+        share = await db.get(WorkShare, share_id)
+        if share:
+            share.view_count += 1
+            await db.commit()
+
+    # ============ Iteration Methods ============
+
+    @staticmethod
+    async def create_iteration(
+        db: AsyncSession,
+        parent_work_id: uuid.UUID,
+        current_user_id: uuid.UUID,
+        title: Optional[str] = None,
+        description: Optional[str] = None
+    ) -> Work:
+        """
+        基于父成果创建新版本（迭代）
+
+        Args:
+            db: 数据库会话
+            parent_work_id: 父成果ID
+            current_user_id: 当前用户ID
+            title: 新标题（可选）
+            description: 新描述（可选）
+
+        Returns:
+            新版本成果对象
+        """
+        # 获取父成果
+        parent_work = await WorkService.get_by_id(db, parent_work_id)
+        if not parent_work:
+            raise ResourceNotFoundException("父成果不存在")
+
+        # 权限检查：仅所有者可以迭代
+        if parent_work.user_id != current_user_id:
+            raise InsufficientPermissionsException()
+
+        # 获取新版本号
+        new_version = parent_work.version + 1
+
+        # 自动生成标题
+        if title is None:
+            title = f"{parent_work.title} (V{new_version})"
+
+        # 使用传入的描述或继承父描述
+        if description is None:
+            description = parent_work.description
+
+        # 创建新版本成果
+        # 注意：这里没有 task_id，因为迭代可能不需要重新执行任务
+        # 实际应用中可能需要创建新的 task
+        db_work = Work(
+            user_id=current_user_id,
+            task_id=parent_work.task_id,  # 继承原任务ID
+            parent_id=parent_work_id,
+            tool_id=parent_work.tool_id,
+            title=title,
+            description=description,
+            version=new_version,
+            cover_image=parent_work.cover_image,
+            status="draft",
+            is_public=False,
+            view_count=0,
+            like_count=0,
+            share_count=0
+        )
+        db.add(db_work)
+        await db.flush()
+
+        # 复制原成果的文件
+        parent_files = await WorkService.get_work_files(db, parent_work_id)
+        for file in parent_files:
+            new_file = WorkFile(
+                work_id=db_work.id,
+                file_type=file.file_type,
+                file_name=file.file_name,
+                file_url=file.file_url,
+                file_size=file.file_size,
+                page_number=file.page_number,
+                mime_type=file.mime_type,
+                duration=file.duration,
+                is_preview=file.is_preview
+            )
+            db.add(new_file)
+
+        await db.commit()
+        await db.refresh(db_work)
+        return db_work
+
+    @staticmethod
+    async def get_iteration_history(
+        db: AsyncSession,
+        work_id: uuid.UUID
+    ) -> List[Work]:
+        """
+        获取成果的迭代历史（所有祖先版本）
+
+        Args:
+            db: 数据库会话
+            work_id: 成果ID
+
+        Returns:
+            迭代历史列表
+        """
+        history = []
+        current_id = work_id
+
+        while current_id:
+            work = await WorkService.get_by_id(db, current_id)
+            if not work:
+                break
+            history.append(work)
+            current_id = work.parent_id
+
+        # 按版本号升序排列
+        history.sort(key=lambda x: x.version)
+        return history
+
+    # ============ Permission Methods ============
+
+    @staticmethod
+    async def check_download_permission(
+        db: AsyncSession,
+        work_id: uuid.UUID,
+        user_id: Optional[uuid.UUID]
+    ) -> bool:
+        """
+        检查用户是否有权限下载成果
+
+        Args:
+            db: 数据库会话
+            work_id: 成果ID
+            user_id: 用户ID（None表示未登录用户）
+
+        Returns:
+            bool: 是否有权限
+        """
+        work = await WorkService.get_by_id(db, work_id)
+        if not work:
+            return False
+
+        return WorkService._check_download_permission_internal(work, user_id)
+
+    @staticmethod
+    def _check_download_permission_internal(
+        work: Work,
+        user_id: Optional[uuid.UUID]
+    ) -> bool:
+        """内部权限检查方法（避免重复查询）"""
+        # 所有者有完全权限
+        if user_id is not None and work.user_id == user_id:
+            return True
+
+        # 公开成果允许下载
+        if work.is_public and work.status == "published":
+            return True
+
+        # TODO: 可以扩展更多权限逻辑（如分享链接访问、团队成员等）
+
+        return False
+
+    # ============ View & Like Count Methods ============
+
+    @staticmethod
+    async def increment_view_count(
+        db: AsyncSession,
+        work_id: uuid.UUID
+    ) -> None:
+        """增加成果的查看次数"""
+        work = await WorkService.get_by_id(db, work_id)
+        if work:
+            work.view_count += 1
+            await db.commit()
+
+    @staticmethod
+    async def increment_like_count(
+        db: AsyncSession,
+        work_id: uuid.UUID
+    ) -> None:
+        """增加成果的点赞次数"""
+        work = await WorkService.get_by_id(db, work_id)
+        if work:
+            work.like_count += 1
+            await db.commit()
+
+    # ============ Work File Methods ============
+
+    @staticmethod
+    async def get_work_files(
+        db: AsyncSession,
+        work_id: uuid.UUID
+    ) -> List[WorkFile]:
+        """获取成果的文件列表"""
+        result = await db.execute(
+            select(WorkFile).where(WorkFile.work_id == work_id)
+        )
+        return result.scalars().all()
+
+    @staticmethod
+    async def add_work_file(
+        db: AsyncSession,
+        work_id: uuid.UUID,
+        file_in: WorkFileCreate,
+        current_user_id: uuid.UUID
+    ) -> WorkFile:
+        """
+        为成果添加文件
+
+        Args:
+            db: 数据库会话
+            work_id: 成果ID
+            file_in: 文件创建参数
+            current_user_id: 当前用户ID
+
+        Returns:
+            创建的文件对象
+        """
+        work = await WorkService.get_by_id(db, work_id)
+        if not work:
+            raise ResourceNotFoundException("成果不存在")
+
+        # 权限检查：仅所有者可添加文件
+        if work.user_id != current_user_id:
+            raise InsufficientPermissionsException()
+
+        db_file = WorkFile(
+            work_id=work_id,
+            **file_in.model_dump(exclude={"work_id"})
+        )
+        db.add(db_file)
+        await db.commit()
+        await db.refresh(db_file)
+        return db_file
+
+    @staticmethod
+    async def delete_work_file(
+        db: AsyncSession,
+        file_id: uuid.UUID,
+        current_user_id: uuid.UUID
+    ) -> None:
+        """
+        删除成果文件
+
+        Args:
+            db: 数据库会话
+            file_id: 文件ID
+            current_user_id: 当前用户ID
+        """
+        result = await db.execute(
+            select(WorkFile).where(WorkFile.id == file_id)
+        )
+        db_file = result.scalar_one_or_none()
+
+        if not db_file:
+            raise ResourceNotFoundException("文件不存在")
+
+        # 检查所属成果的所有者
+        work = await WorkService.get_by_id(db, db_file.work_id)
+        if not work or work.user_id != current_user_id:
+            raise InsufficientPermissionsException()
+
+        await db.delete(db_file)
+        await db.commit()

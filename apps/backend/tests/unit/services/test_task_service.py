@@ -12,6 +12,7 @@ from app.schemas.user import UserCreate
 from app.services.task_service import TaskService
 from app.services.user_service import UserService
 from app.services.point_service import PointService
+from app.services.work_service import WorkService
 from app.models.task import Task, TaskLog, Work, WorkFile
 from app.models.user import User
 from app.core.exceptions import (
@@ -699,7 +700,7 @@ async def test_create_work(db_session: AsyncSession):
         status="published",
         is_public=True
     )
-    work = await TaskService.create_work(db_session, work_in)
+    work = await WorkService.create_work(db_session, work_in)
 
     assert work.id is not None
     assert work.user_id == user.id
@@ -728,7 +729,7 @@ async def test_create_work_versioning(db_session: AsyncSession):
     work1_in = WorkCreate(
         user_id=user.id, task_id=task1.id, title="第一版绘本", version=1
     )
-    work1 = await TaskService.create_work(db_session, work1_in)
+    work1 = await WorkService.create_work(db_session, work1_in)
     # 保存ID，因为后续TaskService.create_task会expire session对象
     work1_id = work1.id
 
@@ -743,7 +744,7 @@ async def test_create_work_versioning(db_session: AsyncSession):
         title="第二版绘本（优化版）",
         version=2
     )
-    work2 = await TaskService.create_work(db_session, work2_in)
+    work2 = await WorkService.create_work(db_session, work2_in)
 
     assert work2.parent_id == work1_id
     assert work2.version == 2
@@ -768,9 +769,9 @@ async def test_get_user_works(db_session: AsyncSession):
         work_in = WorkCreate(
             user_id=user.id, task_id=task.id, title=f"绘本{i+1}", version=1
         )
-        await TaskService.create_work(db_session, work_in)
+        await WorkService.create_work(db_session, work_in)
 
-    works, total = await TaskService.get_user_works(db_session, user.id, skip=0, limit=10)
+    works, total = await WorkService.list_user_works(db_session, user.id, skip=0, limit=10)
     assert total == 3
     assert len(works) == 3
 
@@ -792,7 +793,7 @@ async def test_create_work_file(db_session: AsyncSession):
     task = await TaskService.create_task(db_session, task_in)
 
     work_in = WorkCreate(user_id=user.id, task_id=task.id, title="测试绘本", version=1)
-    work = await TaskService.create_work(db_session, work_in)
+    work = await WorkService.create_work(db_session, work_in)
 
     # 添加文件
     file_in = WorkFileCreate(
@@ -805,7 +806,7 @@ async def test_create_work_file(db_session: AsyncSession):
         mime_type="image/jpeg",
         is_preview=True
     )
-    file = await TaskService.create_work_file(db_session, file_in)
+    file = await WorkService.add_work_file(db_session, work.id, file_in, user.id)
 
     assert file.id is not None
     assert file.work_id == work.id
@@ -828,7 +829,7 @@ async def test_get_work_files(db_session: AsyncSession):
     task = await TaskService.create_task(db_session, task_in)
 
     work_in = WorkCreate(user_id=user.id, task_id=task.id, title="测试绘本", version=1)
-    work = await TaskService.create_work(db_session, work_in)
+    work = await WorkService.create_work(db_session, work_in)
 
     # 添加多个文件
     for i in range(3):
@@ -839,9 +840,9 @@ async def test_get_work_files(db_session: AsyncSession):
             file_url=f"https://example.com/page{i+1}.jpg",
             page_number=i + 1
         )
-        await TaskService.create_work_file(db_session, file_in)
+        await WorkService.add_work_file(db_session, work.id, file_in, user.id)
 
-    files = await TaskService.get_work_files(db_session, work.id)
+    files = await WorkService.get_work_files(db_session, work.id)
     assert len(files) == 3
 
 
