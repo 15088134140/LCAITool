@@ -33,6 +33,7 @@ class IdeaService:
             description=idea_in.description,
             category=idea_in.category,
             tags=tags_json,
+            cover_image=idea_in.cover_image,
             contact_info=idea_in.contact_info,
             vote_count=0,
             view_count=0,

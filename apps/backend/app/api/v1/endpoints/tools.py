@@ -27,6 +27,7 @@ async def get_tools(
     category: Optional[uuid.UUID] = Query(None, description="分类ID"),
     search: Optional[str] = Query(None, description="搜索关键词"),
     sort_by: Optional[str] = Query(None, description="排序方式: popularity/newest/price_asc/price_desc"),
+    is_featured: Optional[bool] = Query(None, description="是否只返回推荐工具"),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """
@@ -42,6 +43,7 @@ async def get_tools(
         category_id=category,
         search=search,
         sort_by=sort_by,
+        is_featured=is_featured,
         skip=skip,
         limit=page_size
     )

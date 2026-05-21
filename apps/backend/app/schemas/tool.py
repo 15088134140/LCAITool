@@ -57,6 +57,7 @@ class ToolBase(BaseModel):
     token_fee: int = Field(0, description="Token费（积分/千token）")
     config: Optional[Any] = Field(None, description="工具配置，JSON格式")
     status: int = Field(1, description="状态：0下线 1上线 2维护中")
+    is_featured: bool = Field(False, description="是否推荐展示在首页精品工具")
 
 
 class ToolCreate(ToolBase):
@@ -78,6 +79,7 @@ class ToolUpdate(BaseModel):
     token_fee: Optional[int] = Field(None, description="Token费（积分/千token）")
     config: Optional[Any] = Field(None, description="工具配置，JSON格式")
     status: Optional[int] = Field(None, description="状态：0下线 1上线 2维护中")
+    is_featured: Optional[bool] = Field(None, description="是否推荐展示在首页精品工具")
 
 
 class ToolResponse(ToolBase):

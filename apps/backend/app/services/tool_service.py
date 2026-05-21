@@ -35,19 +35,25 @@ class ToolService:
         category_id: Optional[uuid.UUID] = None,
         search: Optional[str] = None,
         sort_by: Optional[str] = None,
+        is_featured: Optional[bool] = None,
         skip: int = 0,
         limit: int = 100
     ) -> Tuple[List[Tool], int]:
-        """获取工具列表，支持分类筛选、搜索和排序
+        """获取工具列表，支持分类筛选、搜索、推荐筛选和排序
 
         Args:
             sort_by: 排序方式 - popularity(热度), newest(最新), price_asc(价格升序), price_desc(价格降序)
+            is_featured: 是否只返回推荐工具
         """
         query = select(Tool).where(Tool.status == 1)  # 只返回已上线工具
 
         # 分类筛选
         if category_id:
             query = query.where(Tool.category_id == category_id)
+
+        # 推荐工具筛选
+        if is_featured is not None:
+            query = query.where(Tool.is_featured == is_featured)
 
         # 搜索（按名称或描述）
         if search:

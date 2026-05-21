@@ -9,6 +9,7 @@ class IdeaSubmissionCreate(BaseModel):
     description: Optional[str] = Field(None, description="创意描述")
     category: Optional[str] = Field(None, max_length=50, description="分类")
     tags: Optional[List[str]] = Field(None, description="标签列表")
+    cover_image: Optional[str] = Field(None, description="封面图片URL")
     contact_info: Optional[str] = Field(None, max_length=200, description="联系方式")
 
 
@@ -20,6 +21,7 @@ class IdeaSubmissionResponse(BaseModel):
     description: Optional[str]
     category: Optional[str]
     tags: Optional[List[str]]
+    cover_image: Optional[str] = None
     vote_count: int
     view_count: int
     status: str
@@ -33,8 +35,8 @@ class IdeaSubmissionListResponse(BaseModel):
     """创意列表响应"""
     items: List[IdeaSubmissionResponse]
     total: int
-    skip: int
-    limit: int
+    page: int
+    page_size: int
 
 
 class IdeaVoteCreate(BaseModel):

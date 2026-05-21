@@ -7,12 +7,51 @@ import asyncio
 import json
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
+from app.core.security import get_password_hash
+from app.models.system import IdeaSubmission
+from app.models.user import User, Role, user_roles
 from app.models.tool import ToolCategory, Tool, ToolDemo
 from app.models.payment import RechargePackage
+
+
+async def seed_users(db: AsyncSession):
+    """创建基础用户和管理员角色"""
+    # 检查系统用户是否已存在
+    result = await db.execute(
+        select(User).where(User.id == uuid.UUID("00000000-0000-0000-0000-000000000001"))
+    )
+    if result.scalar_one_or_none():
+        print("  ✓ 系统用户已存在，跳过")
+        return
+
+    # 创建管理员角色
+    admin_role = Role(
+        id=uuid.UUID("00000000-0000-0000-0000-000000000010"),
+        name="admin",
+        description="系统管理员",
+        permissions=json.dumps(["*"]),
+    )
+    db.add(admin_role)
+
+    users = [
+        User(
+            id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+            nickname="系统用户",
+            phone="13800000000",
+            password_hash=get_password_hash("test123456"),
+            balance=10000,
+            status=1,
+            roles=[admin_role],
+        ),
+    ]
+    for user in users:
+        db.add(user)
+    await db.commit()
+    print(f"  ✓ 已创建 {len(users)} 个基础用户和管理员角色")
 
 async def seed_categories(db: AsyncSession):
     """创建工具分类"""
@@ -21,45 +60,88 @@ async def seed_categories(db: AsyncSession):
             id=uuid.UUID("10000001-0000-0000-0000-000000000001"),
             slug="story", name="故事创作", icon="📖",
             description="AI故事创作、绘本生成等", sort_order=1,
-            is_active=True, is_featured=True,
+            is_active=True, is_featured=True, tool_count=1,
         ),
         ToolCategory(
             id=uuid.UUID("10000001-0000-0000-0000-000000000002"),
             slug="ecommerce", name="电商工具", icon="🛒",
             description="商品详情、营销文案生成", sort_order=2,
-            is_active=True, is_featured=True,
+            is_active=True, is_featured=True, tool_count=1,
         ),
         ToolCategory(
             id=uuid.UUID("10000001-0000-0000-0000-000000000003"),
             slug="image", name="图片处理", icon="🎨",
             description="AI图片生成、编辑、优化", sort_order=3,
-            is_active=True, is_featured=False,
+            is_active=True, is_featured=False, tool_count=1,
         ),
         ToolCategory(
             id=uuid.UUID("10000001-0000-0000-0000-000000000004"),
             slug="copywriting", name="文案写作", icon="✍️",
             description="营销文案、创意写作、标题生成", sort_order=4,
-            is_active=True, is_featured=False,
+            is_active=True, is_featured=False, tool_count=1,
         ),
         ToolCategory(
             id=uuid.UUID("10000001-0000-0000-0000-000000000005"),
             slug="audio", name="音频处理", icon="🎵",
             description="语音合成、配乐生成、音频编辑", sort_order=5,
-            is_active=True, is_featured=False,
+            is_active=True, is_featured=False, tool_count=1,
         ),
         ToolCategory(
             id=uuid.UUID("10000001-0000-0000-0000-000000000006"),
             slug="video", name="视频创作", icon="🎬",
             description="AI视频生成、剪辑辅助", sort_order=6,
-            is_active=False, is_featured=False,
+            is_active=True, is_featured=False, tool_count=0,
+        ),
+        ToolCategory(
+            id=uuid.UUID("10000001-0000-0000-0000-000000000007"),
+            slug="design", name="设计工具", icon="🖌️",
+            description="UI设计、海报制作、视觉创意", sort_order=7,
+            is_active=True, is_featured=False, tool_count=0,
+        ),
+        ToolCategory(
+            id=uuid.UUID("10000001-0000-0000-0000-000000000008"),
+            slug="office", name="办公效率", icon="📊",
+            description="文档处理、数据分析、PPT生成", sort_order=8,
+            is_active=True, is_featured=False, tool_count=0,
+        ),
+        ToolCategory(
+            id=uuid.UUID("10000001-0000-0000-0000-000000000009"),
+            slug="education", name="教育教学", icon="📚",
+            description="课件生成、试题制作、学习辅导", sort_order=9,
+            is_active=True, is_featured=False, tool_count=0,
+        ),
+        ToolCategory(
+            id=uuid.UUID("10000001-0000-0000-0000-000000000010"),
+            slug="marketing", name="营销推广", icon="📢",
+            description="社交媒体、广告创意、SEO优化", sort_order=10,
+            is_active=False, is_featured=False, tool_count=0,
+        ),
+        ToolCategory(
+            id=uuid.UUID("10000001-0000-0000-0000-000000000011"),
+            slug="development", name="编程开发", icon="💻",
+            description="代码生成、API开发、自动化脚本", sort_order=11,
+            is_active=False, is_featured=False, tool_count=0,
         ),
     ]
+    created = 0
+    updated = 0
     for cat in categories:
         existing = await db.execute(select(ToolCategory).where(ToolCategory.slug == cat.slug))
-        if not existing.scalar_one_or_none():
+        existing_row = existing.scalar_one_or_none()
+        if not existing_row:
             db.add(cat)
+            created += 1
+        else:
+            existing_row.name = cat.name
+            existing_row.icon = cat.icon
+            existing_row.description = cat.description
+            existing_row.sort_order = cat.sort_order
+            existing_row.is_active = cat.is_active
+            existing_row.is_featured = cat.is_featured
+            existing_row.tool_count = cat.tool_count
+            updated += 1
     await db.commit()
-    print(f"  ✓ 已创建 {len(categories)} 个分类")
+    print(f"  ✓ 已创建 {created} 个分类，更新 {updated} 个分类")
 
 
 async def seed_tools(db: AsyncSession):
@@ -80,6 +162,7 @@ async def seed_tools(db: AsyncSession):
             tags=json.dumps(["绘本", "故事", "儿童", "插画", "语音"]),
             base_fee=20, image_fee=2, audio_fee=3, token_fee=0,
             status=1, use_count=128, favorite_count=45, rating_count=32, rating_avg=4.7,
+            is_featured=True,
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000002"),
@@ -90,6 +173,7 @@ async def seed_tools(db: AsyncSession):
             tags=json.dumps(["电商", "详情页", "营销", "主图"]),
             base_fee=12, image_fee=1, audio_fee=0, token_fee=0,
             status=1, use_count=96, favorite_count=32, rating_count=18, rating_avg=4.5,
+            is_featured=True,
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000003"),
@@ -100,6 +184,7 @@ async def seed_tools(db: AsyncSession):
             tags=json.dumps(["文案", "电商", "营销", "标题"]),
             base_fee=5, image_fee=0, audio_fee=0, token_fee=0,
             status=1, use_count=200, favorite_count=60, rating_count=45, rating_avg=4.6,
+            is_featured=True,
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000004"),
@@ -251,6 +336,126 @@ async def seed_ideas(db: AsyncSession):
             vote_count=10, view_count=150, status="pending",
             created_at=now - 86400 * 2,
         ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI社交媒体内容工厂",
+            description="一键生成适合各大社交平台的营销内容，支持图文、短视频脚本等多种格式。",
+            category="内容创作", tags=json.dumps([]),
+            vote_count=368, view_count=5200, status="approved",
+            created_at=now - 86400 * 30,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI智能合同审查助手",
+            description="上传合同文档，AI自动识别风险条款、标注异常内容，生成审查报告。",
+            category="办公效率", tags=json.dumps([]),
+            vote_count=285, view_count=4300, status="approved",
+            created_at=now - 86400 * 28,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI儿童故事绘本生成",
+            description="根据主题和年龄段自动生成图文并茂的儿童绘本，支持中英文双语。",
+            category="内容创作", tags=json.dumps([]),
+            vote_count=312, view_count=4800, status="approved",
+            created_at=now - 86400 * 25,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI产品摄影后期处理",
+            description="自动去除背景、调色、添加水印、生成多尺寸适配图。",
+            category="设计工具", tags=json.dumps([]),
+            vote_count=198, view_count=3500, status="approved",
+            created_at=now - 86400 * 22,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI视频自动剪辑大师",
+            description="AI自动识别精彩片段，添加字幕、转场特效和背景音乐，一键出片。",
+            category="视频音频", tags=json.dumps([]),
+            vote_count=420, view_count=6800, status="approved",
+            created_at=now - 86400 * 20,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI Logo智能设计工坊",
+            description="输入品牌名称和行业，AI生成多种风格Logo方案，支持矢量格式导出。",
+            category="设计工具", tags=json.dumps([]),
+            vote_count=256, view_count=4100, status="approved",
+            created_at=now - 86400 * 18,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI论文摘要生成器",
+            description="AI自动提取核心观点、研究方法、实验数据和结论，生成结构化摘要。",
+            category="办公效率", tags=json.dumps([]),
+            vote_count=178, view_count=2900, status="approved",
+            created_at=now - 86400 * 15,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI短视频口播文案生成",
+            description="AI生成吸引人的口播脚本，支持多种人设和语气风格。",
+            category="内容创作", tags=json.dumps([]),
+            vote_count=345, view_count=5500, status="approved",
+            created_at=now - 86400 * 12,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI室内设计效果图生成",
+            description="上传户型图或现场照片，AI生成多种风格的室内设计效果图。",
+            category="设计工具", tags=json.dumps([]),
+            vote_count=220, view_count=3800, status="approved",
+            created_at=now - 86400 * 10,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI声音克隆与配音",
+            description="上传30秒语音样本，AI克隆声音后可用于配音。",
+            category="视频音频", tags=json.dumps([]),
+            vote_count=156, view_count=2600, status="approved",
+            created_at=now - 86400 * 8,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI周报/月报自动生成",
+            description="根据工作日志和项目进度，AI自动生成结构化的周报/月报。",
+            category="办公效率", tags=json.dumps([]),
+            vote_count=132, view_count=2100, status="approved",
+            created_at=now - 86400 * 7,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI表情包生成器",
+            description="输入文字或上传图片，AI自动生成个性化表情包。",
+            category="设计工具", tags=json.dumps([]),
+            vote_count=98, view_count=1800, status="approved",
+            created_at=now - 86400 * 6,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI会议纪要智能整理",
+            description="上传会议录音或文字记录，AI自动提取议题、决议和待办事项。",
+            category="办公效率", tags=json.dumps([]),
+            vote_count=275, view_count=4200, status="approved",
+            created_at=now - 86400 * 5,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI商品短视频生成",
+            description="输入商品链接或图片，AI自动生成商品展示短视频。",
+            category="视频音频", tags=json.dumps([]),
+            vote_count=190, view_count=3100, status="approved",
+            created_at=now - 86400 * 4,
+        ),
+        IdeaSubmission(
+            user_id=system_user_id,
+            title="AI简历优化与面试模拟",
+            description="上传简历PDF，AI诊断问题并优化，提供模拟面试功能。",
+            category="办公效率", tags=json.dumps([]),
+            vote_count=160, view_count=2400, status="approved",
+            created_at=now - 86400 * 3,
+        ),
     ]
     for idea in ideas:
         existing = await db.execute(
@@ -262,12 +467,55 @@ async def seed_ideas(db: AsyncSession):
     print(f"  ✓ 已创建 {len(ideas)} 个构思示例")
 
 
+async def seed_admin_role(db: AsyncSession):
+    """创建管理员角色并分配给系统用户"""
+    # 检查管理员角色是否存在
+    result = await db.execute(
+        select(Role).where(Role.name == "admin")
+    )
+    admin_role = result.scalar_one_or_none()
+    if not admin_role:
+        admin_role = Role(
+            id=uuid.UUID("00000000-0000-0000-0000-000000000010"),
+            name="admin",
+            description="系统管理员",
+            permissions=json.dumps(["*"]),
+        )
+        db.add(admin_role)
+        await db.flush()
+        print("  ✓ 已创建管理员角色")
+    else:
+        print("  ✓ 管理员角色已存在")
+
+    # 确保系统用户有 admin 角色（直接操作关联表）
+    result = await db.execute(
+        select(user_roles).where(
+            user_roles.c.user_id == uuid.UUID("00000000-0000-0000-0000-000000000001"),
+            user_roles.c.role_id == admin_role.id,
+        )
+    )
+    if not result.one_or_none():
+        await db.execute(
+            insert(user_roles).values(
+                user_id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+                role_id=admin_role.id,
+            )
+        )
+        await db.commit()
+        print("  ✓ 已为系统用户分配管理员角色")
+    else:
+        print("  ✓ 系统用户已有管理员角色")
+
+
 async def main():
     print("\n🌱 开始初始化种子数据...\n")
     async with AsyncSessionLocal() as db:
+        await seed_users(db)
+        await seed_admin_role(db)
         await seed_categories(db)
         await seed_tools(db)
         await seed_demos(db)
+        await seed_ideas(db)
         await seed_packages(db)
     print("\n✅ 种子数据初始化完成！\n")
 

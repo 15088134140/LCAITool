@@ -48,6 +48,7 @@ class Tool(BaseModel):
     token_fee = Column(Integer, default=0, nullable=False, comment="Token费（积分/千token）")
     config = Column(JSONType, nullable=True, comment="工具配置，JSON格式")
     status = Column(Integer, default=1, nullable=False, comment="状态：0下线 1上线 2维护中")
+    is_featured = Column(Boolean, default=False, nullable=False, comment="是否推荐展示在首页精品工具")
     use_count = Column(Integer, default=0, nullable=False, comment="使用次数")
     favorite_count = Column(Integer, default=0, nullable=False, comment="收藏次数")
     rating_count = Column(Integer, default=0, nullable=False, comment="评价次数")

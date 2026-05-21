@@ -67,11 +67,28 @@ async def get_ideas(
     )
 
     return {
-        "items": ideas,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "sort": sort,
+        "success": True,
+        "data": {
+            "items": [
+                {
+                    "id": str(idea.id),
+                    "user_id": str(idea.user_id),
+                    "title": idea.title,
+                    "description": idea.description,
+                    "category": idea.category,
+                    "tags": idea.tags,
+                    "vote_count": idea.vote_count,
+                    "view_count": idea.view_count,
+                    "status": idea.status,
+                    "created_at": idea.created_at,
+                    "updated_at": idea.updated_at,
+                }
+                for idea in ideas
+            ],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        },
     }
 
 
