@@ -436,7 +436,8 @@ async def test_list_demos(db_session: AsyncSession):
         )
         await ToolService.create_demo(db_session, demo_in)
 
-    demos = await ToolService.list_demos(db_session, tool.id)
+    demos, total = await ToolService.list_demos(db_session, tool.id)
+    assert total == 3
     assert len(demos) == 3
     # 验证按sort_order排序
     assert demos[0].sort_order == 0

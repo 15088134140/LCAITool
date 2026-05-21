@@ -34,10 +34,15 @@ class ToolService:
         db: AsyncSession,
         category_id: Optional[uuid.UUID] = None,
         search: Optional[str] = None,
+        sort_by: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
     ) -> Tuple[List[Tool], int]:
-        """获取工具列表，支持分类筛选和搜索"""
+        """获取工具列表，支持分类筛选、搜索和排序
+
+        Args:
+            sort_by: 排序方式 - popularity(热度), newest(最新), price_asc(价格升序), price_desc(价格降序)
+        """
         query = select(Tool)
 
         # 分类筛选
@@ -58,8 +63,21 @@ class ToolService:
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 
+        # 排序逻辑
+        if sort_by == "popularity":
+            query = query.order_by(Tool.use_count.desc(), Tool.favorite_count.desc())
+        elif sort_by == "newest":
+            query = query.order_by(Tool.created_at.desc())
+        elif sort_by == "price_asc":
+            query = query.order_by(Tool.base_fee.asc())
+        elif sort_by == "price_desc":
+            query = query.order_by(Tool.base_fee.desc())
+        else:
+            # 默认排序：最新优先
+            query = query.order_by(Tool.created_at.desc())
+
         # 分页查询
-        query = query.offset(skip).limit(limit).order_by(Tool.created_at.desc())
+        query = query.offset(skip).limit(limit)
         result = await db.execute(query)
         tools = result.scalars().all()
 
@@ -257,14 +275,29 @@ class ToolService:
     # ============== Demo Methods ==============
 
     @staticmethod
-    async def list_demos(db: AsyncSession, tool_id: uuid.UUID) -> List[ToolDemo]:
-        """获取工具的演示案例列表"""
-        result = await db.execute(
-            select(ToolDemo)
-            .where(ToolDemo.tool_id == tool_id, ToolDemo.is_active == True)
-            .order_by(ToolDemo.sort_order.asc())
+    async def list_demos(
+        db: AsyncSession,
+        tool_id: uuid.UUID,
+        skip: int = 0,
+        limit: int = 100
+    ) -> Tuple[List[ToolDemo], int]:
+        """获取工具的演示案例列表（支持分页）"""
+        query = select(ToolDemo).where(
+            ToolDemo.tool_id == tool_id,
+            ToolDemo.is_active == True
         )
-        return result.scalars().all()
+
+        # 获取总数
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar()
+
+        # 分页查询
+        query = query.offset(skip).limit(limit).order_by(ToolDemo.sort_order.asc())
+        result = await db.execute(query)
+        demos = result.scalars().all()
+
+        return demos, total
 
     @staticmethod
     async def create_demo(db: AsyncSession, demo_in: ToolDemoCreate) -> ToolDemo:
