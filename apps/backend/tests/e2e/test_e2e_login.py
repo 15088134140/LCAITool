@@ -73,30 +73,30 @@ class TestAccessLoginPage:
         take_screenshot(page, "01_login_page", SCREENSHOTS_DIR)
         print("  [OK] Login page loaded successfully")
 
-    def test_login_form_elements_exist(self, page: Page):
+    def test_login_form_elements_exist(self, clean_page: Page):
         """Verify username, password inputs and login button exist"""
         print("\n[Test 1] Verifying form elements...")
 
-        page.goto(f"{BASE_URL}/login")
-        page.wait_for_load_state("networkidle")
+        clean_page.goto(f"{BASE_URL}/login")
+        clean_page.wait_for_load_state("networkidle")
 
         # Check username input
-        username_input = page.locator('input[name="username"], input[type="text"]').first
+        username_input = clean_page.locator('input[name="username"], input[type="text"]').first
         assert username_input.is_visible(), "Username input not visible"
         print("  [OK] Username input is visible")
 
         # Check password input
-        password_input = page.locator('input[type="password"]').first
+        password_input = clean_page.locator('input[type="password"]').first
         assert password_input.is_visible(), "Password input not visible"
         print("  [OK] Password input is visible")
 
         # Check login button
-        login_button = get_login_submit_button(page)
+        login_button = get_login_submit_button(clean_page)
         assert login_button.is_visible(), "Login button not visible"
         print("  [OK] Login button is visible")
 
         # Check remember me checkbox
-        remember_checkbox = page.locator('input[type="checkbox"]').first
+        remember_checkbox = clean_page.locator('input[type="checkbox"]').first
         if remember_checkbox.count() > 0:
             print("  [OK] Remember me checkbox is visible")
 
@@ -288,11 +288,11 @@ class TestNavigateToRegister:
 class TestLogoutFlow:
     """Test 6: Logout flow"""
 
-    def test_logout_successfully(self, browser_context: BrowserContext):
+    def test_logout_successfully(self, new_browser_context: BrowserContext):
         """Verify logout works correctly"""
         print("\n[Test 6] Testing logout flow...")
 
-        page = browser_context.new_page()
+        page = new_browser_context.new_page()
 
         # First login
         page.goto(f"{BASE_URL}/login")

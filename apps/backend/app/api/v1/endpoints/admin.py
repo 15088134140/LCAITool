@@ -39,7 +39,7 @@ async def get_users(
     # Convert models to schemas for proper serialization
     user_schemas = [UserSchema.model_validate(user) for user in users]
     return {
-        "list": user_schemas,
+        "items": user_schemas,
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -106,7 +106,7 @@ async def adjust_user_balance(
         db=db,
         user_id=user_uuid,
         amount=request.amount,
-        transaction_type="adjust" if request.amount >= 0 else "deduct",
+        transaction_type="adjust",
         reason=request.reason,
     )
 

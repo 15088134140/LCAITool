@@ -42,3 +42,14 @@ def scroll_to_bottom(page: Page) -> None:
         page: Playwright Page 对象
     """
     page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+
+
+def slow_mode(page: Page, delay: int = 500) -> None:
+    """
+    启用慢速模式，便于观察测试过程
+
+    Args:
+        page: Playwright Page 对象
+        delay: 延迟毫秒数
+    """
+    page.wait_for_timeout(delay)

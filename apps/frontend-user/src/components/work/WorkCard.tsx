@@ -63,7 +63,7 @@ export function WorkCard({ work }: WorkCardProps) {
 
   return (
     <Link
-      href={`/works/${work.id}`}
+      href={`/works/detail/${work.id}`}
       className="group block"
     >
       <div className="tool-card card-hover overflow-hidden">

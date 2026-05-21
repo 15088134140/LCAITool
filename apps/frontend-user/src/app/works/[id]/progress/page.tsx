@@ -40,7 +40,7 @@ const ecommerceSteps = [
 export default function TaskProgressPage() {
   const params = useParams();
   const router = useRouter();
-  const taskId = params.taskId as string;
+  const taskId = params.id as string;
 
   const [task, setTask] = useState<Task | null>(null);
   const [logs, setLogs] = useState<TaskLog[]>([]);

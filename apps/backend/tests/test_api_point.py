@@ -112,7 +112,7 @@ async def test_get_point_history(client: AsyncClient, auth_headers: dict, db_ses
             db=db_session,
             user_id=user.id,
             amount=(i + 1) * 10,
-            transaction_type="test",
+            transaction_type="adjust",
             reason=f"测试交易{i}"
         )
 
