@@ -143,7 +143,9 @@ const createApiClient = (): AxiosInstance => {
             { refresh_token: refreshToken }
           );
 
-          const { access_token, refresh_token: newRefreshToken } = response.data.data!;
+          // 兼容两种响应格式: { success, data: { access_token } } 或 { access_token }
+          const tokenData = response.data.data || response.data;
+          const { access_token, refresh_token: newRefreshToken } = tokenData;
 
           // 更新存储的Token
           tokenStorage.setToken(access_token);
