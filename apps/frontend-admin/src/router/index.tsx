@@ -23,6 +23,12 @@ import CreateTool from '@/pages/tools/create';
 import EditTool from '@/pages/tools/[id]/edit';
 import DemoCaseManager from '@/pages/tools/DemoCaseManager';
 
+// 分类管理组件
+import CategoryManagement from '@/pages/categories';
+
+// 实名认证审核组件
+import VerificationManagement from '@/pages/verifications';
+
 export const router = createBrowserRouter([
   {
     path: '/login',
@@ -67,16 +73,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'categories',
-        element: (
-          <PlaceholderPage
-            title="分类管理"
-            breadcrumbs={[
-              { label: '首页', path: '/dashboard' },
-              { label: '工具管理' },
-              { label: '分类管理' },
-            ]}
-          />
-        ),
+        element: <CategoryManagement />,
       },
       // 用户管理
       {
@@ -89,16 +86,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'verifications',
-        element: (
-          <PlaceholderPage
-            title="实名认证审核"
-            breadcrumbs={[
-              { label: '首页', path: '/dashboard' },
-              { label: '用户管理' },
-              { label: '实名认证审核' },
-            ]}
-          />
-        ),
+        element: <VerificationManagement />,
       },
       // 订单管理
       {
