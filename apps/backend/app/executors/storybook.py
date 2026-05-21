@@ -13,10 +13,14 @@
 """
 import asyncio
 import json
+import math
 import os
+import struct
 import tempfile
 import uuid
 import zipfile
+import wave
+import zlib
 from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -327,13 +331,15 @@ class StorybookExecutor(BaseToolExecutor):
                     )
 
                     if response.success:
-                        # 这里模拟图片URL，实际应该保存到存储服务
-                        image_url = response.content if response.content else f"mock_image_{index + 1}.png"
+                        # 如果AI返回了实际内容，保存为文件；否则创建占位图片
+                        if response.content and not response.content.startswith("mock_"):
+                            image_url = response.content
+                        else:
+                            image_url = self._create_dummy_image(index + 1)
                         page['image_url'] = image_url
                         page['image_generated'] = True
                     else:
-                        # 使用占位图
-                        page['image_url'] = f"placeholder_{index + 1}.png"
+                        page['image_url'] = self._create_dummy_image(index + 1)
                         page['image_generated'] = False
 
                     # 更新进度
@@ -341,7 +347,7 @@ class StorybookExecutor(BaseToolExecutor):
                     await self.update_progress(progress, f"正在生成插画... ({index + 1}/{total_pages})")
 
                 except Exception as e:
-                    page['image_url'] = f"placeholder_{index + 1}.png"
+                    page['image_url'] = self._create_dummy_image(index + 1)
                     page['image_generated'] = False
                     page['image_error'] = str(e)
 
@@ -372,8 +378,11 @@ class StorybookExecutor(BaseToolExecutor):
                     )
 
                     if response.success:
-                        # 这里模拟音频URL
-                        audio_url = response.content if response.content else f"mock_audio_{index + 1}.mp3"
+                        # 如果AI返回了实际内容，保存为文件；否则创建占位音频
+                        if response.content and not response.content.startswith("mock_"):
+                            audio_url = response.content
+                        else:
+                            audio_url = self._create_dummy_audio(index + 1)
                         page['audio_url'] = audio_url
                         page['audio_generated'] = True
                     else:
@@ -395,6 +404,59 @@ class StorybookExecutor(BaseToolExecutor):
         results = await asyncio.gather(*tasks)
 
         return list(results)
+
+    @staticmethod
+    def _create_dummy_image(page_num: int) -> str:
+        """创建占位图片文件，返回真实文件路径"""
+        fd, path = tempfile.mkstemp(suffix='.png', prefix=f'storybook_img_{page_num}_')
+        os.close(fd)
+
+        try:
+            # 尝试用 Pillow 创建彩色占位图
+            from PIL import Image, ImageDraw
+            img = Image.new('RGB', (1024, 1024), color=(240, 248, 255))
+            draw = ImageDraw.Draw(img)
+            draw.text((400, 500), f'Page {page_num}', fill=(30, 58, 95))
+            img.save(path, 'PNG')
+        except ImportError:
+            # 回退：创建最小有效PNG（1x1像素）
+            def _make_png(r, g, b):
+                def _chunk(ctype, data):
+                    c = ctype + data
+                    crc = struct.pack('>I', 0xffffffff & (
+                        lambda x: x if x <= 0x7fffffff else x - 0x100000000)(
+                        zlib.crc32(c) & 0xffffffff))
+                    return struct.pack('>I', len(data)) + c + crc
+                ihdr = struct.pack('>IIBBBBB', 1, 1, 8, 2, 0, 0, 0)
+                raw = b'\x00' + bytes([r, g, b])
+                return (b'\x89PNG\r\n\x1a\n'
+                        + _chunk(b'IHDR', ihdr)
+                        + _chunk(b'IDAT', zlib.compress(raw))
+                        + _chunk(b'IEND', b''))
+            with open(path, 'wb') as f:
+                f.write(_make_png(240, 248, 255))
+
+        return path
+
+    @staticmethod
+    def _create_dummy_audio(page_num: int) -> str:
+        """创建占位音频文件（WAV格式），返回真实文件路径"""
+        fd, path = tempfile.mkstemp(suffix='.wav', prefix=f'storybook_audio_{page_num}_')
+        os.close(fd)
+
+        sample_rate = 8000
+        duration = 1  # 1 second placeholder
+        frequency = 440  # A4 note
+
+        with wave.open(path, 'w') as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(sample_rate)
+            for i in range(sample_rate * duration):
+                value = int(32767 * 0.3 * math.sin(2 * math.pi * frequency * i / sample_rate))
+                wf.writeframes(struct.pack('<h', value))
+
+        return path
 
     async def _generate_pdf_and_zip(self, result_data: Dict[str, Any]) -> Dict[str, str]:
         """生成PDF并打包所有文件"""

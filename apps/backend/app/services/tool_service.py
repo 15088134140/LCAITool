@@ -43,7 +43,7 @@ class ToolService:
         Args:
             sort_by: 排序方式 - popularity(热度), newest(最新), price_asc(价格升序), price_desc(价格降序)
         """
-        query = select(Tool)
+        query = select(Tool).where(Tool.status == 1)  # 只返回已上线工具
 
         # 分类筛选
         if category_id:
@@ -85,7 +85,13 @@ class ToolService:
 
     @staticmethod
     async def create_tool(db: AsyncSession, tool_in: ToolCreate) -> Tool:
-        """创建工具"""
+        """创建工具（自动校验 slug 唯一性）"""
+        # 校验 slug 唯一性
+        existing = await ToolService.get_tool_by_slug(db, tool_in.slug)
+        if existing:
+            from app.core.exceptions import BusinessException
+            raise BusinessException(detail=f"工具标识 '{tool_in.slug}' 已存在")
+
         db_obj = Tool(**tool_in.model_dump())
         db.add(db_obj)
         await db.commit()
@@ -195,6 +201,19 @@ class ToolService:
     @staticmethod
     async def create_rating(db: AsyncSession, user_id: uuid.UUID, rating_in: ToolRatingCreate) -> ToolRating:
         """创建工具评价"""
+        # 验证评分范围 1-5
+        if not 1 <= rating_in.rating <= 5:
+            from app.core.exceptions import BusinessException
+            raise BusinessException(detail="评分必须在 1-5 之间")
+
+        # 验证 task_id 唯一性（模型层有唯一索引，提前检查避免500）
+        existing = await db.execute(
+            select(ToolRating).where(ToolRating.task_id == rating_in.task_id)
+        )
+        if existing.scalar_one_or_none():
+            from app.core.exceptions import BusinessException
+            raise BusinessException(detail="该任务已评价，不可重复评价")
+
         db_obj = ToolRating(
             user_id=user_id,
             **rating_in.model_dump()
