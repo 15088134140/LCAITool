@@ -243,9 +243,9 @@ async def test_vote_idea_down(verified_user_id: uuid.UUID, db_session: AsyncSess
     vote_in = IdeaVoteCreate(idea_id=idea.id, vote_type="down")
     await IdeaService.vote_idea(db_session, verified_user_id, vote_in)
 
-    # 验证投票数已减少
+    # 验证投票数不会减少到0以下（初始为0，投反对票后保持为0）
     updated_idea = await IdeaService.get_idea(db_session, idea.id)
-    assert updated_idea.vote_count == -1
+    assert updated_idea.vote_count == 0
 
 
 # ============== Helper Methods Tests ==============

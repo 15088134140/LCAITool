@@ -119,8 +119,8 @@ class IdeaSubmission(BaseModel):
         self.status = "implemented"
 
     def increment_vote(self, delta=1):
-        """增加投票数（支持正负值）"""
-        self.vote_count = (self.vote_count or 0) + delta
+        """增加投票数（支持正负值，防止负数）"""
+        self.vote_count = max((self.vote_count or 0) + delta, 0)
 
     def increment_view(self):
         """增加浏览数"""
