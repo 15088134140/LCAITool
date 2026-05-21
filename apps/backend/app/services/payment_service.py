@@ -151,8 +151,8 @@ class PaymentService:
 
     @staticmethod
     async def process_simulated_payment(db: AsyncSession, order_id: uuid.UUID) -> PaymentResponse:
-        """处理模拟支付 - 核心方法：直接标记支付成功并发放积分"""
-        # 获取订单
+        """处理模拟支付 - 核心方法：直接标记支付成功并发放积分（同一事务）"""
+        # 获取订单并加行级锁
         order_result = await db.execute(
             select(Order).where(Order.id == order_id).with_for_update()
         )
@@ -162,7 +162,6 @@ class PaymentService:
 
         # 检查订单状态
         if order.status == OrderStatus.PAID:
-            # 已支付成功，直接返回
             return PaymentResponse(
                 success=True,
                 order_id=order.id,
@@ -176,56 +175,56 @@ class PaymentService:
         if order.status != OrderStatus.PENDING:
             raise BusinessException(detail=f"订单状态不允许支付: {order.status}")
 
-        # 更新订单状态为已支付
+        # === 同一事务中完成：订单更新 + 积分发放 + 流水记录 ===
         now = int(time.time())
-        stmt = (
-            update(Order)
-            .where(Order.id == order_id)
-            .values(
-                status=OrderStatus.PAID,
-                paid_at=now,
-                third_party_order_no=f"SIM{int(time.time() * 1000)}"
-            )
-            .execution_options(synchronize_session=False)
-        )
-        await db.execute(stmt)
-        await db.commit()
 
-        # 发放积分到用户账户
+        # 1. 更新订单状态为已支付
+        order.status = OrderStatus.PAID
+        order.paid_at = now
+        order.third_party_order_no = f"SIM{int(time.time() * 1000)}"
+
+        # 2. 发放积分到用户账户（使用行级锁）
         user_result = await db.execute(
             select(User).where(User.id == order.user_id).with_for_update()
         )
         user = user_result.scalar_one_or_none()
-        if user:
-            user.balance += order.total_points
-            await db.commit()
+        if not user:
+            raise UserNotFoundException()
+        user.balance += order.total_points
 
-        # 记录积分交易流水 - base points
-        await PointService.create_transaction(
-            db=db,
+        # 3. 记录积分交易流水 - base points
+        base_tx = PointTransaction(
             user_id=order.user_id,
             amount=order.base_points,
-            transaction_type=PointTransactionType.RECHARGE,
+            type=PointTransactionType.RECHARGE,
             reason="充值基础积分",
             related_id=str(order.id),
             related_type="order",
+            balance_before=user.balance - order.total_points,
+            balance_after=user.balance,
             operator="system",
             remark=f"订单号: {order.order_no}"
         )
+        db.add(base_tx)
 
-        # 记录赠送积分流水（如果有）
+        # 4. 记录赠送积分流水（如果有）
         if order.bonus_points > 0:
-            await PointService.create_transaction(
-                db=db,
+            bonus_tx = PointTransaction(
                 user_id=order.user_id,
                 amount=order.bonus_points,
-                transaction_type=PointTransactionType.REWARD,
+                type=PointTransactionType.REWARD,
                 reason="充值赠送积分",
                 related_id=str(order.id),
                 related_type="order",
+                balance_before=user.balance,
+                balance_after=user.balance,
                 operator="system",
                 remark=f"档位活动赠送积分"
             )
+            db.add(bonus_tx)
+
+        # 5. 统一提交
+        await db.commit()
 
         # 重新获取订单
         await db.refresh(order)
@@ -259,49 +258,53 @@ class PaymentService:
         if order.status == OrderStatus.PAID:
             return True
 
-        # 模拟支付环境下直接标记成功
+        # 模拟支付环境下直接标记成功（同一事务）
         if callback_data.payment_success:
-            # 更新订单
+            # 1. 更新订单
             now = int(time.time())
             order.status = OrderStatus.PAID
             order.paid_at = now
             order.third_party_order_no = callback_data.third_party_order_no
             order.callback_raw = callback_data.callback_raw
-            await db.commit()
 
-            # 发放积分
+            # 2. 发放积分（使用行级锁）
             user_result = await db.execute(
                 select(User).where(User.id == order.user_id).with_for_update()
             )
             user = user_result.scalar_one_or_none()
             if user:
                 user.balance += order.total_points
-                await db.commit()
 
-            # 记录交易流水
-            await PointService.create_transaction(
-                db=db,
+            # 3. 记录交易流水
+            base_tx = PointTransaction(
                 user_id=order.user_id,
                 amount=order.base_points,
-                transaction_type=PointTransactionType.RECHARGE,
+                type=PointTransactionType.RECHARGE,
                 reason="充值基础积分",
                 related_id=str(order.id),
                 related_type="order",
-                operator="system"
+                operator="system",
+                balance_before=user.balance - order.total_points if user else 0,
+                balance_after=user.balance if user else order.total_points,
             )
+            db.add(base_tx)
 
             if order.bonus_points > 0:
-                await PointService.create_transaction(
-                    db=db,
+                bonus_tx = PointTransaction(
                     user_id=order.user_id,
                     amount=order.bonus_points,
-                    transaction_type=PointTransactionType.REWARD,
+                    type=PointTransactionType.REWARD,
                     reason="充值赠送积分",
                     related_id=str(order.id),
                     related_type="order",
-                    operator="system"
+                    operator="system",
+                    balance_before=user.balance if user else 0,
+                    balance_after=user.balance if user else order.bonus_points,
                 )
+                db.add(bonus_tx)
 
+            # 统一提交
+            await db.commit()
             return True
         else:
             # 支付失败

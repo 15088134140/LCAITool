@@ -64,6 +64,14 @@ def add_to_message_buffer(task_id: str, message: Dict[str, Any]):
         _message_buffers[task_id] = _message_buffers[task_id][-MESSAGE_BUFFER_SIZE:]
 
 
+def cleanup_message_buffer(task_id: str):
+    """
+    清理已完成任务的消息缓冲区，防止内存泄漏
+    在任务达到终态（completed/failed/cancelled/timeout）后调用
+    """
+    _message_buffers.pop(task_id, None)
+
+
 def get_buffered_messages(task_id: str, last_event_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """获取断线期间缓存的消息"""
     if task_id not in _message_buffers:
@@ -146,8 +154,9 @@ async def sse_event_generator(
                     # 发送 SSE 消息
                     yield format_sse(message_type, message_data, event_id=event_id)
 
-                    # 如果是终止状态（completed/failed/cancelled/timeout），结束连接
+                    # 如果是终止状态（completed/failed/cancelled/timeout），清理缓冲区并结束连接
                     if message_type in ["completed", "failed", "cancelled", "timeout"]:
+                        cleanup_message_buffer(task_id_str)
                         yield format_sse("closed", {
                             "task_id": task_id_str,
                             "reason": f"任务已{message_type}",

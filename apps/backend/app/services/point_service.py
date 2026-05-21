@@ -150,11 +150,10 @@ class PointService:
             related_id=related_id
         )
 
-        # 过期会话中的对象，强制从数据库重新获取
-        await db.flush()
-        db.expire_all()
+        # 重新获取用户（强制从数据库读取最新版本）
+        await db.refresh(user)
 
-        # 重新获取用户
+        # 再查询一次确保 identity map 与 DB 一致
         result = await db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
 
@@ -201,11 +200,10 @@ class PointService:
             related_id=related_id
         )
 
-        # 过期会话中的对象，强制从数据库重新获取
-        await db.flush()
-        db.expire_all()
+        # 重新获取用户（强制从数据库读取最新版本）
+        await db.refresh(user)
 
-        # 重新获取用户
+        # 再查询一次确保 identity map 与 DB 一致
         result = await db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
 
@@ -253,10 +251,9 @@ class PointService:
             related_id=related_id
         )
 
-        # 过期会话中的对象，强制从数据库重新获取
-        await db.flush()
-        db.expire_all()
+        # 重新获取用户（强制从数据库读取最新版本）
+        await db.refresh(user)
 
-        # 重新获取用户
+        # 再查询一次确保 identity map 与 DB 一致
         result = await db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
