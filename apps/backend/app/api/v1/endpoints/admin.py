@@ -1,8 +1,10 @@
-from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, Body
+from typing import Any, Optional
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db, get_current_admin_user
 from app.models.user import User
+from app.models.tool import ToolCategory, ToolDemo as ToolDemoModel
 from app.schemas.user import (
     User as UserSchema,
     UserUpdate,
@@ -12,11 +14,18 @@ from app.schemas.user import (
     UserRoleAssignRequest,
     AdjustBalanceRequest,
 )
+from app.schemas.tool import (
+    ToolCreate, ToolUpdate,
+    ToolCategoryCreate, ToolCategoryUpdate,
+    ToolDemoCreate, ToolDemoResponse,
+    ToolResponse, ToolCategoryResponse,
+)
 from app.schemas.payment import PointTransaction, Order as OrderSchema, OrderStatus
 from app.services.user_service import UserService
 from app.services.role_service import RoleService
 from app.services.point_service import PointService
 from app.services.order_service import OrderService
+from app.services.tool_service import ToolService
 
 router = APIRouter()
 
@@ -522,6 +531,172 @@ async def update_order_status(
     if not order:
         raise HTTPException(status_code=404, detail="订单不存在")
     return {"message": "更新成功", "order_id": order_id}
+
+
+# ==================== 工具管理 ====================
+
+@router.post("/tools", summary="创建工具")
+async def create_tool(
+    tool_in: ToolCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """创建新工具"""
+    tool = await ToolService.create_tool(db, tool_in)
+    return ToolResponse.model_validate(tool)
+
+
+@router.put("/tools/{tool_id}", summary="更新工具")
+async def update_tool(
+    tool_id: str,
+    tool_in: ToolUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """更新工具信息"""
+    import uuid
+    tool = await ToolService.update_tool(db, uuid.UUID(tool_id), tool_in)
+    return ToolResponse.model_validate(tool)
+
+
+@router.delete("/tools/{tool_id}", summary="删除工具")
+async def delete_tool(
+    tool_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """删除工具"""
+    import uuid
+    await ToolService.delete_tool(db, uuid.UUID(tool_id))
+    return {"message": "删除成功"}
+
+
+@router.put("/tools/{tool_id}/status", summary="切换工具状态")
+async def toggle_tool_status(
+    tool_id: str,
+    status: int = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """切换工具上线/下线状态"""
+    import uuid
+    tool = await ToolService.update_tool(db, uuid.UUID(tool_id), ToolUpdate(status=status))
+    return ToolResponse.model_validate(tool)
+
+
+# ==================== 分类管理 ====================
+
+@router.post("/tools/categories", summary="创建分类")
+async def create_category(
+    category_in: ToolCategoryCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """创建工具分类"""
+    category = await ToolService.create_category(db, category_in)
+    return ToolCategoryResponse.model_validate(category)
+
+
+@router.put("/tools/categories/{category_id}", summary="更新分类")
+async def update_category(
+    category_id: str,
+    category_in: ToolCategoryUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """更新工具分类"""
+    import uuid
+    category = await ToolService.update_category(db, uuid.UUID(category_id), category_in)
+    return ToolCategoryResponse.model_validate(category)
+
+
+@router.delete("/tools/categories/{category_id}", summary="删除分类")
+async def delete_category(
+    category_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """删除工具分类"""
+    import uuid
+    result = await db.execute(select(ToolCategory).where(ToolCategory.id == uuid.UUID(category_id)))
+    category = result.scalar_one_or_none()
+    if not category:
+        raise HTTPException(status_code=404, detail="分类不存在")
+    await db.delete(category)
+    await db.commit()
+    return {"message": "删除成功"}
+
+
+# ==================== 演示案例管理 ====================
+
+@router.post("/tools/{tool_id}/demos", summary="创建演示案例")
+async def create_demo(
+    tool_id: str,
+    demo_in: ToolDemoCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """创建工具演示案例"""
+    import uuid
+    demo_in.tool_id = uuid.UUID(tool_id)
+    demo = await ToolService.create_demo(db, demo_in)
+    return demo
+
+
+@router.put("/tools/demos/{demo_id}", summary="更新演示案例")
+async def update_demo(
+    demo_id: str,
+    demo_in: ToolDemoCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """更新工具演示案例"""
+    import uuid
+    result = await db.execute(select(ToolDemoModel).where(ToolDemoModel.id == uuid.UUID(demo_id)))
+    demo = result.scalar_one_or_none()
+    if not demo:
+        raise HTTPException(status_code=404, detail="演示案例不存在")
+    update_data = demo_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(demo, field, value)
+    await db.commit()
+    await db.refresh(demo)
+    return demo
+
+
+@router.delete("/tools/demos/{demo_id}", summary="删除演示案例")
+async def delete_demo(
+    demo_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """删除工具演示案例"""
+    import uuid
+    result = await db.execute(select(ToolDemoModel).where(ToolDemoModel.id == uuid.UUID(demo_id)))
+    demo = result.scalar_one_or_none()
+    if not demo:
+        raise HTTPException(status_code=404, detail="演示案例不存在")
+    await db.delete(demo)
+    await db.commit()
+    return {"message": "删除成功"}
+
+
+@router.put("/tools/{tool_id}/demos/order", summary="更新演示案例排序")
+async def update_demo_order(
+    tool_id: str,
+    demo_ids: list[str] = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """批量更新演示案例排序"""
+    import uuid
+    for idx, demo_id in enumerate(demo_ids):
+        result = await db.execute(select(ToolDemoModel).where(ToolDemoModel.id == uuid.UUID(demo_id)))
+        demo = result.scalar_one_or_none()
+        if demo:
+            demo.sort_order = idx
+    await db.commit()
+    return {"message": "排序更新成功"}
 
 
 # ==================== 实名认证审核 ====================

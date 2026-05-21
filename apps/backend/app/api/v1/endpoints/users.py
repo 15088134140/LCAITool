@@ -114,9 +114,10 @@ async def change_password(
 @router.post("/send-code", summary="发送手机验证码")
 async def send_verification_code(
     request: SendCodeRequest,
-    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Any:
     # TODO: 集成短信服务商
+    # 开放访问：注册时需要发送验证码，无需登录
     # 开发环境下，验证码固定为 123456
     return {"message": "验证码已发送", "expire_minutes": 5}
 

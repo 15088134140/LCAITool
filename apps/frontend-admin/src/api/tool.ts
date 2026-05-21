@@ -132,8 +132,10 @@ export interface UpdateDemoParams {
   is_active?: boolean;
 }
 
+const ADMIN_PREFIX = '/admin';
+
 export const toolApi = {
-  // 获取工具列表
+  // 获取工具列表（公开接口）
   getList: (params: ToolListParams) => {
     const filteredParams: Record<string, any> = {
       page: params.page,
@@ -148,22 +150,21 @@ export const toolApi = {
     if (params.category_id) {
       filteredParams.category_id = params.category_id;
     }
-    return request.get<ToolListResponse>('/admin/tools', { params: filteredParams });
+    return request.get<ToolListResponse>('/tools', { params: filteredParams });
   },
 
-  // 获取工具详情
+  // 获取工具详情（公开接口）
   getDetail: (id: string) => {
-    return request.get<Tool>(`/admin/tools/${id}`);
+    return request.get<Tool>(`/tools/${id}`);
   },
 
   // 创建工具
   create: (data: CreateToolParams) => {
-    // 处理tags为JSON字符串
     const payload = { ...data };
     if (payload.tags && Array.isArray(payload.tags)) {
       payload.tags = JSON.stringify(payload.tags);
     }
-    return request.post<Tool>('/admin/tools', payload);
+    return request.post<Tool>(`${ADMIN_PREFIX}/tools`, payload);
   },
 
   // 更新工具
@@ -173,42 +174,42 @@ export const toolApi = {
     if (payload.tags && Array.isArray(payload.tags)) {
       payload.tags = JSON.stringify(payload.tags);
     }
-    return request.put<Tool>(`/admin/tools/${id}`, payload);
+    return request.put<Tool>(`${ADMIN_PREFIX}/tools/${id}`, payload);
   },
 
   // 删除工具
   delete: (id: string) => {
-    return request.delete(`/admin/tools/${id}`);
+    return request.delete(`${ADMIN_PREFIX}/tools/${id}`);
   },
 
   // 切换工具状态
   toggleStatus: (id: string, status: number) => {
-    return request.put<Tool>(`/admin/tools/${id}/status`, { status });
+    return request.put<Tool>(`${ADMIN_PREFIX}/tools/${id}/status`, { status });
   },
 
-  // 获取分类列表
+  // 获取分类列表（公开接口）
   getCategories: () => {
-    return request.get<ToolCategory[]>('/admin/tool-categories');
+    return request.get<ToolCategory[]>('/tools/categories/list');
   },
 
   // 创建分类
   createCategory: (data: Partial<ToolCategory>) => {
-    return request.post<ToolCategory>('/admin/tool-categories', data);
+    return request.post<ToolCategory>(`${ADMIN_PREFIX}/tools/categories`, data);
   },
 
   // 更新分类
   updateCategory: (id: string, data: Partial<ToolCategory>) => {
-    return request.put<ToolCategory>(`/admin/tool-categories/${id}`, data);
+    return request.put<ToolCategory>(`${ADMIN_PREFIX}/tools/categories/${id}`, data);
   },
 
   // 删除分类
   deleteCategory: (id: string) => {
-    return request.delete(`/admin/tool-categories/${id}`);
+    return request.delete(`${ADMIN_PREFIX}/tools/categories/${id}`);
   },
 
-  // 获取工具演示案例列表
+  // 获取工具演示案例列表（公开接口）
   getDemos: (toolId: string) => {
-    return request.get<ToolDemo[]>(`/admin/tools/${toolId}/demos`);
+    return request.get<ToolDemo[]>(`/tools/${toolId}/demos`);
   },
 
   // 创建演示案例
@@ -217,7 +218,7 @@ export const toolApi = {
     if (payload.demo_images && Array.isArray(payload.demo_images)) {
       payload.demo_images = JSON.stringify(payload.demo_images);
     }
-    return request.post<ToolDemo>(`/admin/tools/${data.tool_id}/demos`, payload);
+    return request.post<ToolDemo>(`${ADMIN_PREFIX}/tools/${data.tool_id}/demos`, payload);
   },
 
   // 更新演示案例
@@ -227,16 +228,16 @@ export const toolApi = {
     if (payload.demo_images && Array.isArray(payload.demo_images)) {
       payload.demo_images = JSON.stringify(payload.demo_images);
     }
-    return request.put<ToolDemo>(`/admin/tool-demos/${id}`, payload);
+    return request.put<ToolDemo>(`${ADMIN_PREFIX}/tools/demos/${id}`, payload);
   },
 
   // 删除演示案例
   deleteDemo: (id: string) => {
-    return request.delete(`/admin/tool-demos/${id}`);
+    return request.delete(`${ADMIN_PREFIX}/tools/demos/${id}`);
   },
 
   // 更新演示案例排序
   updateDemoOrder: (toolId: string, demoIds: string[]) => {
-    return request.put(`/admin/tools/${toolId}/demos/order`, { demo_ids: demoIds });
+    return request.put(`${ADMIN_PREFIX}/tools/${toolId}/demos/order`, { demo_ids: demoIds });
   },
 };

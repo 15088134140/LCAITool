@@ -176,7 +176,7 @@ export const authApi = {
 // Tools specific APIs
 export const toolsApi = {
   getCategories: async () => {
-    return api.get("/categories");
+    return api.get("/tools/categories/list");
   },
 
   getTools: async (params?: {
