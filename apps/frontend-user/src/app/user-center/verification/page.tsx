@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store';
-import { authApi } from '@/lib/api';
+import { userApi } from '@/lib/api';
 
 export default function VerificationPage() {
   const { user, updateUser } = useAuthStore();
@@ -54,8 +54,11 @@ export default function VerificationPage() {
 
     setLoading(true);
     try {
-      await authApi.verifyIdentity(formData.real_name, formData.id_card);
-      updateUser({ is_verified: true, id_card: formData.id_card });
+      await userApi.submitRealNameVerification({
+        id_card_name: formData.real_name,
+        id_card_number: formData.id_card,
+      });
+      updateUser({ id_card_verified: true, id_card: formData.id_card });
       setSuccessMessage('实名认证提交成功！');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error: any) {
@@ -66,7 +69,7 @@ export default function VerificationPage() {
   };
 
   // If already verified, show success state
-  if (user?.is_verified) {
+  if (user?.id_card_verified) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Navigation */}

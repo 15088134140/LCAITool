@@ -44,7 +44,7 @@ export default function LoginPage() {
       // Fetch current user info using the new token
       const user = await authApi.getCurrentUser(tokens.access_token);
 
-      login(tokens, user);
+      login(tokens, user as any);
       router.push('/user-center');
     } catch (err: any) {
       setError(err.message || '登录失败，请检查用户名和密码');

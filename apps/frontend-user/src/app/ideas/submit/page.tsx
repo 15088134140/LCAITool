@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ideaApi } from '@/lib/api/modules/idea';
-import { CreateIdeaRequest } from '@/lib/api/types';
+import type { CreateIdeaRequest } from '@/lib/api/types';
 
 const categories = ['内容创作', '设计工具', '视频音频', '办公效率', '其他'];
 
@@ -25,21 +25,21 @@ export default function SubmitIdeaPage() {
   });
 
   const [tagInput, setTagInput] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<any>({});
 
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: any = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = '请输入工具名称';
+      newErrors['title'] = '请输入工具名称';
     } else if (formData.title.length < 3) {
-      newErrors.title = '工具名称至少3个字符';
+      newErrors['title'] = '工具名称至少3个字符';
     }
 
     if (!formData.description?.trim()) {
-      newErrors.description = '请输入工具描述';
+      newErrors['description'] = '请输入工具描述';
     } else if (formData.description.length < 20) {
-      newErrors.description = '工具描述至少20个字符';
+      newErrors['description'] = '工具描述至少20个字符';
     }
 
     setErrors(newErrors);
@@ -60,7 +60,7 @@ export default function SubmitIdeaPage() {
   const removeTag = (tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags?.filter(tag => tag !== tagToRemove),
+      tags: (prev.tags || []).filter(tag => tag !== tagToRemove),
     }));
   };
 
@@ -78,9 +78,10 @@ export default function SubmitIdeaPage() {
       setTimeout(() => {
         router.push('/ideas');
       }, 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('提交失败:', error);
-      setErrors({ submit: '提交失败，请稍后重试' });
+      const msg = error?.response?.data?.detail || error?.message || '提交失败，请稍后重试';
+      setErrors({ submit: msg });
     } finally {
       setIsSubmitting(false);
     }

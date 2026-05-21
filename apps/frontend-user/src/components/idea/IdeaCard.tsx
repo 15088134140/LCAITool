@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { IdeaSubmission } from '@/lib/api/types';
+import type { IdeaSubmission } from '@/lib/api/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ideaApi } from '@/lib/api/modules/idea';
 
@@ -26,21 +26,27 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
   const [isVoting, setIsVoting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [voteAnimation, setVoteAnimation] = useState(false);
+  const [voteError, setVoteError] = useState<string | null>(null);
   const [localVoteCount, setLocalVoteCount] = useState(idea.vote_count);
+  const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    };
+  }, []);
 
   const category = idea.category || '其他';
-  const colors = categoryColors[category] || categoryColors['其他'];
+  const colors = (categoryColors[category] ?? categoryColors['其他'])!;
   const percentage = Math.min(Math.round((localVoteCount / targetVotes) * 100), 100);
 
   const handleVote = async () => {
     if (!isAuthenticated || hasVoted || isVoting) return;
 
+    setVoteError(null);
     setIsVoting(true);
     try {
-      await ideaApi.voteIdea({
-        idea_id: idea.id,
-        vote_type: 'up',
-      });
+      await ideaApi.voteIdea(idea.id, 'up');
 
       setHasVoted(true);
       setLocalVoteCount(prev => prev + 1);
@@ -48,8 +54,12 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
       setTimeout(() => setVoteAnimation(false), 500);
 
       onVoteSuccess?.(idea.id, localVoteCount + 1);
-    } catch (error) {
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || '投票失败，请稍后重试';
+      setVoteError(message);
       console.error('投票失败:', error);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => setVoteError(null), 4000);
     } finally {
       setIsVoting(false);
     }
@@ -151,6 +161,12 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
         <Link href="/login" className="w-full py-3 bg-[#1E3A5F] text-white rounded-xl font-semibold hover:bg-[#2563EB] transition-colors focus-ring text-center block">
           登录后投票
         </Link>
+      )}
+
+      {voteError && (
+        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 text-center">
+          {voteError}
+        </div>
       )}
 
       <style jsx>{`

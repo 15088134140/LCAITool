@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/store/userStore';
 import { paymentApi } from '@/lib/api/modules/payment';
 import { RechargePackageCard } from '@/components/payment/RechargePackageCard';
@@ -172,7 +171,6 @@ const PaymentResultPage: React.FC<{
 
 // Main payment page component
 const PaymentPage: React.FC = () => {
-  const router = useRouter();
   const { user, refreshUserBalance } = useUserStore();
 
   const [packages, setPackages] = useState<RechargePackage[]>([]);
@@ -189,15 +187,16 @@ const PaymentPage: React.FC = () => {
     const loadPackages = async () => {
       try {
         const data = await paymentApi.getRechargePackages();
-        setPackages(data);
-        if (data.length > 0) {
-          const popular = data.find(p => p.is_popular) || data[0];
+        const items = data.items || [];
+        setPackages(items);
+        if (items.length > 0) {
+          const popular = items.find(p => p.is_popular) || items[0]!;
           setSelectedPackage(popular);
         }
       } catch (error) {
         console.error('Failed to load packages:', error);
         setPackages(MOCK_PACKAGES);
-        const popular = MOCK_PACKAGES.find(p => p.is_popular) || MOCK_PACKAGES[0];
+        const popular = MOCK_PACKAGES.find(p => p.is_popular) || MOCK_PACKAGES[0]!;
         setSelectedPackage(popular);
       }
     };

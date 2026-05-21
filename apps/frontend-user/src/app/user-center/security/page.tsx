@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store';
-import { authApi } from '@/lib/api';
+import { userApi } from '@/lib/api';
 
 export default function SecurityPage() {
   const { user } = useAuthStore();
@@ -46,7 +46,7 @@ export default function SecurityPage() {
     }
 
     try {
-      await authApi.sendSmsCode(phoneForm.new_phone);
+      await userApi.sendVerificationCode(phoneForm.new_phone);
       setCountdown(60);
       const interval = setInterval(() => {
         setCountdown(prev => {
@@ -82,7 +82,7 @@ export default function SecurityPage() {
 
     setPasswordLoading(true);
     try {
-      await authApi.changePassword(passwordForm.old_password, passwordForm.new_password);
+      await userApi.changePassword(passwordForm.old_password, passwordForm.new_password);
       setSuccessMessage('密码修改成功！');
       setPasswordForm({ old_password: '', new_password: '', confirm_password: '' });
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -105,7 +105,7 @@ export default function SecurityPage() {
 
     setPhoneLoading(true);
     try {
-      await authApi.changePhone(phoneForm.new_phone, phoneForm.code);
+      await userApi.changePhone(phoneForm.new_phone, phoneForm.code);
       setSuccessMessage('手机号修改成功！');
       setPhoneForm({ new_phone: '', code: '' });
       setTimeout(() => setSuccessMessage(''), 3000);

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Tool } from '../../types';
+import { taskApi } from '../../lib/api/modules/task';
 
 interface ToolCreationFormProps {
   tool: Tool;
@@ -36,6 +38,7 @@ interface FormState {
 }
 
 export function ToolCreationForm({ tool }: ToolCreationFormProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<'form' | 'chat'>('form');
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentProgress, setCurrentProgress] = useState(0);
@@ -88,27 +91,41 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
     setTotalCost(cost);
   };
 
-  const handleStartGeneration = () => {
+  const handleStartGeneration = async () => {
     setIsGenerating(true);
     setCurrentProgress(0);
     setCurrentStep(1);
 
-    // Simulate progress
-    const steps = tool.slug === 'ai-storybook' ? 4 : tool.slug === 'ecommerce-detail' ? 3 : 2;
-    let step = 1;
-    const interval = setInterval(() => {
-      const progress = Math.min((step / steps) * 100, 100);
-      setCurrentProgress(progress);
-      setCurrentStep(step);
-      step++;
+    try {
+      // Map tool slug to task type for backend executor
+      const taskTypeMap: Record<string, string> = {
+        'ai-storybook': 'storybook',
+        'ecommerce-detail': 'ecommerce',
+        'product-description': 'marketing',
+      };
+      const taskType = taskTypeMap[tool.slug] || tool.slug;
 
-      if (step > steps) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setIsGenerating(false);
-        }, 1000);
-      }
-    }, 1500);
+      // Collect form inputs
+      const inputParams: Record<string, any> = {
+        ...formState,
+        estimatedCost: totalCost,
+      };
+
+      const task = await taskApi.createTask({
+        tool_id: tool.id,
+        task_type: taskType,
+        input_params: inputParams,
+      });
+
+      // Navigate to progress page
+      router.push(`/works/${task.id}/progress`);
+    } catch (error: any) {
+      console.error('创建任务失败:', error);
+      alert(error?.response?.data?.detail || '创建任务失败，请检查登录状态或稍后重试');
+      setIsGenerating(false);
+      setCurrentProgress(0);
+      setCurrentStep(0);
+    }
   };
 
   const updateFormState = (key: keyof FormState, value: any) => {

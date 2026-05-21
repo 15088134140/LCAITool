@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // 定价套餐数据类型
 interface PricingPlan {
@@ -24,6 +25,7 @@ interface FAQItem {
 }
 
 export default function PricingPage() {
+  const router = useRouter();
   const [activePlan, setActivePlan] = useState<number>(2);
   const [activeTab, setActiveTab] = useState<string>('pay-per-use');
   const [selectedPayment, setSelectedPayment] = useState<string>('wechat');
@@ -170,7 +172,10 @@ export default function PricingPage() {
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-md mx-auto">
             <div className="text-blue-100 text-sm mb-2">当前积分余额</div>
             <div className="text-5xl font-bold text-white mb-4">156</div>
-            <button className="w-full py-3 bg-white text-[#1E3A5F] rounded-xl font-semibold hover:bg-blue-50 transition-colors focus-ring">
+            <button
+              onClick={() => router.push('/payment')}
+              className="w-full py-3 bg-white text-[#1E3A5F] rounded-xl font-semibold hover:bg-blue-50 transition-colors focus-ring"
+            >
               立即充值
             </button>
           </div>
@@ -306,7 +311,10 @@ export default function PricingPage() {
                   min="1"
                 />
               </div>
-              <button className="btn-primary px-8 py-3 text-white rounded-xl font-semibold focus-ring">
+              <button
+                onClick={() => router.push('/payment')}
+                className="btn-primary px-8 py-3 text-white rounded-xl font-semibold focus-ring"
+              >
                 立即充值
               </button>
             </div>
@@ -400,7 +408,13 @@ export default function PricingPage() {
                   金额: {formatPrice(pricingPlans.find(plan => plan.id === activePlan)?.price || 0)}
                 </div>
               </div>
-              <button className="btn-primary px-10 py-4 text-white rounded-xl font-bold text-lg hover:bg-green-600 transition-colors focus-ring shadow-xl">
+              <button
+                onClick={() => {
+                  const plan = pricingPlans.find(p => p.id === activePlan);
+                  router.push(`/payment?plan=${plan?.id || 2}&price=${plan?.price || 0}&points=${plan?.points || 0}`);
+                }}
+                className="btn-primary px-10 py-4 text-white rounded-xl font-bold text-lg hover:bg-green-600 transition-colors focus-ring shadow-xl"
+              >
                 确认支付
               </button>
             </div>

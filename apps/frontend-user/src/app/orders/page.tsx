@@ -31,7 +31,7 @@ const getStatusDisplay = (status: OrderStatus): {
 };
 
 const OrdersPage: React.FC = () => {
-  const { user, refreshUserBalance } = useUserStore();
+  const { user } = useUserStore();
   const [activeTab, setActiveTab] = useState<FilterType>('all');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);

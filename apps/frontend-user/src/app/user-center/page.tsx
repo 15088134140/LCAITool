@@ -90,7 +90,7 @@ export default function UserCenterPage() {
 
                 {/* Verification Badge */}
                 <div className="mt-3 flex justify-center">
-                  {user?.is_verified ? (
+                  {user?.id_card_verified ? (
                     <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>

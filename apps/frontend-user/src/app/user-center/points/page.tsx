@@ -42,7 +42,7 @@ const PointsPage: React.FC = () => {
   };
 
   // Get type icon
-  const getTypeIcon = (type: TransactionType, amount: number) => {
+  const getTypeIcon = (_type: TransactionType, amount: number) => {
     const isIncome = amount > 0;
     if (isIncome) {
       return (
@@ -80,7 +80,6 @@ const PointsPage: React.FC = () => {
       const currentPage = reset ? 1 : page;
 
       // Map filter to API type
-      let typeFilter: TransactionType | undefined;
       if (filter === 'income') {
         // For MVP, we'll handle this by filtering client-side
       } else if (filter === 'expense') {

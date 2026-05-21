@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { IdeaCard } from '@/components/idea/IdeaCard';
-import { IdeaSubmission } from '@/lib/api/types';
+import type { IdeaSubmission } from '@/lib/api/types';
 import { ideaApi } from '@/lib/api/modules/idea';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -15,13 +15,12 @@ const sortOptions = [
 ];
 
 export default function IdeasPage() {
-  const { isAuthenticated } = useAuthStore();
-  const [selectedCategory, setSelectedCategory] = useState('全部');
+  useAuthStore();
+const [selectedCategory, setSelectedCategory] = useState('全部');
   const [sortBy, setSortBy] = useState('votes');
   const [ideas, setIdeas] = useState<IdeaSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [page] = useState(1);
 
   useEffect(() => {
     const fetchIdeas = async () => {
@@ -34,7 +33,6 @@ export default function IdeasPage() {
           sort: sortMap[sortBy] || 'vote_count',
         });
         setIdeas(result.items || []);
-        setHasMore(result.total > result.page * result.page_size);
       } catch (err) {
         console.error('获取构思列表失败:', err);
       } finally {
