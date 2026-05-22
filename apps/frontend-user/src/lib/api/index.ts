@@ -15,6 +15,7 @@ export * from './modules/task';
 export * from './modules/work';
 export * from './modules/payment';
 export * from './modules/idea';
+export * from './modules/chat';
 
 // 按命名空间导出，方便使用
 import { authApi, userApi } from './modules/user';
@@ -23,6 +24,7 @@ import { taskApi } from './modules/task';
 import { workApi } from './modules/work';
 import { paymentApi } from './modules/payment';
 import { ideaApi } from './modules/idea';
+import { chatApi } from './modules/chat';
 
 export const apiModules = {
   auth: { ...authApi },
@@ -33,6 +35,7 @@ export const apiModules = {
   work: { ...workApi },
   payment: { ...paymentApi },
   idea: { ...ideaApi },
+  chat: { ...chatApi },
 };
 
 export default apiModules;
