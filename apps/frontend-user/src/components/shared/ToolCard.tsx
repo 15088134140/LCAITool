@@ -24,7 +24,7 @@ export function ToolCard({ tool, showImage = false }: ToolCardProps) {
   };
 
   return (
-    <Link href={`/tools/${tool.id}`} className="tool-card bg-white rounded-2xl overflow-hidden group">
+    <Link href={tool.slug ? `/tools/${tool.slug}` : `/tools/${tool.id}`} className="tool-card bg-white rounded-2xl overflow-hidden group">
       {showImage && (
         <div className="relative">
           <img
