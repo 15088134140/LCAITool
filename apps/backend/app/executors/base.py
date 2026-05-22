@@ -6,10 +6,22 @@ import asyncio
 import os
 import uuid
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Dict, Any, Optional, Callable, Awaitable
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.services.task_service import TaskService
+
+
+@dataclass
+class ProgressEvent:
+    """进度事件数据结构"""
+    percent: int = 0
+    message: str = ""
+    step_index: int = 0
+    total_steps: int = 1
+    step_status: str = "running"  # running | completed | pending
+    sub_progress: Optional[str] = None  # 如 "3/10"
 
 
 class BaseToolExecutor(ABC):
@@ -50,13 +62,28 @@ class BaseToolExecutor(ABC):
         """
         pass
 
-    async def update_progress(self, percent: int, message: str, data: Optional[Dict[str, Any]] = None) -> None:
-        """
-        更新任务进度
-        :param percent: 进度百分比 0-100
-        :param message: 进度消息
-        :param data: 附加数据（用于回调）
-        """
+    async def update_progress(
+        self,
+        percent: int,
+        message: str,
+        data: Optional[Dict[str, Any]] = None,
+        step_index: Optional[int] = None,
+        total_steps: Optional[int] = None,
+        step_status: Optional[str] = None,
+        sub_progress: Optional[str] = None,
+    ) -> None:
+        """更新任务进度（结构化版本）"""
+        # 构建结构化数据
+        progress_data = data or {}
+        if step_index is not None:
+            progress_data['step_index'] = step_index
+        if total_steps is not None:
+            progress_data['total_steps'] = total_steps
+        if step_status is not None:
+            progress_data['step_status'] = step_status
+        if sub_progress is not None:
+            progress_data['sub_progress'] = sub_progress
+
         await TaskService.update_task_status(
             db=self.db,
             task_id=self.task_id,
@@ -64,9 +91,17 @@ class BaseToolExecutor(ABC):
             message=message
         )
 
-        # 如果有进度回调函数，调用它
+        # 自动写 TaskLog
+        await TaskService.add_task_log(
+            db=self.db,
+            task_id=self.task_id,
+            level="info",
+            message=message,
+            details=progress_data
+        )
+
         if self._progress_callback:
-            await self._progress_callback(percent, message, data)
+            await self._progress_callback(percent, message, progress_data)
 
     async def add_log(self, level: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
         """

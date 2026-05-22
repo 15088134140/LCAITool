@@ -154,6 +154,17 @@ def publish_task_message(
         'data': data or {},
         'timestamp': int(time.time())
     }
+
+    # 如果是进度事件，提取结构化字段到顶层
+    if msg_type == 'progress' and data:
+        for key in ['step_index', 'total_steps', 'step_status', 'sub_progress']:
+            if key in data:
+                payload[key] = data[key]
+
+    # 如果是 completed 事件，包含 work_id
+    if msg_type == 'completed' and data:
+        payload['work_id'] = data.get('work_id', '')
+
     _get_redis_client().publish(channel, json.dumps(payload, ensure_ascii=False))
 
 
