@@ -58,6 +58,7 @@ class ToolBase(BaseModel):
     config: Optional[Any] = Field(None, description="工具配置，JSON格式")
     status: int = Field(1, description="状态：0下线 1上线 2维护中")
     is_featured: bool = Field(False, description="是否推荐展示在首页精品工具")
+    usage_modes: Optional[list[str]] = Field(default=None, description="使用模式，可选值 form/dialog")
 
 
 class ToolCreate(ToolBase):
@@ -80,6 +81,7 @@ class ToolUpdate(BaseModel):
     config: Optional[Any] = Field(None, description="工具配置，JSON格式")
     status: Optional[int] = Field(None, description="状态：0下线 1上线 2维护中")
     is_featured: Optional[bool] = Field(None, description="是否推荐展示在首页精品工具")
+    usage_modes: Optional[list[str]] = Field(None, description="使用模式")
 
 
 class ToolResponse(ToolBase):
