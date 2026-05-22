@@ -5,7 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { workApi } from '@/lib/api/modules/work';
+import { tokenStorage } from '@/lib/api/client';
 import type { Work, WorkFile, Work as WorkVersion } from '@/lib/api/types';
+
+const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || 'http://localhost:8000/api/v1';
 
 // 工具类型配置
 const toolConfig = {
@@ -148,18 +151,39 @@ export default function WorkDetailPage() {
   };
 
   // 处理下载
-  const handleDownload = (file: WorkFile) => {
-    // TODO: 实现真实下载
-    alert(`正在下载: ${file.fileName}`);
+  const handleDownload = async (file: WorkFile) => {
+    try {
+      const token = tokenStorage.getToken();
+      const response = await fetch(
+        `${API_BASE_URL}/files/${file.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!response.ok) throw new Error('下载失败');
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.fileName || 'download';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('下载失败:', err);
+      alert('文件下载失败，请稍后重试');
+    }
   };
 
   // 处理下载全部
-  const handleDownloadAll = () => {
-    const zipFile = files.find(f => f.fileName.endsWith('.zip'));
+  const handleDownloadAll = async () => {
+    const zipFile = files.find(f => f.fileType === 'other' && f.fileName?.endsWith('.zip'));
     if (zipFile) {
-      handleDownload(zipFile);
+      await handleDownload(zipFile);
     } else {
-      alert('正在打包所有文件...');
+      for (const file of files) {
+        await handleDownload(file);
+      }
     }
   };
 
