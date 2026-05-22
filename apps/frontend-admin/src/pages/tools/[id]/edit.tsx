@@ -30,6 +30,7 @@ const EditTool = () => {
     audio_fee: 0,
     token_fee: 0,
     status: 0,
+    usage_modes: ['form'],
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -91,6 +92,7 @@ const EditTool = () => {
         token_fee: data.token_fee,
         status: data.status,
         is_featured: data.is_featured,
+        usage_modes: data.usage_modes || ['form'],
       });
     } catch (err) {
       console.error('加载工具详情失败:', err);
@@ -417,6 +419,53 @@ const EditTool = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none"
               />
             </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">使用模式</h2>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.usage_modes?.includes('form') ?? true}
+                onChange={(e) => {
+                  const modes = formData.usage_modes || ['form'];
+                  if (e.target.checked) {
+                    handleInputChange('usage_modes', [...modes, 'form']);
+                  } else {
+                    const newModes = modes.filter(m => m !== 'form');
+                    if (newModes.length > 0) {
+                      handleInputChange('usage_modes', newModes);
+                    }
+                  }
+                }}
+                className="w-4 h-4 text-[#1E3A5F] border-gray-300 rounded focus:ring-[#1E3A5F]"
+              />
+              <div>
+                <span className="font-medium text-gray-800">表单模式 (form)</span>
+                <p className="text-sm text-gray-500">用户填写表单参数后开始生成</p>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.usage_modes?.includes('dialog') ?? false}
+                onChange={(e) => {
+                  const modes = formData.usage_modes || ['form'];
+                  if (e.target.checked) {
+                    handleInputChange('usage_modes', [...modes, 'dialog']);
+                  } else {
+                    handleInputChange('usage_modes', modes.filter(m => m !== 'dialog'));
+                  }
+                }}
+                className="w-4 h-4 text-[#1E3A5F] border-gray-300 rounded focus:ring-[#1E3A5F]"
+              />
+              <div>
+                <span className="font-medium text-gray-800">对话模式 (dialog)</span>
+                <p className="text-sm text-gray-500">用户通过自然语言对话描述需求</p>
+              </div>
+            </label>
           </div>
         </div>
 
