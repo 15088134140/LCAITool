@@ -11,13 +11,14 @@ interface ToolCreationFormProps {
 
 interface FormState {
   // Storybook specific
-  storyTitle?: string;
+  theme?: string;
   storyContent?: string;
-  artStyle?: string;
+  art_style?: string;
   voiceType?: string;
-  pageCount?: number;
+  page_count?: number;
   hasBackgroundMusic?: boolean;
   hasSoundEffects?: boolean;
+  target_age?: string;
 
   // Ecommerce specific
   productName?: string;
@@ -44,10 +45,10 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
   const [currentProgress, setCurrentProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [formState, setFormState] = useState<FormState>({
-    pageCount: 10,
+    page_count: 10,
     imageCount: 5,
     platformCount: 3,
-    artStyle: 'cartoon',
+    art_style: 'cartoon',
     voiceType: 'warm',
     imageStyle: 'professional',
     targetPlatform: 'all',
@@ -63,28 +64,28 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
   }, [formState, tool]);
 
   const calculateTotalCost = () => {
-    let cost = tool.pricing.baseFee;
+    let cost = tool.base_fee;
 
     // Storybook
     if (tool.slug === 'ai-storybook') {
-      const imageCost = tool.pricing.resourceFees?.image || 1;
-      cost += imageCost * (formState.pageCount || 10);
+      const imageCost = tool.image_fee || 1;
+      cost += imageCost * (formState.page_count || 10);
 
       if (formState.voiceType && formState.voiceType !== 'none') {
-        const audioCost = tool.pricing.resourceFees?.audio || 0.5;
-        cost += audioCost * (formState.pageCount || 10);
+        const audioCost = tool.audio_fee || 0.5;
+        cost += audioCost * (formState.page_count || 10);
       }
     }
 
     // Ecommerce
     if (tool.slug === 'ecommerce-detail') {
-      const imageCost = tool.pricing.resourceFees?.image || 2;
+      const imageCost = tool.image_fee || 2;
       cost += imageCost * (formState.imageCount || 5);
     }
 
     // Marketing
     if (tool.slug === 'product-description') {
-      const platformCost = tool.pricing.resourceFees?.image || 1;
+      const platformCost = tool.image_fee || 1;
       cost += platformCost * (formState.platformCount || 3);
     }
 
@@ -107,8 +108,35 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
 
       // Collect form inputs
       const inputParams: Record<string, any> = {
-        ...formState,
+        theme: formState.theme,
+        storyContent: formState.storyContent,
+        art_style: formState.art_style,
+        page_count: formState.page_count,
+        voiceType: formState.voiceType,
+        include_audio: formState.voiceType && formState.voiceType !== 'none',
+        target_age: formState.target_age || '3-6',
+        hasBackgroundMusic: formState.hasBackgroundMusic,
+        hasSoundEffects: formState.hasSoundEffects,
         estimatedCost: totalCost,
+        // Ecommerce fields
+        ...(tool.slug === 'ecommerce-detail' && {
+          productName: formState.productName,
+          productCategory: formState.productCategory,
+          productFeatures: formState.productFeatures,
+          targetAudience: formState.targetAudience,
+          imageStyle: formState.imageStyle,
+          includePsd: formState.includePsd,
+          imageCount: formState.imageCount,
+        }),
+        // Marketing fields
+        ...(tool.slug === 'product-description' && {
+          productOrBrand: formState.productOrBrand,
+          keySellingPoints: formState.keySellingPoints,
+          targetPlatform: formState.targetPlatform,
+          toneStyle: formState.toneStyle,
+          copyLength: formState.copyLength,
+          platformCount: formState.platformCount,
+        }),
       };
 
       const task = await taskApi.createTask({
@@ -143,13 +171,13 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
         </h3>
         <div className="space-y-5">
           <div>
-            <label className="block text-base font-medium text-gray-600 mb-2">绘本标题 *</label>
+            <label className="block text-base font-medium text-gray-600 mb-2">绘本主题 *</label>
             <input
               type="text"
               className="w-full px-5 py-4 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-lg"
               placeholder="例如：小兔子的森林冒险"
-              value={formState.storyTitle || ''}
-              onChange={(e) => updateFormState('storyTitle', e.target.value)}
+              value={formState.theme || ''}
+              onChange={(e) => updateFormState('theme', e.target.value)}
             />
           </div>
           <div>
@@ -178,17 +206,17 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
               {[
                 { value: 'cartoon', label: '卡通水彩', icon: '🎨' },
                 { value: 'oil', label: '梦幻油画', icon: '🖼️' },
-                { value: 'japanese', label: '日系动漫', icon: '🌸' },
-                { value: 'flat', label: '扁平插画', icon: '💎' },
-              ].map((style) => (
-                <label key={style.value} className="cursor-pointer">
+                { value: 'watercolor', label: '日系动漫', icon: '🌸' },
+                { value: 'watercolor', label: '扁平插画', icon: '💎' },
+              ].map((style, idx) => (
+                <label key={`${style.value}-${idx}`} className="cursor-pointer">
                   <input
                     type="radio"
                     name="style"
                     value={style.value}
                     className="peer hidden"
-                    checked={formState.artStyle === style.value}
-                    onChange={() => updateFormState('artStyle', style.value)}
+                    checked={formState.art_style === style.value}
+                    onChange={() => updateFormState('art_style', style.value)}
                   />
                   <div className="p-6 border-2 border-gray-200 rounded-2xl text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all hover:border-gray-300">
                     <div className="text-3xl mb-2">{style.icon}</div>
@@ -228,6 +256,39 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
         </div>
       </div>
 
+      {/* Step 2.5: Target Age Setting */}
+      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+        <h3 className="font-semibold text-xl text-brand-dark mb-6 flex items-center gap-3">
+          <span className="w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center font-bold">2.5</span>
+          受众设置
+        </h3>
+        <div>
+          <label className="block text-base font-medium text-gray-600 mb-4">目标年龄段</label>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { value: '3-6', label: '3-6岁', desc: '学龄前儿童' },
+              { value: '6-9', label: '6-9岁', desc: '小学低年级' },
+              { value: '9-12', label: '9-12岁', desc: '小学高年级' },
+            ].map((age) => (
+              <label key={age.value} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="targetAge"
+                  value={age.value}
+                  className="peer hidden"
+                  checked={formState.target_age === age.value}
+                  onChange={() => updateFormState('target_age', age.value)}
+                />
+                <div className="p-6 border-2 border-gray-200 rounded-2xl text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all hover:border-gray-300">
+                  <div className="text-3xl font-bold text-brand-dark mb-1">{age.label}</div>
+                  <div className="text-sm text-gray-500">{age.desc}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Step 3: Page Settings */}
       <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
         <h3 className="font-semibold text-xl text-brand-dark mb-6 flex items-center gap-3">
@@ -237,15 +298,15 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
         <div className="space-y-6">
           <div>
             <label className="block text-base font-medium text-gray-600 mb-3">
-              绘本页数：<span className="text-blue-500 font-bold text-xl">{formState.pageCount}</span>页
+              绘本页数：<span className="text-blue-500 font-bold text-xl">{formState.page_count}</span>页
             </label>
             <input
               type="range"
               min={5}
               max={30}
-              value={formState.pageCount}
+              value={formState.page_count}
               className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              onChange={(e) => updateFormState('pageCount', parseInt(e.target.value))}
+              onChange={(e) => updateFormState('page_count', parseInt(e.target.value))}
             />
             <div className="flex justify-between text-sm text-gray-500 mt-2">
               <span>5页</span>
@@ -616,19 +677,19 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
       <div className="space-y-4 mb-8">
         <div className="flex justify-between items-center py-3 border-b border-gray-200">
           <span className="text-gray-500 text-lg">基础调用费</span>
-          <span className="font-medium text-brand-dark text-lg">{tool.pricing.baseFee} 积分</span>
+          <span className="font-medium text-brand-dark text-lg">{tool.base_fee} 积分</span>
         </div>
 
         {tool.slug === 'ai-storybook' && (
           <>
             <div className="flex justify-between items-center py-3 border-b border-gray-200">
-              <span className="text-gray-500 text-lg">插图生成 ({formState.pageCount}张 × {(tool.pricing.resourceFees?.image || 1).toFixed(1)}积分)</span>
-              <span className="font-medium text-brand-dark text-lg">{((formState.pageCount || 10) * (tool.pricing.resourceFees?.image || 1)).toFixed(1)} 积分</span>
+              <span className="text-gray-500 text-lg">插图生成 ({formState.page_count}张 × {(tool.image_fee || 1).toFixed(1)}积分)</span>
+              <span className="font-medium text-brand-dark text-lg">{((formState.page_count || 10) * (tool.image_fee || 1)).toFixed(1)} 积分</span>
             </div>
             {formState.voiceType && formState.voiceType !== 'none' && (
               <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                <span className="text-gray-500 text-lg">配音合成 ({formState.pageCount}段 × {(tool.pricing.resourceFees?.audio || 0.5).toFixed(1)}积分)</span>
-                <span className="font-medium text-brand-dark text-lg">{((formState.pageCount || 10) * (tool.pricing.resourceFees?.audio || 0.5)).toFixed(1)} 积分</span>
+                <span className="text-gray-500 text-lg">配音合成 ({formState.page_count}段 × {(tool.audio_fee || 0.5).toFixed(1)}积分)</span>
+                <span className="font-medium text-brand-dark text-lg">{((formState.page_count || 10) * (tool.audio_fee || 0.5)).toFixed(1)} 积分</span>
               </div>
             )}
           </>
@@ -636,15 +697,15 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
 
         {tool.slug === 'ecommerce-detail' && (
           <div className="flex justify-between items-center py-3 border-b border-gray-200">
-            <span className="text-gray-500 text-lg">详情图生成 ({formState.imageCount}张 × {(tool.pricing.resourceFees?.image || 2).toFixed(1)}积分)</span>
-            <span className="font-medium text-brand-dark text-lg">{((formState.imageCount || 5) * (tool.pricing.resourceFees?.image || 2)).toFixed(1)} 积分</span>
+            <span className="text-gray-500 text-lg">详情图生成 ({formState.imageCount}张 × {(tool.image_fee || 2).toFixed(1)}积分)</span>
+            <span className="font-medium text-brand-dark text-lg">{((formState.imageCount || 5) * (tool.image_fee || 2)).toFixed(1)} 积分</span>
           </div>
         )}
 
         {tool.slug === 'product-description' && (
           <div className="flex justify-between items-center py-3 border-b border-gray-200">
-            <span className="text-gray-500 text-lg">多平台适配 ({formState.platformCount}个 × {(tool.pricing.resourceFees?.image || 1).toFixed(1)}积分)</span>
-            <span className="font-medium text-brand-dark text-lg">{((formState.platformCount || 3) * (tool.pricing.resourceFees?.image || 1)).toFixed(1)} 积分</span>
+            <span className="text-gray-500 text-lg">多平台适配 ({formState.platformCount}个 × {(tool.image_fee || 1).toFixed(1)}积分)</span>
+            <span className="font-medium text-brand-dark text-lg">{((formState.platformCount || 3) * (tool.image_fee || 1)).toFixed(1)} 积分</span>
           </div>
         )}
 
