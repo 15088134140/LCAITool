@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "灵创AI工具箱"
 
+    STORAGE_DIR: str = "./storage"
+    WORKS_DIR: str = "./storage/works"
+
     # AES-256 加密密钥（用于身份证号等敏感信息加密，32字节Hex格式）
     AES_ENCRYPTION_KEY: str = ""
 

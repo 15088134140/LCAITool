@@ -138,7 +138,7 @@ class WorkDetail(WorkInDBBase):
 class WorkFileBase(BaseModel):
     file_type: str = Field("other", max_length=20, description="文件类型：image audio video pdf psd other")
     file_name: str = Field(..., max_length=255, description="文件名")
-    file_url: str = Field(..., max_length=255, description="文件URL")
+    file_url: str = Field(..., max_length=255, description="文件路径（相对路径如 images/page_1.png，或绝对路径）")
     file_size: Optional[int] = Field(None, description="文件大小（字节）")
     page_number: Optional[int] = Field(None, description="页码")
     mime_type: Optional[str] = Field(None, max_length=100, description="MIME类型")
