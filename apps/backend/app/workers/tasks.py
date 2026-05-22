@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 from app.executors import (
     BaseToolExecutor,
     StorybookExecutor,
-    EcommerceExecutor
+    EcommerceExecutor,
+    MarketingExecutor,
 )
 from app.services.task_service import TaskService
 from app.workers.celery_app import celery_app
@@ -70,6 +71,7 @@ def _get_redis_client():
 EXECUTOR_MAP: Dict[str, type[BaseToolExecutor]] = {
     'storybook': StorybookExecutor,
     'ecommerce': EcommerceExecutor,
+    'marketing': MarketingExecutor,
 }
 
 
