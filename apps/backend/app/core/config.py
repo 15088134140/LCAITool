@@ -38,5 +38,7 @@ class Settings(BaseSettings):
     # AES-256 加密密钥（用于身份证号等敏感信息加密，32字节Hex格式）
     AES_ENCRYPTION_KEY: str = ""
 
+    INTERNAL_API_TOKEN: str = ""
+
 
 settings = Settings()
