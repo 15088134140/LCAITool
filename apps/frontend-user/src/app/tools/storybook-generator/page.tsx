@@ -8,8 +8,8 @@ import {
   ToolHowTo,
   ToolPricing,
   ToolReviews,
-  ToolCreationForm,
 } from '../../../components/tool-detail';
+import { StorybookForm } from './components/StorybookForm';
 
 // 工具配置
 const TOOL_ID = 'ai-storybook';
@@ -66,7 +66,7 @@ export default function StorybookGeneratorPage() {
       </div>
 
       <ToolHero tool={currentTool} />
-      <ToolCreationForm tool={currentTool} />
+      <StorybookForm tool={currentTool} />
       <ToolFeatures />
       <ToolHowTo />
       <ToolPricing pricing={currentTool.pricing} />
