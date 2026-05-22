@@ -16,7 +16,6 @@ import json
 import math
 import os
 import struct
-import tempfile
 import uuid
 import zipfile
 import wave
@@ -26,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .base import BaseToolExecutor
 from app.providers.ai import AIProviderFactory
+from app.models.task import WorkFile
 from app.services.task_service import TaskService
 from app.schemas.task import WorkCreate, WorkFileCreate
 from app.utils.pdf_generator import PDFGenerator
@@ -34,10 +34,6 @@ from app.utils.pdf_generator import PDFGenerator
 class StorybookExecutor(BaseToolExecutor):
     """有声绘本执行器"""
 
-    # 费用配置
-    BASE_FEE = 20  # 基础费用
-    IMAGE_FEE_PER_PAGE = 2  # 每页图片费用
-    AUDIO_FEE_PER_PAGE = 1  # 每页音频费用
     MAX_PARALLEL_IMAGES = 3  # 最大并行图片生成数
     MAX_PARALLEL_AUDIOS = 5  # 最大并行音频生成数
 
@@ -45,11 +41,13 @@ class StorybookExecutor(BaseToolExecutor):
         self,
         task_id: uuid.UUID,
         db: AsyncSession,
+        tool: Optional[Dict[str, Any]] = None,
         progress_callback=None
     ):
         super().__init__(task_id, db, progress_callback)
         self.ai_provider = AIProviderFactory.get_provider("doubao")
         self.pdf_generator = PDFGenerator()
+        self._tool_config = tool or {}
 
     def estimate_cost(self, params: Dict[str, Any]) -> int:
         """
@@ -60,10 +58,14 @@ class StorybookExecutor(BaseToolExecutor):
         page_count = params.get('page_count', 5)
         include_audio = params.get('include_audio', True)
 
-        total = self.BASE_FEE
-        total += self.IMAGE_FEE_PER_PAGE * page_count
+        base_fee = self._tool_config.get('base_fee', 20)
+        image_fee = self._tool_config.get('image_fee', 2)
+        audio_fee = self._tool_config.get('audio_fee', 1)
+
+        total = base_fee
+        total += image_fee * page_count
         if include_audio:
-            total += self.AUDIO_FEE_PER_PAGE * page_count
+            total += audio_fee * page_count
 
         return total
 
@@ -73,6 +75,9 @@ class StorybookExecutor(BaseToolExecutor):
         :param params: 工具参数
         :return: 执行结果
         """
+        # 获取持久化工作目录
+        works_dir = self.get_works_dir()
+
         # 检查是否有快照可以恢复
         snapshot = await self.get_snapshot()
         start_step = snapshot.get('step', 0) if snapshot else 0
@@ -119,7 +124,7 @@ class StorybookExecutor(BaseToolExecutor):
             if start_step <= 4:
                 await self.update_progress(35, "正在生成插画...")
                 pages_with_images = await self._generate_images_parallel(
-                    result_data['pages'], art_style
+                    result_data['pages'], art_style, works_dir
                 )
                 result_data['pages'] = pages_with_images
                 await self.save_snapshot({'step': 5, 'data': result_data})
@@ -128,7 +133,7 @@ class StorybookExecutor(BaseToolExecutor):
             # Step 5: 语音合成 (60-80%)
             if include_audio and start_step <= 5:
                 await self.update_progress(60, "正在生成语音 narration...")
-                pages_with_audio = await self._generate_audio_parallel(result_data['pages'])
+                pages_with_audio = await self._generate_audio_parallel(result_data['pages'], works_dir)
                 result_data['pages'] = pages_with_audio
                 await self.save_snapshot({'step': 6, 'data': result_data})
                 await self.add_log('info', '语音合成完成')
@@ -136,7 +141,7 @@ class StorybookExecutor(BaseToolExecutor):
             # Step 6: PDF排版与打包 (80-95%)
             if start_step <= 6:
                 await self.update_progress(80, "正在生成PDF并打包...")
-                files = await self._generate_pdf_and_zip(result_data)
+                files = await self._generate_pdf_and_zip(result_data, works_dir)
                 result_data['files'] = files
                 await self.save_snapshot({'step': 7, 'data': result_data})
                 await self.add_log('info', 'PDF生成与打包完成')
@@ -315,7 +320,8 @@ class StorybookExecutor(BaseToolExecutor):
     async def _generate_images_parallel(
         self,
         pages: List[Dict[str, Any]],
-        art_style: str
+        art_style: str,
+        works_dir: str
     ) -> List[Dict[str, Any]]:
         """并行生成图片（带限流）"""
         semaphore = asyncio.Semaphore(self.MAX_PARALLEL_IMAGES)
@@ -335,11 +341,11 @@ class StorybookExecutor(BaseToolExecutor):
                         if response.content and not response.content.startswith("mock_"):
                             image_url = response.content
                         else:
-                            image_url = self._create_dummy_image(index + 1)
+                            image_url = self._create_dummy_image(index + 1, works_dir)
                         page['image_url'] = image_url
                         page['image_generated'] = True
                     else:
-                        page['image_url'] = self._create_dummy_image(index + 1)
+                        page['image_url'] = self._create_dummy_image(index + 1, works_dir)
                         page['image_generated'] = False
 
                     # 更新进度
@@ -347,7 +353,7 @@ class StorybookExecutor(BaseToolExecutor):
                     await self.update_progress(progress, f"正在生成插画... ({index + 1}/{total_pages})")
 
                 except Exception as e:
-                    page['image_url'] = self._create_dummy_image(index + 1)
+                    page['image_url'] = self._create_dummy_image(index + 1, works_dir)
                     page['image_generated'] = False
                     page['image_error'] = str(e)
 
@@ -358,7 +364,7 @@ class StorybookExecutor(BaseToolExecutor):
 
         return list(results)
 
-    async def _generate_audio_parallel(self, pages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _generate_audio_parallel(self, pages: List[Dict[str, Any]], works_dir: str) -> List[Dict[str, Any]]:
         """并行生成语音 narration"""
         semaphore = asyncio.Semaphore(self.MAX_PARALLEL_AUDIOS)
         total_pages = len(pages)
@@ -382,7 +388,7 @@ class StorybookExecutor(BaseToolExecutor):
                         if response.content and not response.content.startswith("mock_"):
                             audio_url = response.content
                         else:
-                            audio_url = self._create_dummy_audio(index + 1)
+                            audio_url = self._create_dummy_audio(index + 1, works_dir)
                         page['audio_url'] = audio_url
                         page['audio_generated'] = True
                     else:
@@ -406,10 +412,10 @@ class StorybookExecutor(BaseToolExecutor):
         return list(results)
 
     @staticmethod
-    def _create_dummy_image(page_num: int) -> str:
-        """创建占位图片文件，返回真实文件路径"""
-        fd, path = tempfile.mkstemp(suffix='.png', prefix=f'storybook_img_{page_num}_')
-        os.close(fd)
+    def _create_dummy_image(page_num: int, works_dir: str) -> str:
+        """创建占位图片文件到持久化目录"""
+        path = os.path.join(works_dir, 'images', f'page_{page_num}.png')
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
         try:
             # 尝试用 Pillow 创建彩色占位图
@@ -439,10 +445,10 @@ class StorybookExecutor(BaseToolExecutor):
         return path
 
     @staticmethod
-    def _create_dummy_audio(page_num: int) -> str:
-        """创建占位音频文件（WAV格式），返回真实文件路径"""
-        fd, path = tempfile.mkstemp(suffix='.wav', prefix=f'storybook_audio_{page_num}_')
-        os.close(fd)
+    def _create_dummy_audio(page_num: int, works_dir: str) -> str:
+        """创建占位音频文件（WAV格式）到持久化目录"""
+        path = os.path.join(works_dir, 'audio', f'page_{page_num}.wav')
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
         sample_rate = 8000
         duration = 1  # 1 second placeholder
@@ -458,21 +464,22 @@ class StorybookExecutor(BaseToolExecutor):
 
         return path
 
-    async def _generate_pdf_and_zip(self, result_data: Dict[str, Any]) -> Dict[str, str]:
+    async def _generate_pdf_and_zip(self, result_data: Dict[str, Any], works_dir: str) -> Dict[str, str]:
         """生成PDF并打包所有文件"""
         outline = result_data.get('outline', {})
         pages = result_data.get('pages', [])
 
         # 生成PDF
         title = outline.get('title', '有声绘本')
-        pdf_path = self.pdf_generator.generate_storybook_pdf(
+        pdf_path = os.path.join(works_dir, 'storybook.pdf')
+        self.pdf_generator.generate_storybook_pdf(
             title=title,
-            pages=pages
+            pages=pages,
+            output_path=pdf_path
         )
 
         # 创建ZIP包
-        fd, zip_path = tempfile.mkstemp(suffix='.zip', prefix='storybook_package_')
-        os.close(fd)
+        zip_path = os.path.join(works_dir, 'package.zip')
 
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
             # 添加PDF
@@ -490,7 +497,7 @@ class StorybookExecutor(BaseToolExecutor):
                 # 添加音频
                 audio_url = page.get('audio_url')
                 if audio_url and os.path.exists(audio_url):
-                    zf.write(audio_url, f'audio/page_{page_num}.mp3')
+                    zf.write(audio_url, f'audio/page_{page_num}.wav')
 
             # 添加元数据
             metadata = {
@@ -503,7 +510,7 @@ class StorybookExecutor(BaseToolExecutor):
         return {
             'pdf_path': pdf_path,
             'zip_path': zip_path,
-            'pdf_size': self.pdf_generator.get_pdf_size(pdf_path),
+            'pdf_size': os.path.getsize(pdf_path),
             'zip_size': os.path.getsize(zip_path)
         }
 
@@ -521,14 +528,14 @@ class StorybookExecutor(BaseToolExecutor):
             tool_id=task.tool_id,
             title=outline.get('title', '有声绘本'),
             description=outline.get('synopsis', ''),
-            cover_image=pages[0].get('image_url') if pages else None,
+            cover_image=f"images/page_1.png" if pages else None,
             status="published",
             is_public=False,
             version=1
         )
         work = await TaskService.create_work(self.db, work_in)
 
-        # 创建WorkFile记录
+        # 创建WorkFile记录（使用相对路径）
         # PDF文件
         pdf_path = files.get('pdf_path')
         if pdf_path:
@@ -536,11 +543,11 @@ class StorybookExecutor(BaseToolExecutor):
                 work_id=work.id,
                 file_type="pdf",
                 file_name=f"{work.title}.pdf",
-                file_url=pdf_path,
+                file_url="storybook.pdf",
                 file_size=files.get('pdf_size', 0),
                 mime_type="application/pdf"
             )
-            await TaskService.create_work_file(self.db, pdf_file_in)
+            self.db.add(WorkFile(**pdf_file_in.model_dump()))
 
         # ZIP包
         zip_path = files.get('zip_path')
@@ -549,11 +556,11 @@ class StorybookExecutor(BaseToolExecutor):
                 work_id=work.id,
                 file_type="other",
                 file_name=f"{work.title}_package.zip",
-                file_url=zip_path,
+                file_url="package.zip",
                 file_size=files.get('zip_size', 0),
                 mime_type="application/zip"
             )
-            await TaskService.create_work_file(self.db, zip_file_in)
+            self.db.add(WorkFile(**zip_file_in.model_dump()))
 
         # 每页的图片和音频
         for page in pages:
@@ -566,11 +573,11 @@ class StorybookExecutor(BaseToolExecutor):
                     work_id=work.id,
                     file_type="image",
                     file_name=f"page_{page_num}.png",
-                    file_url=image_url,
+                    file_url=f"images/page_{page_num}.png",
                     page_number=page_num,
                     mime_type="image/png"
                 )
-                await TaskService.create_work_file(self.db, img_file_in)
+                self.db.add(WorkFile(**img_file_in.model_dump()))
 
             # 音频
             audio_url = page.get('audio_url')
@@ -578,11 +585,13 @@ class StorybookExecutor(BaseToolExecutor):
                 audio_file_in = WorkFileCreate(
                     work_id=work.id,
                     file_type="audio",
-                    file_name=f"page_{page_num}.mp3",
-                    file_url=audio_url,
+                    file_name=f"page_{page_num}.wav",
+                    file_url=f"audio/page_{page_num}.wav",
                     page_number=page_num,
-                    mime_type="audio/mpeg"
+                    mime_type="audio/wav"
                 )
-                await TaskService.create_work_file(self.db, audio_file_in)
+                self.db.add(WorkFile(**audio_file_in.model_dump()))
+
+        await self.db.commit()
 
         return work

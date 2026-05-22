@@ -53,6 +53,7 @@ class Tool(BaseModel):
     favorite_count = Column(Integer, default=0, nullable=False, comment="收藏次数")
     rating_count = Column(Integer, default=0, nullable=False, comment="评价次数")
     rating_avg = Column(Numeric(2, 1), default=0.0, nullable=False, comment="平均评分")
+    usage_modes = Column(JSONType, nullable=True, comment="使用模式，JSON数组：[\"form\", \"dialog\"]")
 
     category_obj = relationship("ToolCategory", back_populates="tools")
     favorites = relationship("ToolFavorite", back_populates="tool", cascade="all, delete-orphan")

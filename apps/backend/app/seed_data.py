@@ -162,7 +162,7 @@ async def seed_tools(db: AsyncSession):
             tags=json.dumps(["绘本", "故事", "儿童", "插画", "语音"]),
             base_fee=20, image_fee=2, audio_fee=3, token_fee=0,
             status=1, use_count=128, favorite_count=45, rating_count=32, rating_avg=4.7,
-            is_featured=True,
+            is_featured=True, usage_modes=["form"],
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000002"),
@@ -173,7 +173,7 @@ async def seed_tools(db: AsyncSession):
             tags=json.dumps(["电商", "详情页", "营销", "主图"]),
             base_fee=12, image_fee=1, audio_fee=0, token_fee=0,
             status=1, use_count=96, favorite_count=32, rating_count=18, rating_avg=4.5,
-            is_featured=True,
+            is_featured=True, usage_modes=["form"],
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000003"),
@@ -184,7 +184,7 @@ async def seed_tools(db: AsyncSession):
             tags=json.dumps(["文案", "电商", "营销", "标题"]),
             base_fee=5, image_fee=0, audio_fee=0, token_fee=0,
             status=1, use_count=200, favorite_count=60, rating_count=45, rating_avg=4.6,
-            is_featured=True,
+            is_featured=True, usage_modes=["form"],
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000004"),

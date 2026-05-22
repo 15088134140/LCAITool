@@ -48,6 +48,13 @@ export const taskApi = {
   cancelTask: async (id: string, reason?: string): Promise<Task> => {
     return api.post<Task>(`/tasks/${id}/cancel`, undefined, { params: { reason } });
   },
+
+  /**
+   * 重试失败任务
+   */
+  retryTask: async (id: string): Promise<Task> => {
+    return api.post<Task>(`/tasks/${id}/retry`);
+  },
 };
 
 export default taskApi;

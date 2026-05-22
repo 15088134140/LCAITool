@@ -9,8 +9,8 @@ import {
   ToolHowTo,
   ToolPricing,
   ToolReviews,
-  ToolCreationForm,
 } from '../../../components/tool-detail';
+import { MarketingForm } from './components/MarketingForm';
 
 // 工具配置
 const TOOL_ID = 'product-description';
@@ -63,7 +63,7 @@ export default function MarketingCopywriterPage() {
       </div>
 
       <ToolHero tool={currentTool} />
-      <ToolCreationForm tool={currentTool} />
+      <MarketingForm tool={currentTool} />
       <ToolFeatures />
       <ToolHowTo />
       <ToolPricing pricing={currentTool.pricing} />

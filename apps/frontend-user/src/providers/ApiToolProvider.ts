@@ -36,6 +36,7 @@ function mapApiTool(apiItem: any): Tool {
     isFeatured: apiItem.is_featured ?? apiItem.isFeatured ?? false,
     isHot: apiItem.is_hot ?? apiItem.isHot ?? false,
     tags,
+    usage_modes: apiItem.usage_modes || ['form'],
     status: apiItem.status === 1 ? 'active' : apiItem.status === 2 ? 'maintenance' : 'coming_soon',
     createdAt: apiItem.created_at ? new Date(apiItem.created_at * 1000).toISOString() : '',
     heroImage: apiItem.cover_image || apiItem.heroImage || '',

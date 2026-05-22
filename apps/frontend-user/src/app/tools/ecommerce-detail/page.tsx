@@ -9,8 +9,8 @@ import {
   ToolHowTo,
   ToolPricing,
   ToolReviews,
-  ToolCreationForm,
 } from '../../../components/tool-detail';
+import { EcommerceForm } from './components/EcommerceForm';
 
 // 工具配置
 const TOOL_ID = 'ecommerce-detail';
@@ -63,7 +63,7 @@ export default function EcommerceDetailPage() {
       </div>
 
       <ToolHero tool={currentTool} />
-      <ToolCreationForm tool={currentTool} />
+      <EcommerceForm tool={currentTool} />
       <ToolFeatures />
       <ToolHowTo />
       <ToolPricing pricing={currentTool.pricing} />

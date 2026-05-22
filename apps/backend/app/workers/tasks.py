@@ -4,19 +4,24 @@ Celery 任务定义
 """
 import asyncio
 import json
+import logging
+import os
 import time
 import uuid
 from typing import Dict, Any, Optional
 from celery import Task
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker, Session
 import redis
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 from app.executors import (
     BaseToolExecutor,
     StorybookExecutor,
-    EcommerceExecutor
+    EcommerceExecutor,
+    MarketingExecutor,
 )
 from app.services.task_service import TaskService
 from app.workers.celery_app import celery_app
@@ -66,6 +71,7 @@ def _get_redis_client():
 EXECUTOR_MAP: Dict[str, type[BaseToolExecutor]] = {
     'storybook': StorybookExecutor,
     'ecommerce': EcommerceExecutor,
+    'marketing': MarketingExecutor,
 }
 
 
@@ -148,6 +154,17 @@ def publish_task_message(
         'data': data or {},
         'timestamp': int(time.time())
     }
+
+    # 如果是进度事件，提取结构化字段到顶层
+    if msg_type == 'progress' and data:
+        for key in ['step_index', 'total_steps', 'step_status', 'sub_progress']:
+            if key in data:
+                payload[key] = data[key]
+
+    # 如果是 completed 事件，包含 work_id
+    if msg_type == 'completed' and data:
+        payload['work_id'] = data.get('work_id', '')
+
     _get_redis_client().publish(channel, json.dumps(payload, ensure_ascii=False))
 
 
@@ -308,30 +325,51 @@ async def _execute_with_async_session(
     """使用异步会话执行任务"""
     from app.core.database import AsyncSessionLocal
     from app.services.task_service import TaskService
+    from app.models.tool import Tool
 
     async with AsyncSessionLocal() as db:
+        # 获取任务信息，找到对应的 tool_id
+        task = await TaskService.get_by_id(db, task_uuid)
+
+        # 从数据库读取工具定价配置
+        tool_config = {}
+        if task and task.tool_id:
+            result = await db.execute(select(Tool).where(Tool.id == task.tool_id))
+            tool = result.scalar_one_or_none()
+            if tool:
+                tool_config = {
+                    'base_fee': tool.base_fee,
+                    'image_fee': tool.image_fee,
+                    'audio_fee': tool.audio_fee,
+                }
+
         # 创建异步进度回调
         progress_callback = AsyncProgressCallback(task_uuid)
 
-        # 创建执行器，传入进度回调
+        # 创建执行器，传入工具配置
         executor = executor_class(
             task_id=task_uuid,
             db=db,
+            tool=tool_config,
             progress_callback=progress_callback
         )
 
-        # 执行任务
-        result = await executor.execute(input_params)
+        # 判断是否启用 Mock 执行模式
+        if os.getenv("MOCK_AI_EXECUTION") == "true":
+            logger.info(f"[Mock Mode] 模拟执行 task {task_uuid}")
+            result = await executor._mock_execute()
+        else:
+            result = await executor.execute(input_params)
 
-        # 结算任务（计算实际费用）
-        actual_cost = executor.estimate_cost(input_params)
+            # 结算任务（计算实际费用）
+            actual_cost = executor.estimate_cost(input_params)
 
-        # 完成任务并结算
-        await TaskService.complete_task(
-            db=db,
-            task_id=task_uuid,
-            actual_cost=actual_cost
-        )
+            # 完成任务并结算
+            await TaskService.complete_task(
+                db=db,
+                task_id=task_uuid,
+                actual_cost=actual_cost
+            )
 
         await db.commit()
 

@@ -2,10 +2,12 @@
 任务管理 API 端点
 实现任务创建、查询、取消、日志等功能
 """
-from typing import Any, Optional
-from fastapi import APIRouter, Depends, Query
+from typing import Any, Dict, Optional
+from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
+
+from pydantic import BaseModel, Field
 
 from app.api.deps import get_db, get_current_active_user
 from app.models.user import User
@@ -16,7 +18,8 @@ from app.schemas.task import (
     TaskLog as TaskLogSchema
 )
 from app.services.task_service import TaskService
-from app.workers.tasks import execute_tool_task
+from app.core.config import settings
+from app.workers.tasks import execute_tool_task, publish_task_message
 
 router = APIRouter()
 
@@ -157,3 +160,114 @@ async def get_user_tasks(
         "page": page,
         "page_size": page_size,
     }
+
+
+@router.post("/{task_id}/retry", response_model=TaskSchema, summary="重试失败任务")
+async def retry_task(
+    task_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """
+    重试失败/超时的任务
+
+    - 仅允许重试 status 为 failed/timeout 的任务
+    - 重新创建任务（保持相同的 tool_id, task_type, input_params）
+    - 重新预冻结积分
+    - 提交到 Celery 队列
+    """
+    task = await TaskService.get_by_id(db=db, task_id=task_id)
+    if not task or task.user_id != current_user.id:
+        from app.core.exceptions import ResourceNotFoundException
+        raise ResourceNotFoundException("任务不存在")
+
+    if task.status not in ["failed", "timeout"]:
+        from app.core.exceptions import BusinessException
+        raise BusinessException(detail="仅允许重试失败或超时的任务")
+
+    # 使用相同的参数创建新任务
+    from app.schemas.task import TaskCreate
+    new_task_in = TaskCreate(
+        user_id=current_user.id,
+        tool_id=task.tool_id,
+        task_type=task.task_type,
+        input_params=task.input_params,
+        estimated_cost=task.estimated_cost
+    )
+    new_task = await TaskService.create_task(db=db, task_in=new_task_in)
+
+    # 提交到 Celery
+    execute_tool_task.delay(
+        task_id=str(new_task.id),
+        tool_type=new_task.task_type,
+        input_params=new_task.input_params or {}
+    )
+
+    return new_task
+
+
+@router.post("/{task_id}/progress", summary="更新任务进度（HTTP 回调）")
+async def update_task_progress(
+    task_id: uuid.UUID,
+    req: ProgressUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    x_internal_token: Optional[str] = Header(None, alias="X-Internal-Token"),
+):
+    """
+    更新任务进度，支持第三方 HTTP 回调
+    """
+    # 鉴权验证
+    internal_token = settings.INTERNAL_API_TOKEN
+    if x_internal_token and internal_token and x_internal_token == internal_token:
+        pass  # 内网 token 验证通过
+    else:
+        # 外网用户验证
+        task = await TaskService.get_by_id(db=db, task_id=task_id)
+        if not task or task.user_id != current_user.id:
+            from app.core.exceptions import ResourceNotFoundException
+            raise ResourceNotFoundException("任务不存在")
+
+    # 更新进度
+    task = await TaskService.update_task_status(
+        db=db,
+        task_id=task_id,
+        progress=req.progress,
+        message=req.message
+    )
+
+    # 发布进度消息到 Redis Pub/Sub（触发 SSE）
+    publish_task_message(
+        task_id=task_id,
+        msg_type='progress',
+        message=req.message,
+        data=req.data or {},
+        progress=req.progress
+    )
+
+    # 如果 completed=true，触发结算
+    if req.completed:
+        actual_cost = req.actual_cost or task.estimated_cost or 0
+        task = await TaskService.complete_task(
+            db=db,
+            task_id=task_id,
+            actual_cost=actual_cost
+        )
+        # 发布完成消息
+        publish_task_message(
+            task_id=task_id,
+            msg_type='completed',
+            message='任务完成',
+            data={'work_id': task.result_preview} if hasattr(task, 'result_preview') else {},
+            progress=100
+        )
+
+    return {"success": True, "task_id": str(task_id), "progress": req.progress, "completed": req.completed}
+
+
+class ProgressUpdateRequest(BaseModel):
+    progress: int = Field(..., ge=0, le=100, description="进度 0-100")
+    message: str = Field("", description="进度消息")
+    data: Optional[Dict[str, Any]] = Field(None, description="附加数据")
+    completed: bool = Field(False, description="是否标记完成")
+    actual_cost: Optional[int] = Field(None, description="实际费用")

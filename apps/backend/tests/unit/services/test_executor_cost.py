@@ -1,0 +1,191 @@
+"""
+执行器费用预估单元测试
+覆盖：StorybookExecutor、EcommerceExecutor、MarketingExecutor 的 estimate_cost 方法
+"""
+import pytest
+from app.executors.storybook import StorybookExecutor
+from app.executors.ecommerce import EcommerceExecutor
+from app.executors.marketing import MarketingExecutor
+
+
+class TestStorybookCostEstimate:
+    """有声绘本执行器费用预估测试"""
+
+    def test_storybook_cost_estimate_default(self):
+        """默认参数：5页，含音频"""
+        executor = StorybookExecutor.__new__(StorybookExecutor)
+        executor._tool_config = {
+            'base_fee': 20,
+            'image_fee': 2,
+            'audio_fee': 1,
+        }
+        params = {'page_count': 5, 'include_audio': True}
+        cost = executor.estimate_cost(params)
+        # base_fee(20) + image_fee(2) * 5 + audio_fee(1) * 5 = 35
+        assert cost == 35
+
+    def test_storybook_cost_estimate_no_audio(self):
+        """不含音频"""
+        executor = StorybookExecutor.__new__(StorybookExecutor)
+        executor._tool_config = {
+            'base_fee': 20,
+            'image_fee': 2,
+            'audio_fee': 1,
+        }
+        params = {'page_count': 5, 'include_audio': False}
+        cost = executor.estimate_cost(params)
+        # base_fee(20) + image_fee(2) * 5 = 30
+        assert cost == 30
+
+    def test_storybook_cost_estimate_more_pages(self):
+        """更多页数"""
+        executor = StorybookExecutor.__new__(StorybookExecutor)
+        executor._tool_config = {
+            'base_fee': 20,
+            'image_fee': 2,
+            'audio_fee': 1,
+        }
+        params = {'page_count': 10, 'include_audio': True}
+        cost = executor.estimate_cost(params)
+        # base_fee(20) + image_fee(2) * 10 + audio_fee(1) * 10 = 50
+        assert cost == 50
+
+    def test_storybook_cost_estimate_custom_fees(self):
+        """自定义费用配置"""
+        executor = StorybookExecutor.__new__(StorybookExecutor)
+        executor._tool_config = {
+            'base_fee': 50,
+            'image_fee': 3,
+            'audio_fee': 2,
+        }
+        params = {'page_count': 8, 'include_audio': True}
+        cost = executor.estimate_cost(params)
+        # base_fee(50) + image_fee(3) * 8 + audio_fee(2) * 8 = 90
+        assert cost == 90
+
+
+class TestEcommerceCostEstimate:
+    """电商详情页执行器费用预估测试"""
+
+    def test_ecommerce_cost_estimate_default(self):
+        """默认参数：3主图 + 3详情图"""
+        executor = EcommerceExecutor.__new__(EcommerceExecutor)
+        executor._tool_config = {
+            'base_fee': 12,
+            'image_fee': 2,
+        }
+        params = {'main_image_count': 3, 'detail_image_count': 3}
+        cost = executor.estimate_cost(params)
+        # base_fee(12) + (3+3) * image_fee(2) = 24
+        assert cost == 24
+
+    def test_ecommerce_cost_estimate_more_images(self):
+        """更多图片"""
+        executor = EcommerceExecutor.__new__(EcommerceExecutor)
+        executor._tool_config = {
+            'base_fee': 12,
+            'image_fee': 2,
+        }
+        params = {'main_image_count': 5, 'detail_image_count': 5}
+        cost = executor.estimate_cost(params)
+        # base_fee(12) + (5+5) * image_fee(2) = 32
+        assert cost == 32
+
+    def test_ecommerce_cost_estimate_no_detail_images(self):
+        """无详情图"""
+        executor = EcommerceExecutor.__new__(EcommerceExecutor)
+        executor._tool_config = {
+            'base_fee': 12,
+            'image_fee': 2,
+        }
+        params = {'main_image_count': 1, 'detail_image_count': 0}
+        cost = executor.estimate_cost(params)
+        # base_fee(12) + (1+0) * image_fee(2) = 14
+        assert cost == 14
+
+
+class TestMarketingCostEstimate:
+    """营销文案执行器费用预估测试"""
+
+    def test_marketing_cost_estimate_default(self):
+        """默认参数：仅基础费"""
+        executor = MarketingExecutor.__new__(MarketingExecutor)
+        executor._tool_config = {
+            'base_fee': 8,
+        }
+        params = {'platform_count': 3}
+        cost = executor.estimate_cost(params)
+        # base_fee(8)
+        assert cost == 8
+
+    def test_marketing_cost_estimate_custom_fee(self):
+        """自定义基础费"""
+        executor = MarketingExecutor.__new__(MarketingExecutor)
+        executor._tool_config = {
+            'base_fee': 15,
+        }
+        params = {'platform_count': 5}
+        cost = executor.estimate_cost(params)
+        # base_fee(15)
+        assert cost == 15
+
+    def test_marketing_cost_estimate_empty_params(self):
+        """空参数"""
+        executor = MarketingExecutor.__new__(MarketingExecutor)
+        executor._tool_config = {
+            'base_fee': 8,
+        }
+        params = {}
+        cost = executor.estimate_cost(params)
+        # base_fee(8)
+        assert cost == 8
+
+
+class TestCostEdgeCases:
+    """费用预估边界情况测试"""
+
+    def test_cost_with_zero_fees(self):
+        """所有费用为0"""
+        executor = StorybookExecutor.__new__(StorybookExecutor)
+        executor._tool_config = {
+            'base_fee': 0,
+            'image_fee': 0,
+            'audio_fee': 0,
+        }
+        params = {'page_count': 5, 'include_audio': True}
+        cost = executor.estimate_cost(params)
+        assert cost == 0
+
+    def test_cost_with_zero_page_count(self):
+        """页数为0"""
+        executor = StorybookExecutor.__new__(StorybookExecutor)
+        executor._tool_config = {
+            'base_fee': 20,
+            'image_fee': 2,
+            'audio_fee': 1,
+        }
+        params = {'page_count': 0, 'include_audio': True}
+        cost = executor.estimate_cost(params)
+        # base_fee(20) + image_fee(2) * 0 + audio_fee(1) * 0 = 20
+        assert cost == 20
+
+    def test_cost_with_null_fees(self):
+        """费用配置为 None 时使用默认值"""
+        executor = StorybookExecutor.__new__(StorybookExecutor)
+        executor._tool_config = {}
+        params = {'page_count': 5, 'include_audio': True}
+        cost = executor.estimate_cost(params)
+        # defaults: base_fee(20) + image_fee(2)*5 + audio_fee(1)*5 = 35
+        assert cost == 35
+
+    def test_ecommerce_cost_with_zero_images(self):
+        """图片数量为0"""
+        executor = EcommerceExecutor.__new__(EcommerceExecutor)
+        executor._tool_config = {
+            'base_fee': 12,
+            'image_fee': 2,
+        }
+        params = {'main_image_count': 0, 'detail_image_count': 0}
+        cost = executor.estimate_cost(params)
+        # base_fee(12)
+        assert cost == 12

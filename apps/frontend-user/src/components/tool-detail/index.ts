@@ -7,3 +7,4 @@ export { ToolReviews } from './ToolReviews';
 export { ToolDemos } from './ToolDemos';
 export { FavoriteButton } from './FavoriteButton';
 export { ToolCreationForm } from './ToolCreationForm';
+export { ProgressModal } from './ProgressModal';

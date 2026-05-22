@@ -148,6 +148,7 @@ export interface Tool {
   favorite_count: number;
   rating_count: number;
   rating_avg: number;
+  usage_modes?: string[];
   created_at: Timestamp;
   updated_at: Timestamp;
 }
