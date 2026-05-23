@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { userApi } from '@/lib/api/modules/user';
 
 export interface User {
   id: string;
@@ -51,6 +52,7 @@ interface AuthState {
   login: (tokens: AuthTokens, user: User) => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
+  refreshBalance: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -93,6 +95,17 @@ export const useAuthStore = create<AuthState>()(
       updateUser: (updates) => set((state) => ({
         user: state.user ? { ...state.user, ...updates } : null,
       })),
+
+      refreshBalance: async () => {
+        try {
+          const { balance } = await userApi.getBalance();
+          set((state) => ({
+            user: state.user ? { ...state.user, balance } : null,
+          }));
+        } catch {
+          // 静默处理，不影响页面渲染
+        }
+      },
     }),
     {
       name: 'lcaitool-auth-storage',

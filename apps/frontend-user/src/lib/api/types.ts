@@ -234,6 +234,7 @@ export interface TaskLog {
 export interface CreateTaskRequest {
   tool_id: UUID;
   task_type: string;
+  estimated_cost?: number;
   input_params: Record<string, any>;
 }
 
@@ -373,13 +374,15 @@ export interface PointTransaction {
 }
 
 export interface CreateOrderRequest {
-  package_id: UUID;
+  recharge_package_id: UUID;
   payment_provider: PaymentProvider;
 }
 
 export interface CreateOrderResponse {
-  order: Order;
-  pay_params?: Record<string, any>; // 微信支付等需要的参数
+  order_id: UUID;
+  order_no: string;
+  pay_amount: number;
+  payment_params: Record<string, any>;
 }
 
 // ============== 创意相关类型 ==============

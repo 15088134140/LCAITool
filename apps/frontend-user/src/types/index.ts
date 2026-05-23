@@ -55,6 +55,12 @@ export interface Tool {
     color: string;
   }>;
   slug?: string;
+  usage_modes?: string[];
+  // 资费字段（扁平，用于表单组件直接访问）
+  base_fee?: number;
+  image_fee?: number;
+  audio_fee?: number;
+  token_fee?: number;
 }
 
 /**

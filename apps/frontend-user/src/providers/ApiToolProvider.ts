@@ -37,6 +37,11 @@ function mapApiTool(apiItem: any): Tool {
     isHot: apiItem.is_hot ?? apiItem.isHot ?? false,
     tags,
     usage_modes: apiItem.usage_modes || ['form'],
+    // 扁平 fee 字段（供表单组件直接读取）
+    base_fee: apiItem.base_fee ?? 0,
+    image_fee: apiItem.image_fee ?? 0,
+    audio_fee: apiItem.audio_fee ?? 0,
+    token_fee: apiItem.token_fee ?? 0,
     status: apiItem.status === 1 ? 'active' : apiItem.status === 2 ? 'maintenance' : 'coming_soon',
     createdAt: apiItem.created_at ? new Date(apiItem.created_at * 1000).toISOString() : '',
     heroImage: apiItem.cover_image || apiItem.heroImage || '',
