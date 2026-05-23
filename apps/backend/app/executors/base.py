@@ -151,6 +151,11 @@ class BaseToolExecutor(ABC):
 
     async def _mock_execute(self) -> Dict[str, Any]:
         """Mock 执行模式：模拟完整的多步执行流程，不调用外部 AI API"""
+        import base64
+        import struct
+        import zlib
+        import math
+        import wave
         from app.services.task_service import TaskService
         from app.services.work_service import WorkService
         from app.schemas.task import WorkCreate, WorkFileCreate
@@ -159,20 +164,92 @@ class BaseToolExecutor(ABC):
         task = await TaskService.get_by_id(db=self.db, task_id=self.task_id)
         user_id = task.user_id if task else self.task_id
         tool_id = task.tool_id if task else None
-        task_type = task.task_type if task else 'storybook'
 
-        mock_steps = [
-            (10, "正在准备素材..."),
-            (25, "正在生成内容..."),
-            (45, "正在处理图片..."),
-            (65, "正在合成..."),
-            (85, "正在生成最终文件..."),
-            (95, "正在打包..."),
-            (100, "生成完成！"),
-        ]
-        for percent, msg in mock_steps:
-            await self.update_progress(percent=percent, message=msg)
-            await asyncio.sleep(0.5)
+        IMAGE_COUNT = 10  # 生成 10 张图片
+        TOTAL_STEPS = 7
+
+        # ── Step 0: 生成故事大纲 ──
+        await self.update_progress(
+            percent=5, message="正在生成故事大纲...",
+            step_index=0, total_steps=TOTAL_STEPS, step_status='running',
+        )
+        await asyncio.sleep(0.5)
+
+        # ── Step 1: 生成分页故事 ──
+        await self.update_progress(
+            percent=15, message="正在生成分页故事...",
+            step_index=1, total_steps=TOTAL_STEPS, step_status='running',
+        )
+        await asyncio.sleep(0.5)
+
+        # ── Step 2: 生成插画提示词 ──
+        await self.update_progress(
+            percent=25, message="正在生成插画提示词...",
+            step_index=2, total_steps=TOTAL_STEPS, step_status='running',
+        )
+        await asyncio.sleep(0.5)
+
+        # ── Step 3: 批量生成插画（逐张推进，子进度 1/10 → 10/10） ──
+        for i in range(1, IMAGE_COUNT + 1):
+            pct = 35 + int(i / IMAGE_COUNT * 25)  # 35% → 60%
+            await self.update_progress(
+                percent=pct,
+                message="正在生成插画...",
+                step_index=3, total_steps=TOTAL_STEPS, step_status='running',
+                sub_progress=f"{i}/{IMAGE_COUNT}"
+            )
+            await asyncio.sleep(0.3)
+
+        # ── Step 4: 语音合成（逐段推进） ──
+        for i in range(1, IMAGE_COUNT + 1):
+            pct = 60 + int(i / IMAGE_COUNT * 20)  # 60% → 80%
+            await self.update_progress(
+                percent=pct,
+                message="正在生成语音...",
+                step_index=4, total_steps=TOTAL_STEPS, step_status='running',
+                sub_progress=f"{i}/{IMAGE_COUNT}"
+            )
+            await asyncio.sleep(0.2)
+
+        # ── Step 5: PDF排版与打包 ──
+        await self.update_progress(
+            percent=85, message="正在生成PDF并打包...",
+            step_index=5, total_steps=TOTAL_STEPS, step_status='running',
+        )
+        await asyncio.sleep(0.5)
+
+        # ── Step 6: 保存成果 ──
+        await self.update_progress(
+            percent=95, message="正在保存成果...",
+            step_index=6, total_steps=TOTAL_STEPS, step_status='running',
+        )
+        await asyncio.sleep(0.3)
+
+        await self.update_progress(
+            percent=100, message="生成完成！",
+            step_index=6, total_steps=TOTAL_STEPS, step_status='completed',
+        )
+
+        # ── 创建成果记录和文件 ──
+        works_dir = settings.WORKS_DIR
+        task_dir = os.path.join(works_dir, str(self.task_id))
+
+        # 生成占位 PNG
+        def _make_png(r, g, b):
+            def _chunk(ctype, data):
+                c = ctype + data
+                crc = struct.pack('>I', 0xffffffff & (
+                    lambda x: x if x <= 0x7fffffff else x - 0x100000000)(
+                    zlib.crc32(c) & 0xffffffff))
+                return struct.pack('>I', len(data)) + c + crc
+            ihdr = struct.pack('>IIBBBBB', 1, 1, 8, 2, 0, 0, 0)
+            raw = b'\x00' + bytes([r, g, b])
+            return (b'\x89PNG\r\n\x1a\n'
+                    + _chunk(b'IHDR', ihdr)
+                    + _chunk(b'IDAT', zlib.compress(raw))
+                    + _chunk(b'IEND', b''))
+
+        minimal_png = _make_png(240, 248, 255)
 
         work_in = WorkCreate(
             user_id=user_id,
@@ -186,19 +263,78 @@ class BaseToolExecutor(ABC):
         )
         work = await WorkService.create_work(self.db, work_in)
 
-        file_in = WorkFileCreate(
+        # 生成 10 张图片和 10 段音频文件
+        for page in range(1, IMAGE_COUNT + 1):
+            # 图片
+            img_rel = f"images/page_{page}.png"
+            img_abs = os.path.join(task_dir, img_rel)
+            os.makedirs(os.path.dirname(img_abs), exist_ok=True)
+            with open(img_abs, "wb") as f:
+                f.write(minimal_png)
+
+            self.db.add(WorkFile(**WorkFileCreate(
+                work_id=work.id,
+                file_name=f"page_{page}.png",
+                file_url=img_rel,
+                file_type="image",
+                page_number=page,
+                mime_type="image/png",
+            ).model_dump()))
+
+            # 音频
+            audio_rel = f"audio/page_{page}.wav"
+            audio_abs = os.path.join(task_dir, audio_rel)
+            os.makedirs(os.path.dirname(audio_abs), exist_ok=True)
+            with wave.open(audio_abs, 'w') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(8000)
+                for s in range(8000):
+                    val = int(32767 * 0.3 * math.sin(2 * math.pi * 440 * s / 8000))
+                    wf.writeframes(struct.pack('<h', val))
+
+            self.db.add(WorkFile(**WorkFileCreate(
+                work_id=work.id,
+                file_name=f"page_{page}.wav",
+                file_url=audio_rel,
+                file_type="audio",
+                page_number=page,
+                mime_type="audio/wav",
+            ).model_dump()))
+
+        # PDF 文件
+        pdf_rel = "storybook.pdf"
+        pdf_abs = os.path.join(task_dir, pdf_rel)
+        os.makedirs(os.path.dirname(pdf_abs), exist_ok=True)
+        with open(pdf_abs, "wb") as f:
+            f.write(b"%PDF-1.4 mock placeholder\n")
+
+        self.db.add(WorkFile(**WorkFileCreate(
             work_id=work.id,
-            file_name="preview.png",
-            file_url="/mock/output/preview.png",
-            file_type="image",
-        )
-        self.db.add(WorkFile(**file_in.model_dump()))
+            file_name="storybook.pdf",
+            file_url=pdf_rel,
+            file_type="pdf",
+            mime_type="application/pdf",
+        ).model_dump()))
+
         await self.db.commit()
+
+        # 先设置 result_preview，再 complete_task
+        task_before = await TaskService.get_by_id(db=self.db, task_id=self.task_id)
+        if task_before:
+            task_before.result_preview = str(work.id)
+            await self.db.commit()
+            await self.db.refresh(task_before)
+
+        # 使用 estimate_cost() 计算实际费用，而不是仅用 base_fee
+        task = await TaskService.get_by_id(db=self.db, task_id=self.task_id)
+        input_params = task.input_params if task else {}
+        actual_cost = self.estimate_cost(input_params)
 
         await TaskService.complete_task(
             db=self.db,
             task_id=self.task_id,
-            actual_cost=self._tool_config.get('base_fee', 10) if hasattr(self, '_tool_config') else 10,
+            actual_cost=actual_cost,
         )
 
         return {"success": True, "work_id": str(work.id)}

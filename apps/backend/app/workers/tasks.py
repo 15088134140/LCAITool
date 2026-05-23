@@ -288,33 +288,42 @@ def execute_tool_task(
 
 async def _update_task_status_to_running(task_uuid: uuid.UUID) -> None:
     """更新任务状态为 running"""
-    from app.core.database import AsyncSessionLocal
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+    from app.core.config import settings
 
-    async with AsyncSessionLocal() as db:
-        await TaskService.update_task_status(
-            db=db,
-            task_id=task_uuid,
-            status='running',
-            progress=0,
-            message='任务开始执行'
-        )
-        await db.commit()
+    engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG)
+    try:
+        async with async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)() as db:
+            await TaskService.update_task_status(
+                db=db,
+                task_id=task_uuid,
+                status='running',
+                progress=0,
+                message='任务开始执行'
+            )
+            await db.commit()
+    finally:
+        await engine.dispose()
 
 
 async def _mark_task_failed(task_uuid: uuid.UUID, error_message: str) -> None:
     """标记任务失败"""
-    from app.core.database import AsyncSessionLocal
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+    from app.core.config import settings
 
-    async with AsyncSessionLocal() as db:
-        try:
-            await TaskService.fail_task(
-                db=db,
-                task_id=task_uuid,
-                error_message=error_message
-            )
-        except Exception:
-            # 如果已经失败过，忽略
-            pass
+    engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG)
+    try:
+        async with async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)() as db:
+            try:
+                await TaskService.fail_task(
+                    db=db,
+                    task_id=task_uuid,
+                    error_message=error_message
+                )
+            except Exception:
+                pass
+    finally:
+        await engine.dispose()
 
 
 async def _execute_with_async_session(
@@ -322,58 +331,63 @@ async def _execute_with_async_session(
     task_uuid: uuid.UUID,
     input_params: Dict[str, Any]
 ) -> Dict[str, Any]:
-    """使用异步会话执行任务"""
-    from app.core.database import AsyncSessionLocal
+    """使用异步会话执行任务（每个 Celery 任务创建独立的 engine，避免事件循环冲突）"""
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+    from app.core.config import settings
     from app.services.task_service import TaskService
     from app.models.tool import Tool
 
-    async with AsyncSessionLocal() as db:
-        # 获取任务信息，找到对应的 tool_id
-        task = await TaskService.get_by_id(db, task_uuid)
+    engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG)
+    try:
+        async with async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)() as db:
+            # 获取任务信息，找到对应的 tool_id
+            task = await TaskService.get_by_id(db, task_uuid)
 
-        # 从数据库读取工具定价配置
-        tool_config = {}
-        if task and task.tool_id:
-            result = await db.execute(select(Tool).where(Tool.id == task.tool_id))
-            tool = result.scalar_one_or_none()
-            if tool:
-                tool_config = {
-                    'base_fee': tool.base_fee,
-                    'image_fee': tool.image_fee,
-                    'audio_fee': tool.audio_fee,
-                }
+            # 从数据库读取工具定价配置
+            tool_config = {}
+            if task and task.tool_id:
+                result = await db.execute(select(Tool).where(Tool.id == task.tool_id))
+                tool = result.scalar_one_or_none()
+                if tool:
+                    tool_config = {
+                        'base_fee': tool.base_fee,
+                        'image_fee': tool.image_fee,
+                        'audio_fee': tool.audio_fee,
+                        'token_fee': tool.token_fee,
+                    }
 
-        # 创建异步进度回调
-        progress_callback = AsyncProgressCallback(task_uuid)
+            # 创建异步进度回调
+            progress_callback = AsyncProgressCallback(task_uuid)
 
-        # 创建执行器，传入工具配置
-        executor = executor_class(
-            task_id=task_uuid,
-            db=db,
-            tool=tool_config,
-            progress_callback=progress_callback
-        )
-
-        # 判断是否启用 Mock 执行模式
-        if os.getenv("MOCK_AI_EXECUTION") == "true":
-            logger.info(f"[Mock Mode] 模拟执行 task {task_uuid}")
-            result = await executor._mock_execute()
-        else:
-            result = await executor.execute(input_params)
-
-            # 结算任务（计算实际费用）
-            actual_cost = executor.estimate_cost(input_params)
-
-            # 完成任务并结算
-            await TaskService.complete_task(
-                db=db,
+            # 创建执行器，传入工具配置
+            executor = executor_class(
                 task_id=task_uuid,
-                actual_cost=actual_cost
+                db=db,
+                tool=tool_config,
+                progress_callback=progress_callback
             )
 
-        await db.commit()
+            # 判断是否启用 Mock 执行模式
+            if settings.MOCK_AI_EXECUTION:
+                logger.info(f"[Mock Mode] 模拟执行 task {task_uuid}")
+                result = await executor._mock_execute()
+            else:
+                result = await executor.execute(input_params)
 
-        return result
+                # 结算任务（计算实际费用）
+                actual_cost = executor.estimate_cost(input_params)
+
+                # 完成任务并结算
+                await TaskService.complete_task(
+                    db=db,
+                    task_id=task_uuid,
+                    actual_cost=actual_cost
+                )
+
+            await db.commit()
+            return result
+    finally:
+        await engine.dispose()
 
 
 @celery_app.task(queue='fast')
