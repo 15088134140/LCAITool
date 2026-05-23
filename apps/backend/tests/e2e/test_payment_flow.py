@@ -1,12 +1,17 @@
 # apps/backend/tests/e2e/test_payment_flow.py
 """
 支付充值完整流程E2E测试
-按照计划文档要求：
-- 浏览充值档位 → 选择套餐 → 模拟支付 → 确认积分到账
-- 每步自动截图保存
+
+覆盖 spec 测试要点：
+- 4个档位正确显示
+- 选择档位 → 支付成功 → 积分到账
+- 自定义金额 → 支付成功 → 积分到账
+- 余额刷新正确
+- 所有 /payment 入口正确指向 /pricing
 """
 import sys
 import os
+import re
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -16,165 +21,283 @@ from utils.helpers import take_screenshot, wait_for_network_idle
 E2E_BASE_URL = os.getenv("E2E_BASE_URL", "http://localhost:3000")
 SCREENSHOTS_DIR = "tests/e2e/screenshots/payment_flow"
 
-
-def assert_page_loaded(page, url: str, step_name: str):
-    """确保页面正常加载"""
-    response = page.goto(url)
-    assert response is not None, f"{step_name}: 页面无响应"
-    # 页面状态码应该是200
-    assert response.status == 200, f"{step_name}: 页面状态码错误: {response.status}"
-    wait_for_network_idle(page)
-    return response
+# PRD 4个档位的预期数据
+EXPECTED_PACKAGES = [
+    {"name": "入门档", "price": 30, "base_points": 300, "bonus_points": 20, "total_points": 320},
+    {"name": "进阶档", "price": 100, "base_points": 1000, "bonus_points": 100, "total_points": 1100},
+    {"name": "专业档", "price": 300, "base_points": 3000, "bonus_points": 400, "total_points": 3400},
+    {"name": "企业档", "price": 1000, "base_points": 10000, "bonus_points": 2000, "total_points": 12000},
+]
 
 
 @pytest.mark.payment_flow
 @pytest.mark.e2e
-class TestPaymentCompleteFlow:
-    """支付充值完整流程E2E测试"""
+class TestPackageDisplay:
+    """充值档位显示测试"""
 
-    def test_complete_payment_flow(self, page):
-        """
-        完整的充值支付流程：
-        进入积分页面 → 浏览充值档位 → 选择套餐 → 模拟支付
-        → 确认支付成功 → 验证积分到账
-        """
-        print("\n" + "="*60)
-        print("💳 开始支付充值完整流程E2E测试")
-        print("="*60)
+    def test_four_packages_displayed(self, logged_in_page):
+        """验证4个档位正确显示"""
+        page = logged_in_page
+        print("\n📦 验证充值档位显示...")
 
-        # ============================================
-        # Step 1: 进入积分/充值页面
-        # ============================================
-        print("\n💰 [Step 1] 进入积分充值页面...")
         page.goto(f"{E2E_BASE_URL}/pricing")
         wait_for_network_idle(page)
-        take_screenshot(page, "01_pricing_home", SCREENSHOTS_DIR)
+        take_screenshot(page, "display_packages", SCREENSHOTS_DIR)
 
-        print("   ✅ 充值定价页加载成功")
+        # 检查每个档位的名称和价格在页面上可见
+        for pkg in EXPECTED_PACKAGES:
+            name_visible = page.get_by_text(pkg["name"], exact=True).count() > 0
+            price_text = f"¥{pkg['price']}"
+            price_visible = page.get_by_text(price_text, exact=False).count() > 0
+            points_text = f"{pkg['total_points']} 积分"
+            points_visible = page.get_by_text(points_text, exact=False).count() > 0
 
-        # ============================================
-        # Step 2: 浏览充值档位
-        # ============================================
-        print("\n📦 [Step 2] 浏览充值档位...")
+            assert name_visible, f"档位名称 '{pkg['name']}' 未显示"
+            assert price_visible, f"价格 '{price_text}' 未显示"
+            assert points_visible, f"积分信息 '{points_text}' 未显示"
+            print(f"   ✅ 档位 '{pkg['name']}' — ¥{pkg['price']} → {pkg['total_points']}积分")
 
-        # 检查套餐卡片
-        package_cards = page.locator('[class*="card"]').count()
-        print(f"   ✅ 发现 {package_cards} 个套餐/卡片元素")
+        # 验证热门档位有推荐标签
+        hot_badges = page.locator('text=推荐').count() + page.locator('text=最划算').count()
+        assert hot_badges >= 2, f"热门档位标签不足，找到 {hot_badges} 个"
+        print(f"   ✅ 热门档位标签: {hot_badges} 个 (推荐/最划算)")
 
-        # 检查页面金额相关内容
-        page_content = page.content()
-        price_keywords = ["积分", "点", "元", "赠送", "优惠", "套餐"]
-        found_keywords = [k for k in price_keywords if k in page_content]
-        print(f"   ✅ 页面包含价格相关关键词: {found_keywords}")
+    def test_packages_loaded_from_api(self, logged_in_page):
+        """验证档位数据来自API而非硬编码"""
+        page = logged_in_page
 
-        take_screenshot(page, "02_browse_packages", SCREENSHOTS_DIR)
+        # 监听 API 请求
+        with page.expect_response(lambda response: "/payment/packages" in response.url and response.ok) as response_info:
+            page.goto(f"{E2E_BASE_URL}/pricing")
+            wait_for_network_idle(page)
 
-        # ============================================
-        # Step 3: 选择一个充值套餐
-        # ============================================
-        print("\n✅ [Step 3] 选择充值套餐...")
+        response = response_info.value
+        body = response.json()
+        items = body.get("items", body.get("packages", []))
+        assert len(items) == 4, f"API 返回 {len(items)} 个档位，期望 4 个"
+        print(f"   ✅ API GET /payment/packages 返回 {len(items)} 个档位")
 
-        try:
-            # 尝试点击卡片
-            cards = page.locator('[class*="card"]').all()
-            if len(cards) > 0:
-                # 选择第一个套餐
-                print(f"   ✅ 发现 {len(cards)} 个可选项")
-        except Exception as e:
-            print(f"   ⚠️  套餐选择跳过: {e}")
-
-        take_screenshot(page, "03_select_package", SCREENSHOTS_DIR)
-        print("   ✅ 套餐选择完成")
-
-        # ============================================
-        # Step 4: 模拟支付流程
-        # ============================================
-        print("\n💳 [Step 4] 模拟支付流程...")
-
-        # 检查支付按钮
-        try:
-            button_selectors = [
-                page.get_by_role("button", name="立即支付"),
-                page.get_by_role("button", name="支付"),
-                page.get_by_role("button", name="确认支付"),
-                page.locator('button[type="submit"]').first,
-            ]
-
-            found_button = False
-            for selector in button_selectors:
-                if selector.count() > 0:
-                    found_button = True
-                    print(f"   ✅ 发现支付按钮")
-                    break
-
-            if not found_button:
-                print("   ℹ️  未找到支付按钮，跳过点击")
-        except Exception as e:
-            print(f"   ⚠️  支付按钮检查跳过: {e}")
-
-        take_screenshot(page, "04_payment_process", SCREENSHOTS_DIR)
-        print("   ✅ 模拟支付流程完成")
-
-        # ============================================
-        # Step 5: 支付成功页面
-        # ============================================
-        print("\n🎉 [Step 5] 验证支付成功页面...")
-
-        # 检查页面支付成功相关提示
-        page_content = page.content()
-        success_indicators = ["成功", "完成", "支付", "success", "已完成"]
-        has_success = any(ind in page_content.lower() or ind in page_content for ind in success_indicators)
-
-        take_screenshot(page, "05_payment_success", SCREENSHOTS_DIR)
-        print(f"   ✅ 页面包含成功提示: {has_success}")
-
-        # ============================================
-        # Step 6: 验证积分到账（个人中心查看）
-        # ============================================
-        print("\n📊 [Step 6] 验证积分到账...")
-
-        page.goto(f"{E2E_BASE_URL}/user-center")
-        wait_for_network_idle(page)
-        take_screenshot(page, "06_check_balance", SCREENSHOTS_DIR)
-
-        # 检查积分相关显示
-        page_content = page.content()
-        balance_keywords = ["积分", "余额", "balance", "points"]
-        found_balance = any(k in page_content.lower() for k in balance_keywords)
-
-        print(f"   ✅ 个人中心包含积分相关显示: {found_balance}")
-
-        print("\n" + "="*60)
-        print("🎉 支付充值完整流程E2E测试完成！")
-        print("="*60 + "\n")
+        # 验证 API 返回的数据与 PRD 一致
+        api_names = {p["name"] for p in items}
+        expected_names = {p["name"] for p in EXPECTED_PACKAGES}
+        assert api_names == expected_names, f"API 档位名称不匹配: {api_names} vs {expected_names}"
+        print(f"   ✅ API 档位名称匹配 PRD: {api_names}")
 
 
 @pytest.mark.payment_flow
+@pytest.mark.e2e
+class TestPackageRecharge:
+    """选择档位充值流程测试"""
+
+    def test_select_package_and_pay(self, logged_in_page):
+        """选择档位 → 支付成功 → 积分到账"""
+        page = logged_in_page
+        print("\n💳 测试选择档位充值...")
+
+        # Step 1: 进入充值页
+        page.goto(f"{E2E_BASE_URL}/pricing")
+        wait_for_network_idle(page)
+
+        # 记下充值前余额
+        balance_text_before = page.locator("text=当前积分余额").locator("..").locator("div").nth(1).text_content()
+        balance_before = int(balance_text_before.strip())
+        print(f"   💰 充值前余额: {balance_before}")
+
+        take_screenshot(page, "pay01_before", SCREENSHOTS_DIR)
+
+        # Step 2: 点击"入门档"卡片选中
+        page.get_by_text("入门档", exact=True).first.click()
+        wait_for_network_idle(page)
+        print("   ✅ 已选中入门档")
+
+        take_screenshot(page, "pay02_selected", SCREENSHOTS_DIR)
+
+        # Step 3: 点击支付按钮
+        pay_button = page.get_by_role("button", name=re.compile(r"立即支付"))
+        assert pay_button.count() > 0, "支付按钮未找到"
+        pay_button.click()
+
+        # Step 4: 等待支付成功结果展示
+        page.wait_for_selector("text=充值成功", timeout=15000)
+        take_screenshot(page, "pay03_success", SCREENSHOTS_DIR)
+        print("   ✅ 支付成功结果已显示")
+
+        # Step 5: 验证成功页面内容
+        page_content = page.content()
+        assert "订单号" in page_content, "成功页面缺少订单号"
+        print("   ✅ 成功页面包含订单号")
+
+        # Step 6: 验证余额已增加
+        page.goto(f"{E2E_BASE_URL}/pricing")
+        wait_for_network_idle(page)
+        balance_text_after = page.locator("text=当前积分余额").locator("..").locator("div").nth(1).text_content()
+        balance_after = int(balance_text_after.strip())
+        expected_increase = 320  # 入门档: 300基础 + 20赠送
+        assert balance_after == balance_before + expected_increase, \
+            f"余额未正确增加: 之前 {balance_before}, 之后 {balance_after}, 期望增加 {expected_increase}"
+        print(f"   ✅ 余额正确增加: {balance_before} → {balance_after} (+{expected_increase})")
+
+    def test_different_package_selection(self, logged_in_page):
+        """测试选择不同档位，验证金额和积分显示变化"""
+        page = logged_in_page
+        print("\n🔄 测试不同档位选择...")
+
+        page.goto(f"{E2E_BASE_URL}/pricing")
+        wait_for_network_idle(page)
+
+        # 选择"专业档"（¥300）
+        page.get_by_text("专业档", exact=True).first.click()
+        wait_for_network_idle(page)
+
+        # 验证支付按钮显示正确的金额
+        pay_button = page.get_by_role("button", name=re.compile(r"立即支付 ¥?300"))
+        assert pay_button.count() > 0, f"专业档支付按钮金额不正确"
+        print("   ✅ 选择专业档后支付按钮显示 ¥300")
+
+        take_screenshot(page, "pay04_package_switch", SCREENSHOTS_DIR)
+
+        # 继续充值按钮测试（如果存在成功状态，先重置）
+        # 支付成功
+        pay_button.click()
+        page.wait_for_selector("text=充值成功", timeout=15000)
+
+        # 点击"继续充值"回到选档位状态
+        continue_btn = page.get_by_role("button", name="继续充值")
+        assert continue_btn.count() > 0, "继续充值按钮未出现"
+        continue_btn.click()
+        wait_for_network_idle(page)
+        print("   ✅ '继续充值'按钮可回到选档位状态")
+
+        take_screenshot(page, "pay05_reset", SCREENSHOTS_DIR)
+
+
+@pytest.mark.payment_flow
+@pytest.mark.e2e
+class TestCustomRecharge:
+    """自定义金额充值流程测试"""
+
+    def test_custom_amount_recharge(self, logged_in_page):
+        """自定义金额 → 支付成功 → 积分到账"""
+        page = logged_in_page
+        print("\n✏️  测试自定义金额充值...")
+
+        # Step 1: 进入充值页
+        page.goto(f"{E2E_BASE_URL}/pricing")
+        wait_for_network_idle(page)
+
+        # 记下充值前余额
+        balance_text_before = page.locator("text=当前积分余额").locator("..").locator("div").nth(1).text_content()
+        balance_before = int(balance_text_before.strip())
+        print(f"   💰 充值前余额: {balance_before}")
+
+        take_screenshot(page, "custom01_before", SCREENSHOTS_DIR)
+
+        # Step 2: 在自定义金额输入框中输入50
+        amount_input = page.locator('input[type="number"]')
+        assert amount_input.count() > 0, "自定义金额输入框未找到"
+        amount_input.fill("50")
+        wait_for_network_idle(page)
+        print("   ✅ 已输入自定义金额: ¥50")
+
+        # Step 3: 验证到账积分提示显示
+        points_hint = page.get_by_text("到账积分：500", exact=False)
+        assert points_hint.count() > 0, "到账积分提示未显示"
+        print("   ✅ 到账积分提示正确: 50元 → 500积分")
+
+        take_screenshot(page, "custom02_amount", SCREENSHOTS_DIR)
+
+        # Step 4: 点击支付按钮
+        pay_button = page.get_by_role("button", name=re.compile(r"立即支付 ¥?50"))
+        assert pay_button.count() > 0, "自定义金额支付按钮未找到"
+        pay_button.click()
+
+        # Step 5: 等待支付成功
+        page.wait_for_selector("text=充值成功", timeout=15000)
+        take_screenshot(page, "custom03_success", SCREENSHOTS_DIR)
+        print("   ✅ 自定义充值成功")
+
+        # Step 6: 验证余额
+        # 先导航到 pricing 刷新余额
+        page.goto(f"{E2E_BASE_URL}/pricing")
+        wait_for_network_idle(page)
+        balance_text_after = page.locator("text=当前积分余额").locator("..").locator("div").nth(1).text_content()
+        balance_after = int(balance_text_after.strip())
+        expected_increase = 500  # 50元 × 10积分/元
+        assert balance_after == balance_before + expected_increase, \
+            f"自定义充值余额未正确增加: 之前 {balance_before}, 之后 {balance_after}, 期望增加 {expected_increase}"
+        print(f"   ✅ 余额正确增加: {balance_before} → {balance_after} (+{expected_increase})")
+
+
+@pytest.mark.payment_flow
+@pytest.mark.e2e
+class TestPricingLinks:
+    """支付入口链接测试"""
+
+    def test_payment_links_point_to_pricing(self, logged_in_page):
+        """验证所有入口正确指向 /pricing"""
+        page = logged_in_page
+        print("\n🔗 验证支付入口链接...")
+
+        # 检查 user-center 页面中的充值按钮
+        page.goto(f"{E2E_BASE_URL}/user-center")
+        wait_for_network_idle(page)
+        take_screenshot(page, "link01_user_center", SCREENSHOTS_DIR)
+
+        # 查找充值相关的链接
+        recharge_links = page.locator('a[href="/pricing"]')
+        assert recharge_links.count() >= 1, "user-center 页面缺少到 /pricing 的链接"
+        print(f"   ✅ user-center 页面发现 {recharge_links.count()} 个 /pricing 链接")
+
+        # 检查导航栏是否有到 /pricing 的链接
+        page.goto(f"{E2E_BASE_URL}/")
+        wait_for_network_idle(page)
+        nav_pricing = page.locator('a[href="/pricing"]')
+        assert nav_pricing.count() > 0, "导航栏缺少到 /pricing 的链接"
+        print(f"   ✅ 导航栏有到 /pricing 的链接")
+
+        # 验证没有遗留的 /payment 页面链接（排除 API 路径）
+        page.goto(f"{E2E_BASE_URL}/pricing")
+        wait_for_network_idle(page)
+        all_links = page.locator('a').all()
+        for link in all_links:
+            href = link.get_attribute("href") or ""
+            # 只检查前端路由链接，不检查 API 调用
+            if href.startswith("/payment"):
+                pytest.fail(f"发现遗留的 /payment 链接: {href}")
+        print("   ✅ 未发现遗留的 /payment 链接")
+
+
+@pytest.mark.payment_flow
+@pytest.mark.e2e
 class TestPointHistoryFlow:
     """积分流水记录流程测试"""
 
-    def test_point_history_page(self, page):
+    def test_point_history_page(self, logged_in_page):
         """测试积分历史记录页面"""
+        page = logged_in_page
         print("\n📋 测试积分历史记录页面...")
 
         page.goto(f"{E2E_BASE_URL}/user-center/points")
         wait_for_network_idle(page)
         take_screenshot(page, "point_01_history", SCREENSHOTS_DIR)
 
+        # 检查页面内容
+        page_content = page.content()
+        assert "积分" in page_content and ("明细" in page_content or "记录" in page_content or "历史" in page_content), \
+            "积分历史页面内容缺失"
         print("   ✅ 积分历史页面加载成功")
 
-        # 检查列表元素
         list_items = page.locator('li').count() + page.locator('[role="listitem"]').count()
         print(f"   ✅ 发现 {list_items} 个列表项元素")
 
-    def test_point_filter_function(self, page):
+    def test_point_filter_function(self, logged_in_page):
         """测试积分筛选功能"""
+        page = logged_in_page
         print("\n🔍 测试积分筛选功能...")
 
         page.goto(f"{E2E_BASE_URL}/user-center/points")
         wait_for_network_idle(page)
 
-        # 检查可能的筛选器
         try:
             filters = page.locator('select').count() + page.locator('[role="select"]').count()
             print(f"   ✅ 发现 {filters} 个筛选器元素")
@@ -186,37 +309,25 @@ class TestPointHistoryFlow:
 
 
 @pytest.mark.payment_flow
-class TestOrderManagementFlow:
-    """订单管理流程测试"""
+@pytest.mark.e2e
+class TestPaymentEntryPoints:
+    """充值入口点测试"""
 
-    def test_orders_list_page(self, page):
-        """测试订单列表页面"""
-        print("\n📦 测试订单列表页面...")
+    def test_user_center_recharge_button(self, logged_in_page):
+        """验证个人中心的充值按钮可正常跳转到 /pricing"""
+        page = logged_in_page
+        print("\n🚪 测试个人中心充值按钮...")
 
-        page.goto(f"{E2E_BASE_URL}/orders")
+        page.goto(f"{E2E_BASE_URL}/user-center")
         wait_for_network_idle(page)
-        take_screenshot(page, "order_01_list", SCREENSHOTS_DIR)
 
-        print("   ✅ 订单列表页面加载成功")
-
-        # 检查订单状态相关显示
-        page_content = page.content()
-        status_keywords = ["状态", "待支付", "已完成", "已取消", "status"]
-        found_status = any(k in page_content.lower() for k in status_keywords)
-        print(f"   ✅ 页面包含订单状态显示: {found_status}")
-
-    def test_order_detail_page(self, page):
-        """测试订单详情页面"""
-        print("\n📋 测试订单详情页面...")
-
-        page.goto(f"{E2E_BASE_URL}/orders/demo-order-id")
+        # 查找充值按钮并点击
+        recharge_btn = page.locator('a[href="/pricing"]').first
+        assert recharge_btn.count() > 0, "未找到充值按钮"
+        recharge_btn.click()
         wait_for_network_idle(page)
-        take_screenshot(page, "order_02_detail", SCREENSHOTS_DIR)
 
-        print("   ✅ 订单详情页面加载成功")
-
-        # 检查详情页元素
-        detail_keywords = ["订单号", "金额", "时间", "详情", "order", "amount"]
-        page_content = page.content().lower()
-        found_details = any(k in page_content for k in detail_keywords)
-        print(f"   ✅ 页面包含订单详情信息: {found_details}")
+        # 验证已跳转到 /pricing
+        assert "/pricing" in page.url, f"未跳转到 /pricing，当前 URL: {page.url}"
+        print(f"   ✅ 充值按钮跳转到 /pricing")
+        take_screenshot(page, "entry_recharge_btn", SCREENSHOTS_DIR)
