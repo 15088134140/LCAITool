@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.core.exceptions import IdempotentTokenException
 from app.core.redis import get_redis_client
 import logging
+from starlette.types import ASGIApp
 
 logger = logging.getLogger(__name__)
 
@@ -163,5 +164,3 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
             # Redis出错时，记录日志但不阻止请求（降级策略）
             logger.warning(f"幂等性检查失败: {str(e)}")
             return await call_next(request)
-
-

@@ -59,15 +59,10 @@ async def create_order(
         payment_provider=request.payment_provider
     )
 
-    # 获取支付参数（模拟支付）
-    provider = PaymentService.get_provider(request.payment_provider)
-    payment_params = await provider.create_payment(order)
-
     return CreateOrderResponse(
         order_id=order.id,
         order_no=order.order_no,
-        pay_amount=float(order.base_points),  # 积分与金额1:1（模拟）
-        payment_params=payment_params
+        pay_amount=float(order.pay_amount),
     )
 
 
