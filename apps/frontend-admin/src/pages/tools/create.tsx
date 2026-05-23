@@ -212,38 +212,53 @@ const CreateTool = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">封面图片</label>
-                <div className="flex gap-4">
-                  {formData.cover_image ? (
-                    <div className="relative">
-                      <img
-                        src={formData.cover_image}
-                        alt="封面预览"
-                        className="w-40 h-40 object-cover rounded-lg border border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleInputChange('cover_image', '')}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="w-40 h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400">
-                      <Upload size={32} className="mb-2" />
-                      <span className="text-sm">暂未上传</span>
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={formData.cover_image}
-                      onChange={(e) => handleInputChange('cover_image', e.target.value)}
-                      placeholder="输入图片URL"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none"
-                    />
+                <label className="block text-sm font-medium text-gray-700 mb-1">封面图片（支持多张）</label>
+                <div className="space-y-3">
+                  {/* Preview strip */}
+                  <div className="flex gap-3 flex-wrap">
+                    {(() => {
+                      const urls = formData.cover_image
+                        ? formData.cover_image.split('|').map(u => u.trim()).filter(Boolean)
+                        : [];
+                      return urls.length > 0 ? urls.map((url, idx) => (
+                        <div key={idx} className="relative">
+                          <img
+                            src={url}
+                            alt={`封面 ${idx + 1}`}
+                            className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const list = formData.cover_image.split('|').map(u => u.trim()).filter(Boolean);
+                              list.splice(idx, 1);
+                              handleInputChange('cover_image', list.join('|'));
+                            }}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      )) : (
+                        <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400">
+                          <Upload size={24} className="mb-1" />
+                          <span className="text-xs">暂无图片</span>
+                        </div>
+                      );
+                    })()}
                   </div>
+                  {/* URL textarea: one URL per line */}
+                  <textarea
+                    value={formData.cover_image.split('|').join('\n')}
+                    onChange={(e) => {
+                      const lines = e.target.value.split('\n').map(l => l.trim()).filter(Boolean);
+                      handleInputChange('cover_image', lines.join('|'));
+                    }}
+                    placeholder="输入图片URL，每行一张"
+                    rows={4}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none resize-none"
+                  />
                 </div>
               </div>
 
