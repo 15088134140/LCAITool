@@ -30,7 +30,7 @@ async def get_work_file(
     - ZIP 下载（设置 Content-Disposition）
     - 其他文件类型自动识别 MIME
     """
-    from app.models.task import Task, WorkFile as WorkFileModel
+    from app.models.task import Work, WorkFile as WorkFileModel
 
     result = await db.execute(
         select(WorkFileModel).where(WorkFileModel.id == work_file_id)
@@ -40,16 +40,16 @@ async def get_work_file(
     if not work_file:
         raise HTTPException(status_code=404, detail="文件不存在")
 
-    # 验证权限：文件所属任务的用户
+    # 验证权限：文件所属成果的用户
     work_result = await db.execute(
-        select(Task).where(Task.id == work_file.work_id)
+        select(Work).where(Work.id == work_file.work_id)
     )
-    task = work_result.scalar_one_or_none()
-    if not task or task.user_id != current_user.id:
+    work = work_result.scalar_one_or_none()
+    if not work or work.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权访问此文件")
 
     # 构建文件路径
-    file_path = os.path.join(settings.WORKS_DIR, str(task.id), work_file.file_url)
+    file_path = os.path.join(settings.WORKS_DIR, str(work.task_id), work_file.file_url)
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="文件不存在或已被清理")

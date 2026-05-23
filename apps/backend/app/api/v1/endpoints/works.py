@@ -2,8 +2,12 @@
 成果管理 API 端点
 实现成果列表、详情、迭代、分享、下载权限检查等功能
 """
+import io
+import os
+import zipfile
 from typing import Any, Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
@@ -17,6 +21,7 @@ from app.schemas.work import (
     IterationCreate,
 )
 from app.services.work_service import WorkService
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -41,8 +46,11 @@ async def get_user_works(
         limit=page_size
     )
 
+    # Convert SQLAlchemy models to Pydantic schemas for serialization
+    from app.schemas.work import Work as WorkSchema
+    items = [WorkSchema.model_validate(w) for w in works]
     return {
-        "items": works,
+        "items": items,
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -221,8 +229,9 @@ async def get_work_files(
         from app.core.exceptions import InsufficientPermissionsException
         raise InsufficientPermissionsException()
 
-    files = await WorkService.get_work_files(db=db, work_id=work_id)
-    return files
+    from app.schemas.work import WorkFile as WorkFileSchema
+    raw_files = await WorkService.get_work_files(db=db, work_id=work_id)
+    return [WorkFileSchema.model_validate(f) for f in raw_files]
 
 
 @router.get("/{work_id}/versions", summary="获取成果版本历史")
@@ -245,5 +254,60 @@ async def get_work_versions(
         from app.core.exceptions import InsufficientPermissionsException
         raise InsufficientPermissionsException()
 
-    versions = await WorkService.get_work_versions(db=db, work_id=work_id)
-    return versions
+    from app.schemas.work import Work as WorkSchema
+    raw_versions = await WorkService.get_work_versions(db=db, work_id=work_id)
+    return [WorkSchema.model_validate(v) for v in raw_versions]
+
+
+@router.get("/{work_id}/download", summary="下载成果全部文件（ZIP压缩包）")
+async def download_work_files(
+    work_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """
+    动态打包成果的所有文件为 ZIP 压缩包并下载
+
+    适用于：
+    - 旧成果没有预生成 ZIP 文件的情况
+    - 前端「下载全部」按钮的统一入口
+    """
+    from app.models.task import Work, WorkFile as WorkFileModel
+    from sqlalchemy import select
+    from app.core.exceptions import ResourceNotFoundException, InsufficientPermissionsException
+
+    # 验证成果存在且有权限
+    work = await WorkService.get_by_id(db=db, work_id=work_id)
+    if not work:
+        raise ResourceNotFoundException("成果不存在")
+    if work.user_id != current_user.id and not work.is_public:
+        raise InsufficientPermissionsException()
+
+    # 获取所有文件记录
+    result = await db.execute(
+        select(WorkFileModel).where(WorkFileModel.work_id == work_id)
+    )
+    work_files = result.scalars().all()
+
+    if not work_files:
+        raise HTTPException(status_code=404, detail="成果暂无文件可下载")
+
+    # 在内存中创建 ZIP
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for wf in work_files:
+            file_path = os.path.join(settings.WORKS_DIR, str(work.task_id), wf.file_url)
+            if os.path.exists(file_path):
+                # 用 file_url 保留目录结构（如 images/page_1.png）
+                zf.write(file_path, wf.file_url)
+
+    buf.seek(0)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="work_{work_id}.zip"',
+            "Content-Type": "application/zip",
+        }
+    )
