@@ -479,6 +479,26 @@ export interface BalanceUpdatedEvent {
   frozen_balance: number;
 }
 
+// ============== 用户统计类型 ==============
+
+export interface UserStats {
+  days_used: number;
+  today_count: number;
+  total_works: number;
+  total_consumed: number;
+  reward_points: number;
+}
+
+// ============== 最近使用的工具 ==============
+
+export interface ToolRecentItem {
+  id: string;
+  name: string;
+  cover_image: string | null;
+  use_count: number;
+  last_used_at: number | null;
+}
+
 // ============== 查询参数类型 ==============
 
 export interface ListTasksParams {

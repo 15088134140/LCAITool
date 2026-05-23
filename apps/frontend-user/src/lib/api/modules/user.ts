@@ -16,6 +16,7 @@ import type {
   PaginatedResponse,
   RegisterRequest,
   RegisterResponse,
+  UserStats,
 } from '../types';
 
 // API基础URL
@@ -145,6 +146,13 @@ export const userApi = {
    */
   changePhone: async (phone: string, code: string): Promise<{ message: string; phone: string }> => {
     return api.post<{ message: string; phone: string }>('/users/change-phone', { phone, code });
+  },
+
+  /**
+   * 获取用户统计数据
+   */
+  getStats: async (): Promise<UserStats> => {
+    return api.get<UserStats>('/users/stats');
   },
 };
 

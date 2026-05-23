@@ -11,7 +11,8 @@ from app.schemas.tool import (
     ToolCategoryResponse,
     ToolRatingCreate,
     ToolRatingResponse,
-    ToolDemoResponse
+    ToolDemoResponse,
+    ToolRecentResponse,
 )
 from app.core.exceptions import ToolNotFoundException
 
@@ -56,7 +57,18 @@ async def get_tools(
     }
 
 
-# ============== 2. 工具详情 API ==============
+# ============== 2. 最近使用工具 API ==============
+
+@router.get("/recent", response_model=list[ToolRecentResponse], summary="获取最近使用的工具")
+async def get_recent_tools(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """返回当前用户最近使用的工具列表（去重，最多3条）"""
+    return await ToolService.get_recent_tools(db, current_user.id)
+
+
+# ============== 3. 工具详情 API ==============
 
 @router.get("/{tool_identifier}", summary="获取工具详情")
 async def get_tool_detail(

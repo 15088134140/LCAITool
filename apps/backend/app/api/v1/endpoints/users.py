@@ -13,6 +13,7 @@ from app.schemas.user import (
     ChangePhoneRequest,
     SendCodeRequest,
 )
+from app.schemas.stats import UserStatsResponse
 from app.services.user_service import UserService
 from app.services.point_service import PointService
 from app.core.security import verify_password, get_password_hash
@@ -84,6 +85,15 @@ async def get_transactions(
         "page": page,
         "page_size": page_size,
     }
+
+
+@router.get("/stats", response_model=UserStatsResponse, summary="获取用户统计数据")
+async def get_user_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """返回用户统计数据：注册天数、今日次数、作品总数、累计消费、奖励积分"""
+    return await UserService.get_user_stats(db, current_user.id)
 
 
 @router.post("/change-password", summary="修改密码")

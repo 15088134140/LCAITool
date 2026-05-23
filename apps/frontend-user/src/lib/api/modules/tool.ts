@@ -8,6 +8,7 @@ import type {
   ToolCategory,
   ToolDemo,
   ToolRating,
+  ToolRecentItem,
   ListToolsParams,
   PaginatedResponse,
 } from '../types';
@@ -100,6 +101,13 @@ export const toolApi = {
     return api.get<PaginatedResponse<Tool>>('/tools/favorites/list', {
       params: { page, page_size: pageSize },
     });
+  },
+
+  /**
+   * 获取最近使用的工具
+   */
+  getRecentTools: async (): Promise<ToolRecentItem[]> => {
+    return api.get<ToolRecentItem[]>('/tools/recent');
   },
 };
 

@@ -1,10 +1,14 @@
 import uuid
+import time
 from typing import Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
+from fastapi import HTTPException
 from app.core.security import get_password_hash, aes_encrypt, mask_id_card, mask_id_card_encrypted, validate_id_card_format
 from app.core.exceptions import UserAlreadyExistsException, UserNotFoundException, InvalidVerificationCodeException, InvalidIdCardFormatException
 from app.models.user import User, Role
+from app.models.task import Task, Work
+from app.models.payment import PointTransaction
 from app.schemas.user import UserCreate, UserUpdate, UserIdVerifyRequest
 
 
@@ -221,6 +225,65 @@ class UserService:
         await db.commit()
         await db.refresh(user)
         return user
+
+    @staticmethod
+    async def get_user_stats(db: AsyncSession, user_id: uuid.UUID) -> dict:
+        """获取用户统计数据：注册天数、今日次数、作品总数、累计消费、奖励积分"""
+        user_result = await db.execute(
+            select(User).where(User.id == user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        now_ts = int(time.time())
+        created_ts = user.created_at
+        days_used = max(1, (now_ts - created_ts) // 86400 + 1)
+
+        # 今日开始时间戳
+        today_start_ts = now_ts - (now_ts % 86400)
+
+        # 今日任务数
+        today_count_result = await db.execute(
+            select(func.count(Task.id)).where(
+                Task.user_id == user_id,
+                Task.created_at >= today_start_ts
+            )
+        )
+        today_count = today_count_result.scalar() or 0
+
+        # 作品总数
+        works_result = await db.execute(
+            select(func.count(Work.id)).where(Work.user_id == user_id)
+        )
+        total_works = works_result.scalar() or 0
+
+        # 累计消费积分
+        consumed_result = await db.execute(
+            select(func.abs(func.coalesce(func.sum(PointTransaction.amount), 0))).where(
+                PointTransaction.user_id == user_id,
+                PointTransaction.type == "consume"
+            )
+        )
+        total_consumed = consumed_result.scalar() or 0
+
+        # 奖励积分
+        reward_result = await db.execute(
+            select(func.coalesce(func.sum(PointTransaction.amount), 0)).where(
+                PointTransaction.user_id == user_id,
+                PointTransaction.type.in_(["reward", "adjust"]),
+                PointTransaction.amount > 0
+            )
+        )
+        reward_points = reward_result.scalar() or 0
+
+        return {
+            "days_used": days_used,
+            "today_count": today_count,
+            "total_works": total_works,
+            "total_consumed": total_consumed,
+            "reward_points": reward_points,
+        }
 
     @staticmethod
     async def delete(db: AsyncSession, user_id: uuid.UUID) -> None:

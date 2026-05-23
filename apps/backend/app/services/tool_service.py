@@ -1,8 +1,9 @@
 import uuid
 from typing import Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, desc
 from app.models.tool import Tool, ToolCategory, ToolFavorite, ToolRating, ToolDemo
+from app.models.task import Task
 from app.schemas.tool import (
     ToolCreate, ToolUpdate,
     ToolCategoryCreate, ToolCategoryUpdate,
@@ -128,6 +129,39 @@ class ToolService:
 
         await db.delete(tool)
         await db.commit()
+
+    # ============== Recent Tools Methods ==============
+
+    @staticmethod
+    async def get_recent_tools(db: AsyncSession, user_id: uuid.UUID, limit: int = 3) -> list[dict]:
+        """获取用户最近使用的工具列表（去重，按最后使用时间倒序）"""
+        result = await db.execute(
+            select(Task.tool_id, func.max(Task.created_at).label("last_used"))
+            .where(
+                Task.user_id == user_id,
+                Task.tool_id.isnot(None),
+                Task.status == "completed",
+            )
+            .group_by(Task.tool_id)
+            .order_by(desc("last_used"))
+            .limit(limit)
+        )
+        rows = result.all()
+
+        tools = []
+        for row in rows:
+            tool_result = await db.execute(select(Tool).where(Tool.id == row.tool_id))
+            tool = tool_result.scalar_one_or_none()
+            if tool:
+                cover_image = tool.cover_image.split("|")[0].strip() if tool.cover_image else None
+                tools.append({
+                    "id": tool.id,
+                    "name": tool.name,
+                    "cover_image": cover_image,
+                    "use_count": tool.use_count,
+                    "last_used_at": row.last_used,
+                })
+        return tools
 
     # ============== Favorite Methods ==============
 

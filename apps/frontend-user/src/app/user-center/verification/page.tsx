@@ -132,7 +132,7 @@ export default function VerificationPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                 </div>
-                <p className="text-sm font-medium text-gray-900">20积分奖励</p>
+                <p className="text-sm font-medium text-gray-900">50积分奖励</p>
               </div>
               <div className="p-4 bg-green-50 rounded-xl">
                 <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-green-100 flex items-center justify-center">
@@ -217,7 +217,7 @@ export default function VerificationPage() {
             <div>
               <h3 className="font-bold text-gray-900 mb-1">为什么需要实名认证？</h3>
               <p className="text-sm text-gray-600">
-                根据国家相关法律法规要求，网络服务使用者需进行实名认证。完成认证后，您将获得 20 积分奖励，并解锁全部工具功能。
+                根据国家相关法律法规要求，网络服务使用者需进行实名认证。完成认证后，您将获得 50 积分奖励，并解锁全部工具功能。
               </p>
             </div>
           </div>

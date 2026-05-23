@@ -186,7 +186,7 @@ export default function RegisterPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-white">实名认证奖励</h3>
-                      <p className="text-green-300 font-semibold text-lg">额外 +20 积分</p>
+                      <p className="text-green-300 font-semibold text-lg">额外 +50 积分</p>
                     </div>
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export default function RegisterPage() {
                       <div className="text-xs text-blue-200/50">注册即送</div>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-green-300">+20积分</div>
+                      <div className="text-lg font-bold text-green-300">+50积分</div>
                       <div className="text-xs text-blue-200/50">认证奖励</div>
                     </div>
                     <div>

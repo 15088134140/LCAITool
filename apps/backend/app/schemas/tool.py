@@ -96,6 +96,18 @@ class ToolResponse(ToolBase):
     model_config = {"from_attributes": True}
 
 
+# ============== ToolRecent Schema ==============
+
+class ToolRecentResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    cover_image: Optional[str] = None
+    use_count: int = 0
+    last_used_at: Optional[int] = None
+
+    model_config = {"from_attributes": True}
+
+
 # ============== ToolFavorite Schema ==============
 
 class ToolFavoriteResponse(BaseModel):

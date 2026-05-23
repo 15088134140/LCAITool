@@ -45,7 +45,7 @@ export default function VerificationPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-bold text-[#065F46] text-lg">认证即送 20 积分</h3>
+                <h3 className="font-bold text-[#065F46] text-lg">认证即送 50 积分</h3>
                 <p className="text-[#047857]">完成实名认证后，积分将自动发放到您的账户</p>
               </div>
             </div>
