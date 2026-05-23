@@ -7,7 +7,7 @@ import asyncio
 import json
 import uuid
 
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
@@ -261,6 +261,19 @@ async def seed_demos(db: AsyncSession):
 
 async def seed_packages(db: AsyncSession):
     """创建充值套餐（PRD 3.5.2 标准档位）"""
+    # 先停用旧的套餐（按名称匹配旧档位名）
+    old_names = ["体验包", "基础包", "进阶包", "专业包", "旗舰包"]
+    for old_name in old_names:
+        result = await db.execute(
+            select(RechargePackage).where(
+                and_(RechargePackage.name == old_name, RechargePackage.is_active == True)
+            )
+        )
+        old_pkg = result.scalar_one_or_none()
+        if old_pkg:
+            old_pkg.is_active = False
+            print(f"  ⏹️  停用旧套餐: {old_name}")
+
     packages = [
         RechargePackage(
             name="入门档", description="适合初次体验",
