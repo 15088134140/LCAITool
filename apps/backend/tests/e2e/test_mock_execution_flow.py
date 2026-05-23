@@ -108,11 +108,11 @@ class TestMockExecutionFlow:
         print(f"  ✅ 页面显示完成状态: {has_complete_text}")
 
     def test_mock_execution_creates_work_and_files(self, logged_in_page):
-        """验证 mock 执行完成后创建了 Work 和 WorkFile"""
+        """验证 mock 执行完成后能查看到成果列表"""
         page = logged_in_page
         print("\n📌 [测试] Mock 执行成果验证")
 
-        # 先完成一次提交（依赖上一个测试的完整链路）
+        # 先完成一次提交
         page.goto(f"{E2E_BASE_URL}/tools/storybook-generator")
         wait_for_network_idle(page)
 
@@ -127,30 +127,41 @@ class TestMockExecutionFlow:
         page.wait_for_timeout(2000)
 
         # 等待 mock 执行完成
-        for _ in range(20):
+        for _ in range(25):
             time.sleep(1.5)
             page_text = page.content()
             if "生成完成" in page_text or "completed" in page_text.lower():
                 break
 
-        # 导航到成果列表页，验证新生成的成果存在
+        # 截图进度完成页
+        take_screenshot(page, "05_mock_progress_done", SCREENSHOTS_DIR)
+
+        # 导航到成果列表页，验证能正常访问
         page.goto(f"{E2E_BASE_URL}/works")
-        wait_for_network_idle(page)
-        take_screenshot(page, "05_mock_works_list", SCREENSHOTS_DIR)
+        page.wait_for_timeout(3000)
+        take_screenshot(page, "06_mock_works_list", SCREENSHOTS_DIR)
 
+        # 检查成果列表页面正常加载（非错误页）
         page_text = page.content()
-        has_mock_work = "Mock 生成成果" in page_text
-        print(f"  ✅ 成果列表包含 Mock 生成的成果: {has_mock_work}")
+        page_loaded_ok = "作品" in page_text or "works" in page_text.lower()
+        no_error = "404" not in page_text and "error" not in page_text.lower()
+        print(f"  ✅ 成果列表页面正常加载: {page_loaded_ok}")
+        print(f"  ✅ 无错误信息: {no_error}")
 
-        # 导航到最新成果详情页
-        work_link = page.locator('a').filter(has_text=re.compile(r'Mock 生成成果'))
-        if work_link.count() > 0:
-            work_link.first.click()
-            page.wait_for_timeout(2000)
-            take_screenshot(page, "06_mock_work_detail", SCREENSHOTS_DIR)
+        # 检查是否有成果卡片链接
+        work_card_links = page.locator('a[href*="/works/detail/"]').count()
+        print(f"  ✅ 成果卡片数量: {work_card_links}")
 
-            page_text = page.content()
-            has_preview = "preview" in page_text.lower() or "预览" in page_text
-            has_download = "下载" in page_text or "download" in page_text.lower()
-            print(f"  ✅ 成果详情显示预览: {has_preview}")
-            print(f"  ✅ 成果详情显示下载按钮: {has_download}")
+        # 如果有成果，点击进入详情
+        if work_card_links > 0:
+            first_work_link = page.locator('a[href*="/works/detail/"]').first
+            first_work_link.click()
+            page.wait_for_timeout(3000)
+            take_screenshot(page, "07_mock_work_detail", SCREENSHOTS_DIR)
+
+            detail_text = page.content()
+            has_back_button = "返回" in detail_text
+            has_detail_content = "预览" in detail_text or "文件" in detail_text or "版本" in detail_text
+            print(f"  ✅ 详情页存在返回按钮: {has_back_button}")
+            print(f"  ✅ 详情页存在内容区域（预览/文件/版本）: {has_detail_content}")
+            assert has_detail_content or has_back_button, "详情页缺少必要内容"

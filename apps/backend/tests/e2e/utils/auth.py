@@ -82,6 +82,13 @@ def login_with_api(page: Page, username: str, password: str) -> bool:
 
                 # 在页面上下文中注入localStorage数据
                 page.evaluate(f"""localStorage.setItem('lcaitool-auth-storage', '{auth_storage}')""")
+
+                # 同时设置独立 token 键（axios/tokenStorage 使用）
+                # escape single quotes in token values for JS string literal
+                access_token_safe = tokens['access_token'].replace("'", "\\'")
+                refresh_token_safe = tokens['refresh_token'].replace("'", "\\'")
+                page.evaluate(f"localStorage.setItem('lcaitool_access_token', '{access_token_safe}')")
+                page.evaluate(f"localStorage.setItem('lcaitool_refresh_token', '{refresh_token_safe}')")
                 return True
         else:
             logger.warning(

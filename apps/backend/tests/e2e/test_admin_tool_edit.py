@@ -27,7 +27,7 @@ SCREENSHOTS_DIR = "tests/e2e/screenshots/admin_tool_edit"
 class TestAdminToolEditUsageModes:
     """管理端工具编辑 — usage_modes 配置"""
 
-    @pytest.fixture(scope="function")
+    @pytest.fixture(scope="class")
     def admin_context(self, browser):
         """管理员登录上下文"""
         context = browser.new_context(

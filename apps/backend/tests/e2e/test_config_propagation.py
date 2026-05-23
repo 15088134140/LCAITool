@@ -68,7 +68,7 @@ class TestConfigPropagation:
         wait_for_network_idle(page)
         take_screenshot(page, "01_user_tool_page", SCREENSHOTS_DIR)
 
-        print(f"  ✅ 用户端页面加载成功 (HTTP {page.status})")
+        print(f"  ✅ 用户端页面加载成功")
         context.close()
 
     def test_usage_modes_reflects_db_config(self, browser):
@@ -78,7 +78,8 @@ class TestConfigPropagation:
 
         # 访问有声绘本工具
         page.goto(f"{E2E_BASE_URL}/tools/storybook-generator")
-        wait_for_network_idle(page)
+        page.wait_for_load_state("domcontentloaded", timeout=10000)
+        page.wait_for_timeout(2000)
         take_screenshot(page, "02_storybook_render", SCREENSHOTS_DIR)
 
         page_text = page.content()
@@ -86,7 +87,8 @@ class TestConfigPropagation:
 
         # 访问电商工具
         page.goto(f"{E2E_BASE_URL}/tools/ecommerce-detail")
-        wait_for_network_idle(page)
+        page.wait_for_load_state("domcontentloaded", timeout=10000)
+        page.wait_for_timeout(2000)
         take_screenshot(page, "03_ecommerce_render", SCREENSHOTS_DIR)
 
         page_text2 = page.content()
@@ -94,7 +96,8 @@ class TestConfigPropagation:
 
         # 访问营销文案工具
         page.goto(f"{E2E_BASE_URL}/tools/marketing-copywriter")
-        wait_for_network_idle(page)
+        page.wait_for_load_state("domcontentloaded", timeout=10000)
+        page.wait_for_timeout(2000)
         take_screenshot(page, "04_marketing_render", SCREENSHOTS_DIR)
 
         print(f"  ✅ 营销文案页渲染正常")
