@@ -48,3 +48,12 @@ __pycache__/
 venv/
 env/
 .gstack/
+
+.pytest_cache/
+
+# E2E test artifacts
+apps/backend/tests/e2e/videos/
+apps/backend/tests/e2e/screenshots/
+apps/backend/tests/e2e/tests/
+
+storage/
