@@ -14,7 +14,7 @@ class TaskBase(BaseModel):
 
 class TaskCreate(TaskBase):
     """创建任务"""
-    user_id: uuid.UUID = Field(..., description="用户ID")
+    user_id: Optional[uuid.UUID] = Field(None, description="用户ID（不传则使用当前用户）")
 
 
 class TaskUpdate(BaseModel):

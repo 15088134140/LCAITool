@@ -171,9 +171,10 @@ async def seed_tools(db: AsyncSession):
             short_desc="智能生成专业级电商详情页",
             category_id=cat_eco, category="电商工具",
             tags=json.dumps(["电商", "详情页", "营销", "主图"]),
-            base_fee=12, image_fee=1, audio_fee=0, token_fee=0,
+            base_fee=0, image_fee=2, audio_fee=1, token_fee=0,
             status=1, use_count=96, favorite_count=32, rating_count=18, rating_avg=4.5,
             is_featured=True, usage_modes=["form"],
+            cover_image="https://picsum.photos/seed/ecommerce1/600/400|https://picsum.photos/seed/ecommerce2/600/400|https://picsum.photos/seed/ecommerce3/600/400",
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000003"),

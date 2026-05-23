@@ -38,7 +38,7 @@ class Tool(BaseModel):
     name = Column(String(100), index=True, nullable=False, comment="工具名称")
     description = Column(Text, nullable=True, comment="详细描述")
     short_desc = Column(String(255), nullable=True, comment="简短描述")
-    cover_image = Column(String(255), nullable=True, comment="封面图片URL")
+    cover_image = Column(Text, nullable=True, comment="封面图片URL，多张图片以 | 分隔")
     category_id = Column(UUID(as_uuid=True), ForeignKey("tool_categories.id", ondelete="SET NULL"), nullable=True, index=True, comment="分类ID")
     category = Column(String(50), nullable=True, comment="分类名称（冗余字段）")
     tags = Column(Text, nullable=True, comment="标签列表，JSON格式")
