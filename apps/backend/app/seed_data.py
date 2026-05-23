@@ -260,47 +260,43 @@ async def seed_demos(db: AsyncSession):
 
 
 async def seed_packages(db: AsyncSession):
-    """创建充值套餐"""
+    """创建充值套餐（PRD 3.5.2 标准档位）"""
     packages = [
         RechargePackage(
-            name="体验包", description="适合初次体验",
-            original_price=9.90, sale_price=9.90,
-            base_points=100, bonus_points=0, bonus_percentage=0,
+            name="入门档", description="适合初次体验",
+            original_price=30.00, sale_price=30.00,
+            base_points=300, bonus_points=20, bonus_percentage=0,
             is_popular=False, sort_order=1, is_active=True,
         ),
         RechargePackage(
-            name="基础包", description="日常使用推荐",
-            original_price=29.90, sale_price=29.90,
-            base_points=300, bonus_points=30, bonus_percentage=10,
+            name="进阶档", description="日常使用推荐",
+            original_price=100.00, sale_price=100.00,
+            base_points=1000, bonus_points=100, bonus_percentage=10,
             is_popular=True, sort_order=2, is_active=True,
         ),
         RechargePackage(
-            name="进阶包", description="高频用户首选",
-            original_price=68.00, sale_price=68.00,
-            base_points=700, bonus_points=100, bonus_percentage=14,
+            name="专业档", description="高频用户首选",
+            original_price=300.00, sale_price=300.00,
+            base_points=3000, bonus_points=400, bonus_percentage=13,
             is_popular=True, sort_order=3, is_active=True,
         ),
         RechargePackage(
-            name="专业包", description="专业用户必备",
-            original_price=128.00, sale_price=128.00,
-            base_points=1400, bonus_points=280, bonus_percentage=20,
+            name="企业档", description="团队/企业使用",
+            original_price=1000.00, sale_price=1000.00,
+            base_points=10000, bonus_points=2000, bonus_percentage=20,
             is_popular=False, sort_order=4, is_active=True,
         ),
-        RechargePackage(
-            name="旗舰包", description="超值大额套餐",
-            original_price=298.00, sale_price=298.00,
-            base_points=3500, bonus_points=1050, bonus_percentage=30,
-            is_popular=False, sort_order=5, is_active=True,
-        ),
     ]
+    created = 0
     for pkg in packages:
         existing = await db.execute(
             select(RechargePackage).where(RechargePackage.name == pkg.name)
         )
         if not existing.scalar_one_or_none():
             db.add(pkg)
+            created += 1
     await db.commit()
-    print(f"  ✓ 已创建 {len(packages)} 个充值套餐")
+    print(f"  ✓ 已创建 {created} 个充值套餐")
 
 
 async def seed_ideas(db: AsyncSession):

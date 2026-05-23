@@ -191,7 +191,7 @@ const OrdersPage: React.FC = () => {
               <h1 className="text-xl font-bold text-[#1E3A5F]">订单记录</h1>
             </div>
             <Link
-              href="/payment"
+              href="/pricing"
               className="px-4 py-2 bg-gradient-to-r from-[#059669] to-[#10B981] text-white font-medium rounded-lg hover:shadow-md transition-all"
             >
               去充值

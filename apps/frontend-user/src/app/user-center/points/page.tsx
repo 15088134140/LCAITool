@@ -200,7 +200,7 @@ const PointsPage: React.FC = () => {
               <h1 className="text-xl font-bold text-[#1E3A5F]">积分明细</h1>
             </div>
             <Link
-              href="/payment"
+              href="/pricing"
               className="px-4 py-2 bg-gradient-to-r from-[#059669] to-[#10B981] text-white font-medium rounded-lg hover:shadow-md transition-all"
             >
               去充值
@@ -221,7 +221,7 @@ const PointsPage: React.FC = () => {
               </div>
             </div>
             <Link
-              href="/payment"
+              href="/pricing"
               className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl font-medium hover:bg-white/20 transition-all"
             >
               立即充值

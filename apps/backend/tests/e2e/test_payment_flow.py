@@ -46,11 +46,11 @@ class TestPaymentCompleteFlow:
         # Step 1: 进入积分/充值页面
         # ============================================
         print("\n💰 [Step 1] 进入积分充值页面...")
-        page.goto(f"{E2E_BASE_URL}/payment")
+        page.goto(f"{E2E_BASE_URL}/pricing")
         wait_for_network_idle(page)
-        take_screenshot(page, "01_payment_home", SCREENSHOTS_DIR)
+        take_screenshot(page, "01_pricing_home", SCREENSHOTS_DIR)
 
-        print("   ✅ 充值首页加载成功")
+        print("   ✅ 充值定价页加载成功")
 
         # ============================================
         # Step 2: 浏览充值档位

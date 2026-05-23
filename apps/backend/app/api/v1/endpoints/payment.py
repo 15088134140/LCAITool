@@ -12,8 +12,11 @@ from app.schemas.payment import (
     RechargePackage,
     Order,
     PointTransaction,
-    PaymentResponse
+    PaymentResponse,
+    CustomRechargeRequest,
+    CustomRechargeResponse,
 )
+from app.models.payment import Order as OrderModel, OrderStatus
 from app.core.exceptions import ResourceNotFoundException, BusinessException
 
 router = APIRouter()
@@ -148,6 +151,89 @@ async def get_transactions(
 
     return {
         "items": [PointTransaction.model_validate(tx) for tx in transactions],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+# ============== 6. 自定义充值 API ==============
+
+@router.post("/custom-recharge", summary="自定义充值（一步完成）")
+async def custom_recharge(
+    request: CustomRechargeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """
+    自定义充值：
+    - 输入金额(元)，按 1元=10积分 计算
+    - 创建订单 → 模拟支付（同一事务）
+    - 积分即时到账
+    - 返回订单号和充值后余额
+    """
+    # 计算积分
+    total_points = int(request.amount * 10)
+
+    # 创建订单
+    order = OrderModel(
+        user_id=current_user.id,
+        order_no=PaymentService._generate_order_no(),
+        pay_amount=float(request.amount),
+        base_points=total_points,
+        bonus_points=0,
+        total_points=total_points,
+        payment_provider=request.payment_provider,
+        status=OrderStatus.PENDING,
+    )
+    db.add(order)
+    await db.flush()
+
+    # 模拟支付（同一事务）
+    result = await PaymentService.process_simulated_payment(db, order.id)
+
+    # 获取更新后的用户余额
+    await db.refresh(current_user)
+
+    return CustomRechargeResponse(
+        success=True,
+        order_no=order.order_no,
+        pay_amount=float(request.amount),
+        total_points=total_points,
+        balance=float(current_user.balance),
+        message="充值成功"
+    )
+
+
+# ============== 7. 用户订单列表 API ==============
+
+@router.get("/orders", summary="获取用户订单列表")
+async def get_user_orders(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    status: Optional[str] = Query(None, description="订单状态: pending/paid/failed/refunded"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """获取当前用户的充值订单列表"""
+    skip = (page - 1) * page_size
+    order_status = None
+    if status:
+        try:
+            order_status = OrderStatus(status)
+        except ValueError:
+            raise HTTPException(status_code=422, detail=f"无效的订单状态: {status}")
+
+    orders, total = await PaymentService.get_user_orders(
+        db,
+        user_id=current_user.id,
+        skip=skip,
+        limit=page_size,
+        status=order_status
+    )
+
+    return {
+        "items": [Order.model_validate(o) for o in orders],
         "total": total,
         "page": page,
         "page_size": page_size,

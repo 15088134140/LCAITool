@@ -97,7 +97,7 @@ export function StorybookForm({ tool }: StorybookFormProps) {
       console.error('创建任务失败:', error);
       const detail = error?.response?.data?.detail || '';
       if (detail.includes('余额') || error?.response?.status === 400) {
-        toast.warning('积分余额不足，请先充值', { label: '去充值', onClick: () => router.push('/payment') });
+        toast.warning('积分余额不足，请先充值', { label: '去充值', onClick: () => router.push('/pricing') });
       } else {
         toast.error(detail || '创建任务失败，请稍后重试');
       }

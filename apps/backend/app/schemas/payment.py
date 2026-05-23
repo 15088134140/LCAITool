@@ -207,3 +207,19 @@ class OrderListResponse(BaseModel):
     """订单列表响应"""
     orders: list[Order]
     total: int
+
+
+class CustomRechargeRequest(BaseModel):
+    """自定义充值请求"""
+    amount: float = Field(..., ge=1, le=100000, description="充值金额(元)，最小1，最大100000")
+    payment_provider: PaymentProvider = Field(PaymentProvider.SIMULATED, description="支付方式")
+
+
+class CustomRechargeResponse(BaseModel):
+    """自定义充值响应"""
+    success: bool
+    order_no: str
+    pay_amount: float
+    total_points: int
+    balance: float
+    message: str = "充值成功"

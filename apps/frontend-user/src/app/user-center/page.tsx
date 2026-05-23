@@ -125,7 +125,7 @@ export default function UserCenterPage() {
                       <p className="text-2xl font-bold text-[#1E3A5F]">{user?.balance ?? 0}</p>
                     </div>
                     <Link
-                      href="/user-center/points"
+                      href="/pricing"
                       className="px-4 py-2 bg-gradient-to-r from-[#059669] to-[#10B981] text-white text-sm font-medium rounded-lg shadow-md shadow-green-500/20 hover:shadow-lg transition-all"
                     >
                       充值
@@ -253,7 +253,7 @@ export default function UserCenterPage() {
                   </div>
                 </div>
                 <Link
-                  href="/user-center/points"
+                  href="/pricing"
                   className="w-full py-2 bg-gradient-to-r from-[#059669] to-[#10B981] text-white text-sm font-medium rounded-lg text-center block shadow-md shadow-green-500/20 hover:shadow-lg transition-all"
                 >
                   立即充值

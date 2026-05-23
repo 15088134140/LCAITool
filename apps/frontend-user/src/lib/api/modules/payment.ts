@@ -55,6 +55,20 @@ export const paymentApi = {
   getOrders: async (page: number = 1, pageSize: number = 20): Promise<PaginatedResponse<Order>> => {
     return api.get<PaginatedResponse<Order>>('/payment/orders', { params: { page, page_size: pageSize } });
   },
+
+  /**
+   * 自定义充值（一步完成创建订单+支付）
+   */
+  customRecharge: async (amount: number): Promise<{
+    success: boolean;
+    order_no: string;
+    pay_amount: number;
+    total_points: number;
+    balance: number;
+    message: string;
+  }> => {
+    return api.post('/payment/custom-recharge', { amount });
+  },
 };
 
 export default paymentApi;
