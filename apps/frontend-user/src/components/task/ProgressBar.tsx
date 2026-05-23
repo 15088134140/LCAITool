@@ -86,6 +86,29 @@ interface StepIndicatorProps {
   status?: 'pending' | 'running' | 'completed' | 'failed';
 }
 
+/** 已完成状态的步骤（全部显示绿色勾，无动画） */
+function CompletedStep({ step, index, totalSteps }: { step: string; index: number; totalSteps: number }) {
+  const isLast = index === totalSteps - 1;
+  return (
+    <div className="flex items-center gap-4">
+      {/* Step Circle */}
+      <div className="flex flex-col items-center">
+        <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold bg-gradient-to-br from-success-dark to-success-light text-white shadow-md">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        {/* Vertical Line（最后一个省略） */}
+        {!isLast && <div className="w-0.5 h-8 my-1 bg-success-light" />}
+      </div>
+      {/* Step Text */}
+      <div className="flex-1 py-1">
+        <p className="font-medium text-success-dark">{step}</p>
+      </div>
+    </div>
+  );
+}
+
 export function StepIndicator({
   currentStep,
   totalSteps,
@@ -99,6 +122,11 @@ export function StepIndicator({
         const isCompleted = stepNumber < currentStep;
         const isCurrent = stepNumber === currentStep;
         const isPending = stepNumber > currentStep;
+
+        // 任务已完成 -> 所有步骤标记完成
+        if (status === 'completed') {
+          return <CompletedStep key={index} step={step} index={index} totalSteps={steps.length} />;
+        }
 
         let stepStatus: 'completed' | 'current' | 'pending' | 'error' = isCompleted ? 'completed' : isCurrent ? 'current' : 'pending';
         if (status === 'failed' && isCurrent) {
