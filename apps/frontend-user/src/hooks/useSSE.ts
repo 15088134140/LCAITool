@@ -28,6 +28,15 @@ interface SSESubscription {
   callback: SSEEventCallback;
 }
 
+// 任务进度事件类型
+interface TaskProgressEventData {
+  status?: string;
+  progress?: number;
+  progressMessage?: string;
+  work_id?: string;
+  error_message?: string;
+}
+
 // Hook返回类型
 interface UseSSEReturn {
   isConnected: boolean;
@@ -38,6 +47,7 @@ interface UseSSEReturn {
   connect: (taskId: string) => void;
   disconnect: () => void;
   subscribe: <T = any>(eventType: string | '*', callback: SSEEventCallback<T>) => () => void;
+  subscribeToTask: (taskId: string, callback: SSEEventCallback<TaskProgressEventData>) => () => void;
   getEventSource: () => EventSource | null;
 }
 
@@ -100,7 +110,14 @@ export const useSSE = (): UseSSEReturn => {
         lastEventIdRef.current = event.lastEventId;
       }
 
-      const sseEvent: SSEEvent = JSON.parse(event.data);
+      // 后端发送的数据是扁平 JSON: {type: 'progress', progress: 45, message: '...', ...}
+      // 包装为 SSEEvent 格式，将完整 payload 放入 data 字段
+      const parsed = JSON.parse(event.data);
+      const sseEvent: SSEEvent = {
+        type: parsed.type || event.type || 'message',
+        data: parsed,
+        timestamp: parsed.timestamp || Math.floor(Date.now() / 1000),
+      };
       dispatchEvent(sseEvent);
     } catch (err) {
       console.error('Failed to parse SSE message:', err);
@@ -260,6 +277,47 @@ export const useSSE = (): UseSSEReturn => {
     };
   }, [disconnect]);
 
+  // 订阅任务进度事件的便捷方法
+  const subscribeToTask = useCallback((
+    taskId: string,
+    callback: SSEEventCallback<TaskProgressEventData>
+  ): (() => void) => {
+    // 先连接到指定任务的 SSE 流
+    connect(taskId);
+
+    // 订阅进度事件（映射后端字段名: message → progressMessage，提升嵌套 data 字段）
+    const unsubscribeProgress = subscribe('progress', (data: TaskProgressEventData) => {
+      callback({
+        ...data,
+        ...((data as any).data || {}),
+        progressMessage: (data as any).message || data.progressMessage,
+      });
+    });
+
+    // 也订阅 completed/failed 事件
+    const unsubscribeCompleted = subscribe('completed', (data: TaskProgressEventData) => {
+      callback({
+        ...data,
+        ...((data as any).data || {}),
+        progressMessage: (data as any).message || data.progressMessage,
+      });
+    });
+    const unsubscribeFailed = subscribe('failed', (data: TaskProgressEventData) => {
+      callback({
+        ...data,
+        ...((data as any).data || {}),
+        progressMessage: (data as any).message || data.progressMessage,
+      });
+    });
+
+    // 返回统一取消订阅函数
+    return () => {
+      unsubscribeProgress();
+      unsubscribeCompleted();
+      unsubscribeFailed();
+    };
+  }, [connect, subscribe]);
+
   return {
     isConnected,
     isReconnecting,
@@ -269,6 +327,7 @@ export const useSSE = (): UseSSEReturn => {
     connect,
     disconnect,
     subscribe,
+    subscribeToTask,
     getEventSource,
   };
 };
