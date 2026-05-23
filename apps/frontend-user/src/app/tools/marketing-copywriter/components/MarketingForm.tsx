@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Tool } from '@/lib/api/types';
 import { taskApi } from '@/lib/api/modules/task';
+import { userApi } from '@/lib/api/modules/user';
+import { ProgressModal } from '@/components/tool-detail/ProgressModal';
+import { toast } from '@/lib/toast';
 
 interface MarketingFormProps {
   tool: Tool;
@@ -20,9 +23,8 @@ interface MarketingFormState {
 
 export function MarketingForm({ tool }: MarketingFormProps) {
   const router = useRouter();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [currentProgress, setCurrentProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [progressTaskId, setProgressTaskId] = useState<string | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
   const [formState, setFormState] = useState<MarketingFormState>({
     platformCount: 3,
     targetPlatform: 'all',
@@ -31,25 +33,23 @@ export function MarketingForm({ tool }: MarketingFormProps) {
   });
 
   const [totalCost, setTotalCost] = useState(0);
+  const [balance, setBalance] = useState(0);
 
   useEffect(() => {
     calculateTotalCost();
   }, [formState, tool]);
 
-  const calculateTotalCost = () => {
-    let cost = tool.base_fee;
+  useEffect(() => {
+    userApi.getBalance().then(res => setBalance(res.balance)).catch(() => {});
+  }, []);
 
-    const platformCost = tool.image_fee || 1;
-    cost += platformCost * (formState.platformCount || 3);
+  const calculateTotalCost = () => {
+    let cost = tool.base_fee ?? 0;
 
     setTotalCost(cost);
   };
 
   const handleStartGeneration = async () => {
-    setIsGenerating(true);
-    setCurrentProgress(0);
-    setCurrentStep(1);
-
     try {
       // Map tool slug to task type for backend executor
       const taskTypeMap: Record<string, string> = {
@@ -65,97 +65,46 @@ export function MarketingForm({ tool }: MarketingFormProps) {
         toneStyle: formState.toneStyle,
         copyLength: formState.copyLength,
         platformCount: formState.platformCount,
-        estimatedCost: totalCost,
       };
 
       const task = await taskApi.createTask({
         tool_id: tool.id,
         task_type: taskType,
+        estimated_cost: totalCost,
         input_params: inputParams,
       });
 
-      // Navigate to progress page
-      router.push(`/works/${task.id}/progress`);
+      // Open ProgressModal instead of navigating to progress page
+      setProgressTaskId(task.id);
+      setShowProgressModal(true);
     } catch (error: any) {
       console.error('创建任务失败:', error);
-      alert(error?.response?.data?.detail || '创建任务失败，请检查登录状态或稍后重试');
-      setIsGenerating(false);
-      setCurrentProgress(0);
-      setCurrentStep(0);
+      const detail = error?.response?.data?.detail || '';
+      if (detail.includes('余额') || error?.response?.status === 400) {
+        toast.warning('积分余额不足，请先充值', { label: '去充值', onClick: () => router.push('/payment') });
+      } else {
+        toast.error(detail || '创建任务失败，请稍后重试');
+      }
     }
   };
+
+  const handleProgressComplete = useCallback((workId: string) => {
+    setShowProgressModal(false);
+    setProgressTaskId(null);
+    router.push(`/works/detail/${workId}`);
+  }, [router]);
+
+  const handleProgressClose = useCallback(() => {
+    setShowProgressModal(false);
+    setProgressTaskId(null);
+  }, []);
 
   const updateFormState = (key: keyof MarketingFormState, value: any) => {
     setFormState((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Progress Modal
-  const renderProgressModal = () => {
-    if (!isGenerating) return null;
-
-    const steps = ['需求分析', '多平台文案生成'];
-
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-green-600 to-green-500 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
-                <span className="text-3xl">⚙️</span>
-              </div>
-            </div>
-            <h3 className="text-xl font-bold text-brand-dark">正在生成</h3>
-            <p className="text-gray-500 mt-2">{steps[currentStep - 1] || '处理中...'}</p>
-          </div>
-          <div className="mb-6">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-500">步骤 {currentStep}/{steps.length}</span>
-              <span className="font-medium text-green-600">{Math.round(currentProgress)}%</span>
-            </div>
-            <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-green-600 to-green-500 rounded-full transition-all duration-500"
-                style={{ width: `${currentProgress}%` }}
-              />
-            </div>
-          </div>
-          <div className="space-y-3">
-            {steps.map((step, index) => (
-              <div
-                key={index}
-                className={`flex items-center gap-3 p-3 rounded-lg ${
-                  index < currentStep - 1
-                    ? 'bg-green-50'
-                    : index === currentStep - 1
-                    ? 'bg-blue-50'
-                    : 'bg-gray-50 text-gray-500'
-                }`}
-              >
-                {index < currentStep - 1 ? (
-                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : index === currentStep - 1 ? (
-                  <div className="w-5 h-5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                )}
-                <span className={index < currentStep ? 'text-green-600 font-medium' : ''}>{step}</span>
-              </div>
-            ))}
-          </div>
-          <button
-            className="mt-6 w-full py-3 border border-gray-200 text-gray-500 rounded-xl font-medium hover:bg-gray-50 transition-all"
-            onClick={() => setIsGenerating(false)}
-          >
-            取消生成
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   return (
+    <>
     <section id="start-creation" className="py-20 bg-[#F8FAFC]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
@@ -291,17 +240,12 @@ export function MarketingForm({ tool }: MarketingFormProps) {
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-500 text-lg">基础调用费</span>
-                  <span className="font-medium text-brand-dark text-lg">{tool.base_fee} 积分</span>
-                </div>
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-500 text-lg">多平台适配 ({formState.platformCount}个 × {(tool.image_fee || 1).toFixed(1)}积分)</span>
-                  <span className="font-medium text-brand-dark text-lg">{((formState.platformCount || 3) * (tool.image_fee || 1)).toFixed(1)} 积分</span>
+                  <span className="font-medium text-brand-dark text-lg">{tool.base_fee ? `${tool.base_fee} 积分` : '免费'}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-4">
                   <span className="font-semibold text-brand-dark text-xl">总计</span>
-                  <span className="text-3xl font-bold text-green-600">{totalCost.toFixed(1)} 积分</span>
+                  <span className="text-3xl font-bold text-green-600">{totalCost} 积分</span>
                 </div>
               </div>
 
@@ -310,16 +254,15 @@ export function MarketingForm({ tool }: MarketingFormProps) {
                   <span className="text-blue-500 text-xl">💳</span>
                   <span className="font-semibold text-brand-dark text-lg">账户余额</span>
                 </div>
-                <div className="text-3xl font-bold text-brand-dark">128 积分</div>
-                <p className="text-sm text-gray-500 mt-1">≈ ¥12.8</p>
+                <div className="text-3xl font-bold text-brand-dark">{balance} 积分</div>
+                <p className="text-sm text-gray-500 mt-1">≈ ¥{(balance / 10).toFixed(1)}</p>
               </div>
 
               <button
                 className="w-full py-5 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-2xl font-bold text-xl hover:shadow-2xl transition-all"
                 onClick={handleStartGeneration}
-                disabled={isGenerating}
               >
-                {isGenerating ? '⏳ 生成中...' : '🚀 开始生成'}
+                🚀 开始生成
               </button>
               <p className="text-center text-sm text-gray-500 mt-4">预计耗时：0.5-1 分钟</p>
             </div>
@@ -327,7 +270,14 @@ export function MarketingForm({ tool }: MarketingFormProps) {
         </div>
       </div>
 
-      {renderProgressModal()}
+      <ProgressModal
+        isOpen={showProgressModal}
+        taskId={progressTaskId}
+        toolName={tool.name}
+        onClose={handleProgressClose}
+        onComplete={handleProgressComplete}
+      />
     </section>
+    </>
   );
 }

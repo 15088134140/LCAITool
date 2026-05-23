@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { FavoriteButton } from './FavoriteButton';
+import { useAuthStore } from '@/store';
 import type { Tool } from '../../types';
 
 interface ToolHeroProps {
@@ -54,6 +56,14 @@ export function ToolHero({ tool }: ToolHeroProps) {
   };
 
   const stats = getQuickStats();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // Parse cover_image: support "|" delimited multi-image URLs
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const coverImages: string[] = tool.heroImage
+    ? tool.heroImage.split('|').map(url => url.trim()).filter(Boolean)
+    : [];
+  const displayImages = coverImages.length > 0 ? coverImages : [getToolImage()];
 
   return (
     <section className="py-8 section-bg-blobs">
@@ -76,23 +86,33 @@ export function ToolHero({ tool }: ToolHeroProps) {
           {/* Left: Image Gallery */}
           <div className="relative">
             <div className="rounded-2xl overflow-hidden shadow-xl">
-              <img
-                src={tool.heroImage || getToolImage()}
-                alt={tool.name}
-                className="w-full h-auto object-cover"
-              />
-            </div>
-            <div className="flex gap-3 mt-4">
-              <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[#1E3A5F] cursor-pointer">
+              {displayImages.map((src, index) => (
                 <img
-                  src={tool.heroImage || getToolImage()}
-                  alt=""
-                  className="w-full h-full object-cover"
+                  key={index}
+                  src={src}
+                  alt={`${tool.name} - ${index + 1}`}
+                  className={`w-full h-auto object-cover ${index === selectedImageIndex ? 'block' : 'hidden'}`}
                 />
-              </div>
-              {tool.demos?.slice(0, 2).map((demo, index) => (
+              ))}
+            </div>
+            {displayImages.length > 1 && (
+            <div className="flex gap-3 mt-4">
+              {displayImages.map((src, index) => (
                 <div
                   key={index}
+                  className={`w-20 h-20 rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
+                    index === selectedImageIndex
+                      ? 'border-[#1E3A5F] shadow-md'
+                      : 'border-[#E4E7EB] hover:border-[#2563EB]'
+                  }`}
+                  onClick={() => setSelectedImageIndex(index)}
+                >
+                  <img src={src} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+              {tool.demos?.slice(0, 2).map((demo, index) => (
+                <div
+                  key={`demo-${index}`}
                   className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[#E4E7EB] cursor-pointer hover:border-[#2563EB] transition-colors"
                 >
                   <img
@@ -103,6 +123,7 @@ export function ToolHero({ tool }: ToolHeroProps) {
                 </div>
               ))}
             </div>
+            )}
           </div>
 
           {/* Right: Info */}
@@ -160,7 +181,7 @@ export function ToolHero({ tool }: ToolHeroProps) {
             <div className="bg-white rounded-2xl p-6 border border-[#E4E7EB] mb-8">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[#64748B]">基础调用费</span>
-                <span className="text-2xl font-bold text-[#059669]">{tool.pricing.baseFee} 积分</span>
+                <span className="text-2xl font-bold text-[#059669]">{tool.pricing.baseFee ? `${tool.pricing.baseFee} 积分` : '免费'}</span>
               </div>
               {tool.pricing.resourceFees?.image && (
                 <div className="flex items-center justify-between mb-4">
@@ -176,7 +197,7 @@ export function ToolHero({ tool }: ToolHeroProps) {
               )}
               <hr className="my-4 border-[#E4E7EB]" />
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-[#1E3A5F]">示例：10页绘本</span>
+                <span className="font-semibold text-[#1E3A5F]">示例：10页</span>
                 <span className="text-xl font-bold gradient-text">
                   ≈ {tool.pricing.baseFee + (tool.pricing.resourceFees?.image || 0) * 10 + (tool.pricing.resourceFees?.audio || 0) * 10} 积分
                 </span>
@@ -194,9 +215,11 @@ export function ToolHero({ tool }: ToolHeroProps) {
               <FavoriteButton toolId={tool.id} size="lg" className="sm:flex-shrink-0" />
             </div>
 
+            {!isAuthenticated && (
             <p className="text-center text-sm text-[#64748B] mt-4">
               注册即送体验积分，完整体验所有功能
             </p>
+            )}
           </div>
         </div>
       </div>

@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useToolStore } from '../../../store';
-import { Breadcrumb } from '../../../components/layout';
 import {
   ToolHero,
   ToolFeatures,
@@ -49,20 +48,7 @@ export default function EcommerceDetailPage() {
 
   return (
     <>
-      {/* 面包屑导航 */}
-      <div className="bg-gray-50 py-4 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Breadcrumb
-            items={[
-              { label: '首页', href: '/' },
-              { label: '工具中心', href: '/tools' },
-              { label: currentTool.name, href: `/tools/ecommerce-detail`, active: true },
-            ]}
-          />
-        </div>
-      </div>
-
-      <ToolHero tool={currentTool} />
+<ToolHero tool={currentTool} />
       <EcommerceForm tool={currentTool} />
       <ToolFeatures />
       <ToolHowTo />

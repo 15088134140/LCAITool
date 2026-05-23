@@ -48,22 +48,6 @@ export default function StorybookGeneratorPage() {
 
   return (
     <div className="page-bg-animated min-h-screen bg-[#F8FAFC]">
-      {/* 面包屑导航 */}
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex items-center gap-2 text-sm text-gray-500">
-            <a href="/" className="hover:text-brand-dark transition-colors focus-ring rounded">
-              首页
-            </a>
-            <span>/</span>
-            <a href="/tools" className="hover:text-brand-dark transition-colors focus-ring rounded">
-              工具中心
-            </a>
-            <span>/</span>
-            <span className="text-brand-dark font-medium">{currentTool.name}</span>
-          </nav>
-        </div>
-      </div>
 
       <ToolHero tool={currentTool} />
       <StorybookForm tool={currentTool} />
