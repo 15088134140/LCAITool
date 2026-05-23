@@ -15,6 +15,7 @@ from app.core.exceptions import (
     ResourceNotFoundException,
     BusinessException
 )
+from app.core.redis import get_redis_client
 
 
 class TaskService:
@@ -97,6 +98,21 @@ class TaskService:
         return db_task
 
     @staticmethod
+    async def _publish_event(task_id: uuid.UUID, event_type: str, data: Dict[str, Any]) -> None:
+        """
+        发布事件到 Redis pub/sub（供 SSE 实时推送）
+
+        如果 Redis 不可用，静默忽略（不影响主流程）
+        """
+        try:
+            redis = get_redis_client()
+            channel = f"task:{task_id}:status"
+            payload = {"type": event_type, **data}
+            await redis.publish(channel, json.dumps(payload, ensure_ascii=False))
+        except Exception:
+            pass  # Redis 不可用时不影响主流程
+
+    @staticmethod
     async def update_task_status(
         db: AsyncSession,
         task_id: uuid.UUID,
@@ -126,6 +142,17 @@ class TaskService:
 
         await db.commit()
         await db.refresh(task)
+
+        # 发布进度事件到 Redis（供 SSE 实时推送）
+        event_data = {
+            "task_id": str(task_id),
+            "progress": task.progress,
+            "progressMessage": task.progress_message or message,
+            "status": task.status,
+            "timestamp": int(time.time()),
+        }
+        await TaskService._publish_event(task_id, "progress", event_data)
+
         return task
 
     @staticmethod
@@ -229,6 +256,17 @@ class TaskService:
         await db.commit()
         await db.refresh(task)
 
+        # 发布 completed 事件到 Redis（供 SSE 实时推送）
+        await TaskService._publish_event(task_id, "completed", {
+            "task_id": str(task_id),
+            "status": "completed",
+            "progress": 100,
+            "progressMessage": "任务完成",
+            "work_id": str(task.result_preview) if task.result_preview else None,
+            "actual_cost": actual_cost,
+            "timestamp": int(time.time()),
+        })
+
         return task
 
     @staticmethod
@@ -280,6 +318,17 @@ class TaskService:
         )
 
         await db.refresh(task)
+
+        # 发布 cancelled 事件到 Redis
+        await TaskService._publish_event(task_id, "cancelled", {
+            "task_id": str(task_id),
+            "status": "cancelled",
+            "progress": task.progress,
+            "progressMessage": f"任务已取消: {reason}",
+            "reason": reason,
+            "timestamp": int(time.time()),
+        })
+
         return task
 
     @staticmethod
@@ -325,6 +374,17 @@ class TaskService:
         )
 
         await db.refresh(task)
+
+        # 发布 failed 事件到 Redis
+        await TaskService._publish_event(task_id, "failed", {
+            "task_id": str(task_id),
+            "status": "failed",
+            "progress": task.progress,
+            "progressMessage": error_message,
+            "error_message": error_message,
+            "timestamp": int(time.time()),
+        })
+
         return task
 
     # ============ Task Log Methods ============

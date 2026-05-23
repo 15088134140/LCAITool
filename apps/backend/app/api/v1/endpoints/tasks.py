@@ -119,8 +119,10 @@ async def get_task_logs(
         db=db, task_id=task_id, skip=skip, limit=page_size
     )
 
+    from app.schemas.task import TaskLog as TaskLogSchema
+    items = [TaskLogSchema.model_validate(log) for log in logs]
     return {
-        "items": logs,
+        "items": items,
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -144,18 +146,20 @@ async def get_user_tasks(
     )
 
     # 按状态筛选（可选）
+    from app.schemas.task import Task as TaskSchema
+
     if status:
         filtered_tasks = [t for t in tasks if t.status == status]
         filtered_total = len(filtered_tasks)
         return {
-            "items": filtered_tasks,
+            "items": [TaskSchema.model_validate(t) for t in filtered_tasks],
             "total": filtered_total,
             "page": page,
             "page_size": page_size,
         }
 
     return {
-        "items": tasks,
+        "items": [TaskSchema.model_validate(t) for t in tasks],
         "total": total,
         "page": page,
         "page_size": page_size,

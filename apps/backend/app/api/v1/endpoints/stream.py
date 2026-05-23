@@ -13,12 +13,17 @@ import uuid
 import time
 from typing import AsyncGenerator, Dict, List, Optional, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Header
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Header, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from jose import jwt, JWTError
+from pydantic import ValidationError
 
 from app.api.deps import get_db, get_current_user
+from app.core.config import settings
+from app.core.exceptions import InvalidTokenException
+from app.schemas.token import TokenPayload
 from app.core.redis import get_redis_client
 from app.models.task import Task
 from app.models.user import User
@@ -105,8 +110,11 @@ async def sse_event_generator(
     """
     task_id_str = str(task_id)
     channel = f"task:{task_id_str}:status"
-    redis = get_redis_client()
-    pubsub = redis.pubsub()
+    try:
+        redis = get_redis_client()
+        pubsub = redis.pubsub()
+    except Exception:
+        pubsub = None
 
     try:
         # 1. 发送连接成功事件
@@ -125,6 +133,22 @@ async def sse_event_generator(
             event_id = msg.get("event_id")
             yield format_sse(event_type, msg, event_id=event_id)
             await asyncio.sleep(0.01)  # 避免发送过快
+
+        if pubsub is None:
+            # Redis 不可用，通知客户端使用轮询替代，保持连接一段时间后关闭
+            yield format_sse("no_realtime", {
+                "task_id": task_id_str,
+                "message": "实时推送不可用，请使用轮询",
+                "timestamp": int(time.time())
+            })
+            await asyncio.sleep(CONNECTION_TIMEOUT)
+            cleanup_message_buffer(task_id_str)
+            yield format_sse("closed", {
+                "task_id": task_id_str,
+                "reason": "连接超时",
+                "timestamp": int(time.time())
+            })
+            return
 
         # 3. 订阅 Redis 频道
         await pubsub.subscribe(channel)
@@ -193,19 +217,21 @@ async def sse_event_generator(
         })
     finally:
         # 清理资源
-        try:
-            await pubsub.unsubscribe(channel)
-            await pubsub.aclose()
-        except Exception:
-            pass
+        if pubsub is not None:
+            try:
+                await pubsub.unsubscribe(channel)
+                await pubsub.aclose()
+            except Exception:
+                pass
 
 
 @router.get("/tasks/{task_id}/stream", response_class=StreamingResponse, summary="任务状态 SSE 实时流")
 async def stream_task_events(
+    request: Request,
     task_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     last_event_id: Optional[str] = Header(None, alias="Last-Event-ID"),
+    token: Optional[str] = Query(None, description="认证令牌（用于 EventSource 不支持自定义请求头的场景）"),
 ):
     """
     SSE 实时流端点，推送任务状态变化
@@ -238,6 +264,43 @@ async def stream_task_events(
     - `closed`: 连接关闭
     - `error`: 发生错误
     """
+
+    # 验证用户身份（支持 Authorization 头和 token 查询参数两种方式）
+    current_user = None
+    # 先尝试从 Authorization 头获取 token
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header and auth_header.startswith("Bearer "):
+        bearer_token = auth_header[7:]
+        try:
+            payload = jwt.decode(bearer_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            token_data = TokenPayload(**payload)
+            if token_data.type == "access":
+                from app.services.user_service import UserService
+                user = await UserService.get_by_id(db, token_data.sub)
+                if user and user.status == 1:
+                    current_user = user
+        except (JWTError, ValidationError):
+            pass
+
+    # 如果 Authorization 头无效，尝试从查询参数获取 token
+    if current_user is None and token:
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            token_data = TokenPayload(**payload)
+            if token_data.type == "access":
+                from app.services.user_service import UserService
+                user = await UserService.get_by_id(db, token_data.sub)
+                if user and user.status == 1:
+                    current_user = user
+        except (JWTError, ValidationError):
+            pass
+
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的令牌",
+        )
+
     # 验证任务存在且属于当前用户
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
