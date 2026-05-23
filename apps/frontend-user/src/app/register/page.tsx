@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
+import { toast } from '@/lib/toast';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function RegisterPage() {
 
   const handleSendSms = () => {
     if (!formData.phone) {
-      alert('请先输入手机号');
+      toast.warning('请先输入手机号');
       return;
     }
     // 开发环境不实际发送短信，直接启动倒计时
@@ -56,23 +57,23 @@ export default function RegisterPage() {
 
     // 表单验证
     if (!formData.phone) {
-      alert('请输入手机号');
+      toast.warning('请输入手机号');
       return;
     }
     if (!formData.code) {
-      alert('请输入验证码');
+      toast.warning('请输入验证码');
       return;
     }
     if (!formData.password) {
-      alert('请输入密码');
+      toast.warning('请输入密码');
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      alert('两次输入的密码不一致');
+      toast.warning('两次输入的密码不一致');
       return;
     }
     if (!formData.agreed) {
-      alert('请阅读并同意用户协议');
+      toast.warning('请阅读并同意用户协议');
       return;
     }
 
@@ -87,11 +88,11 @@ export default function RegisterPage() {
         code: formData.code
       } as any);
 
-      alert('注册成功！请登录');
+      toast.success('注册成功！请登录');
       router.push('/login');
     } catch (error: any) {
       console.error('注册错误:', error);
-      alert(error.message || '注册失败，请稍后重试');
+      toast.error(error.message || '注册失败，请稍后重试');
     } finally {
       setLoading(false);
     }

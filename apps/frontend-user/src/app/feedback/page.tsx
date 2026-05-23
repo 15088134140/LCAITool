@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from '@/lib/toast';
 
 const faqItems = [
   {
@@ -57,7 +58,7 @@ export default function FeedbackPage() {
   });
 
   const handleSubmit = () => {
-    alert('提交成功！我们会尽快处理您的反馈。');
+    toast.success('提交成功！我们会尽快处理您的反馈。');
     setFormData({ name: '', email: '', title: '', description: '', contact: '' });
     setSelectedType('');
   };

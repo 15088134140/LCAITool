@@ -8,7 +8,7 @@ import { authApi } from '@/lib/api';
 
 export default function UserCenterPage() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, refreshBalance } = useAuthStore();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,6 +19,13 @@ export default function UserCenterPage() {
     }
     setLoading(false);
   }, [isAuthenticated, router]);
+
+  // 每次页面挂载时刷新余额
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshBalance();
+    }
+  }, [isAuthenticated, refreshBalance]);
 
   const handleLogout = async () => {
     try {

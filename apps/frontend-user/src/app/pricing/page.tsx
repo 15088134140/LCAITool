@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUserStore } from '@/store/userStore';
 
 // 定价套餐数据类型
 interface PricingPlan {
@@ -26,6 +27,11 @@ interface FAQItem {
 
 export default function PricingPage() {
   const router = useRouter();
+  const { user, refreshUserBalance } = useUserStore();
+
+  useEffect(() => {
+    refreshUserBalance();
+  }, [refreshUserBalance]);
   const [activePlan, setActivePlan] = useState<number>(2);
   const [activeTab, setActiveTab] = useState<string>('pay-per-use');
   const [selectedPayment, setSelectedPayment] = useState<string>('wechat');
@@ -171,7 +177,7 @@ export default function PricingPage() {
           {/* Current Balance Card */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-md mx-auto">
             <div className="text-blue-100 text-sm mb-2">当前积分余额</div>
-            <div className="text-5xl font-bold text-white mb-4">156</div>
+            <div className="text-5xl font-bold text-white mb-4">{user?.balance ?? 0}</div>
             <button
               onClick={() => router.push('/payment')}
               className="w-full py-3 bg-white text-[#1E3A5F] rounded-xl font-semibold hover:bg-blue-50 transition-colors focus-ring"

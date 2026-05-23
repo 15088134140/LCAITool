@@ -48,7 +48,7 @@ export default function WorksPage() {
     // 类型筛选
     let typeMatch = true;
     if (filterType !== 'all') {
-      const taskType = work.taskType?.toLowerCase() || '';
+      const taskType = work.task_type?.toLowerCase() || '';
       if (filterType === 'storybook') typeMatch = taskType.includes('storybook');
       else if (filterType === 'ecommerce') typeMatch = taskType.includes('ecommerce');
       else if (filterType === 'marketing') typeMatch = taskType.includes('marketing');
@@ -70,7 +70,7 @@ export default function WorksPage() {
       try {
         setIsLoading(true);
         const [worksData, tasksData] = await Promise.all([
-          workApi.getWorks({ page, pageSize: 12 }),
+          workApi.getWorks({ page, page_size: 12 }),
           taskApi.getTasks({ status: 'pending' }),
         ]);
         setWorks(worksData.items);
@@ -253,13 +253,15 @@ export default function WorksPage() {
             </div>
             <div className="bg-white rounded-xl border border-[#E4E7EB] p-6 text-center">
               <div className="text-3xl font-bold text-brand-light mb-1">
-                {works.reduce((sum, w) => sum + w.viewCount, 0)}
+                {works.reduce((sum, w) => sum + (w.view_count || 0), 0)}
               </div>
               <div className="text-sm text-[#64748B]">总浏览</div>
             </div>
             <div className="bg-white rounded-xl border border-[#E4E7EB] p-6 text-center">
               <div className="text-3xl font-bold text-[#F59E0B] mb-1">
-                {works.reduce((sum, w) => sum + w.version, 0) / works.length}
+                {works.length > 0
+                  ? (works.reduce((sum, w) => sum + (w.version || 0), 0) / works.length).toFixed(1)
+                  : 0}
               </div>
               <div className="text-sm text-[#64748B]">平均版本</div>
             </div>

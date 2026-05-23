@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { toast } from '@/lib/toast';
 import { workApi } from '@/lib/api/modules/work';
 import { tokenStorage } from '@/lib/api/client';
 import type { Work, WorkFile, Work as WorkVersion } from '@/lib/api/types';
@@ -62,7 +63,7 @@ const formatDate = (timestamp: number) => {
 };
 
 // 获取文件图标
-const getFileIcon = (fileType: WorkFile['fileType']) => {
+const getFileIcon = (fileType: WorkFile['file_type']) => {
   switch (fileType) {
     case 'image':
       return (
@@ -112,13 +113,13 @@ export default function WorkDetailPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const taskType = work?.taskType?.toLowerCase() || '';
+  const taskType = work?.task_type?.toLowerCase() || '';
   const toolInfo = taskType.includes('storybook') ? toolConfig.storybook :
                    taskType.includes('ecommerce') ? toolConfig.ecommerce :
                    taskType.includes('marketing') ? toolConfig.marketing :
                    toolConfig.default;
 
-  const previewImages = files.filter(f => f.fileType === 'image' && f.fileUrl && f.fileUrl !== '#');
+  const previewImages = files.filter(f => f.file_type === 'image' && f.file_url && f.file_url !== '#');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -155,7 +156,7 @@ export default function WorkDetailPage() {
     try {
       const token = tokenStorage.getToken();
       const response = await fetch(
-        `${API_BASE_URL}/files/${file.id}`,
+        `${API_BASE_URL}/files/works/${file.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!response.ok) throw new Error('下载失败');
@@ -164,23 +165,38 @@ export default function WorkDetailPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = file.fileName || 'download';
+      a.download = file.file_name || 'download';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('下载失败:', err);
-      alert('文件下载失败，请稍后重试');
+      toast.error('文件下载失败，请稍后重试');
     }
   };
 
-  // 处理下载全部
+  // 处理下载全部（动态打包 ZIP）
   const handleDownloadAll = async () => {
-    const zipFile = files.find(f => f.fileType === 'other' && f.fileName?.endsWith('.zip'));
-    if (zipFile) {
-      await handleDownload(zipFile);
-    } else {
+    try {
+      const token = tokenStorage.getToken();
+      const response = await fetch(
+        `${API_BASE_URL}/works/${workId}/download`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!response.ok) throw new Error('下载失败');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `work_${workId}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('下载全部失败:', err);
+      // 回退：逐个下载
       for (const file of files) {
         await handleDownload(file);
       }
@@ -240,9 +256,9 @@ export default function WorkDetailPage() {
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Cover Banner */}
       <div className="relative h-80 lg:h-96 bg-gradient-to-br from-brand-dark to-brand-light overflow-hidden">
-        {work.coverImage ? (
+        {work.cover_image ? (
           <img
-            src={work.coverImage}
+            src={work.cover_image}
             alt={work.title}
             className="w-full h-full object-cover opacity-50"
           />
@@ -271,8 +287,8 @@ export default function WorkDetailPage() {
               {/* Thumbnail */}
               <div className="flex-shrink-0 -mt-20 lg:-mt-24">
                 <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-brand-dark to-brand-light">
-                  {work.coverImage ? (
-                    <img src={work.coverImage} alt={work.title} className="w-full h-full object-cover" />
+                  {work.cover_image ? (
+                    <img src={work.cover_image} alt={work.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl">
                       {toolInfo.icon}
@@ -322,7 +338,7 @@ export default function WorkDetailPage() {
                       <svg className={cn('w-5 h-5', isLiked && 'fill-current')} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
-                      {isLiked ? work.likeCount + 1 : work.likeCount}
+                      {isLiked ? work.like_count + 1 : work.like_count}
                     </button>
                     <button
                       onClick={handleShare}
@@ -373,14 +389,14 @@ export default function WorkDetailPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    创建于 {formatDate(work.createdAt)}
+                    创建于 {formatDate(work.created_at)}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-[#64748B]">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    {work.viewCount} 次浏览
+                    {work.view_count} 次浏览
                   </div>
                   <div className="flex items-center gap-2 text-sm text-[#64748B]">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -442,11 +458,11 @@ export default function WorkDetailPage() {
                     {/* Main Preview */}
                     <div
                       className="aspect-video bg-[#F8FAFC] rounded-xl overflow-hidden cursor-pointer"
-                      onClick={() => setSelectedImage(previewImages[0].fileUrl)}
+                      onClick={() => setSelectedImage(previewImages[0].file_url)}
                     >
                       <img
-                        src={previewImages[0].fileUrl}
-                        alt={previewImages[0].fileName}
+                        src={previewImages[0].file_url}
+                        alt={previewImages[0].file_name}
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -457,13 +473,13 @@ export default function WorkDetailPage() {
                         {previewImages.map((file, index) => (
                           <button
                             key={file.id}
-                            onClick={() => setSelectedImage(file.fileUrl)}
+                            onClick={() => setSelectedImage(file.file_url)}
                             className="aspect-square bg-[#F8FAFC] rounded-lg overflow-hidden border-2 border-transparent hover:border-brand-light transition-colors"
                           >
-                            {file.fileUrl && file.fileUrl !== '#' && (
+                            {file.file_url && file.file_url !== '#' && (
                               <img
-                                src={file.fileUrl}
-                                alt={file.fileName}
+                                src={file.file_url}
+                                alt={file.file_name}
                                 className="w-full h-full object-cover"
                               />
                             )}
@@ -473,15 +489,15 @@ export default function WorkDetailPage() {
                     )}
 
                     {/* Audio Preview */}
-                    {files.some(f => f.fileType === 'audio') && (
+                    {files.some(f => f.file_type === 'audio') && (
                       <div className="mt-8 p-6 bg-[#F8FAFC] rounded-xl">
                         <h3 className="font-semibold text-[#1E3A5F] mb-4">🎧 音频</h3>
-                        {files.filter(f => f.fileType === 'audio').map(file => (
+                        {files.filter(f => f.file_type === 'audio').map(file => (
                           <div key={file.id} className="flex items-center gap-4 p-4 bg-white rounded-lg">
                             {getFileIcon('audio')}
                             <div className="flex-1">
-                              <p className="font-medium text-[#1E3A5F]">{file.fileName}</p>
-                              <p className="text-sm text-[#64748B]">{formatFileSize(file.fileSize)}{file.duration && ` · ${formatDuration(file.duration)}`}</p>
+                              <p className="font-medium text-[#1E3A5F]">{file.file_name}</p>
+                              <p className="text-sm text-[#64748B]">{formatFileSize(file.file_size)}{file.duration && ` · ${formatDuration(file.duration)}`}</p>
                             </div>
                             <div className="text-[#64748B]">
                               音频播放器占位
@@ -512,25 +528,25 @@ export default function WorkDetailPage() {
                     <div key={file.id} className="flex items-center gap-4 p-4 hover:bg-[#F8FAFC] transition-colors">
                       <div className={cn(
                         'w-12 h-12 rounded-xl flex items-center justify-center',
-                        file.fileType === 'image' ? 'bg-blue-50 text-blue-600' :
-                        file.fileType === 'pdf' ? 'bg-red-50 text-red-600' :
-                        file.fileType === 'audio' ? 'bg-green-50 text-green-600' :
-                        file.fileType === 'video' ? 'bg-purple-50 text-purple-600' :
+                        file.file_type === 'image' ? 'bg-blue-50 text-blue-600' :
+                        file.file_type === 'pdf' ? 'bg-red-50 text-red-600' :
+                        file.file_type === 'audio' ? 'bg-green-50 text-green-600' :
+                        file.file_type === 'video' ? 'bg-purple-50 text-purple-600' :
                         'bg-gray-50 text-gray-600'
                       )}>
-                        {getFileIcon(file.fileType)}
+                        {getFileIcon(file.file_type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-[#1E3A5F] truncate">{file.fileName}</p>
+                        <p className="font-medium text-[#1E3A5F] truncate">{file.file_name}</p>
                         <p className="text-sm text-[#64748B]">
-                          {formatFileSize(file.fileSize)}
-                          {file.pageNumber && ` · 第${file.pageNumber}页`}
+                          {formatFileSize(file.file_size)}
+                          {file.page_number && ` · 第${file.page_number}页`}
                           {file.duration && ` · ${formatDuration(file.duration)}`}
                         </p>
                       </div>
-                      {file.fileType === 'image' && file.fileUrl && file.fileUrl !== '#' && (
+                      {file.file_type === 'image' && file.file_url && file.file_url !== '#' && (
                         <button
-                          onClick={() => setSelectedImage(file.fileUrl)}
+                          onClick={() => setSelectedImage(file.file_url)}
                           className="px-4 py-2 text-sm font-medium text-brand-light hover:bg-blue-50 rounded-lg transition-colors"
                         >
                           查看
@@ -572,7 +588,7 @@ export default function WorkDetailPage() {
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-[#1E3A5F]">{version.title}</p>
-                        <p className="text-sm text-[#64748B]">{formatDate(version.createdAt)}</p>
+                        <p className="text-sm text-[#64748B]">{formatDate(version.created_at)}</p>
                       </div>
                       {selectedVersion !== version.version && (
                         <button className="px-4 py-2 text-sm font-medium text-brand-light hover:bg-blue-100 rounded-lg transition-colors">

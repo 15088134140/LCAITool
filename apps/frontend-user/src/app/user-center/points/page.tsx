@@ -10,7 +10,7 @@ import type { PointTransaction, TransactionType } from '@/lib/api/types';
 type FilterType = 'all' | 'income' | 'expense';
 
 const PointsPage: React.FC = () => {
-  const { user } = useUserStore();
+  const { user, refreshUserBalance } = useUserStore();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
@@ -152,6 +152,11 @@ const PointsPage: React.FC = () => {
       setLoading(false);
     }
   }, [page, filter, user?.id]);
+
+  // 每次页面挂载时刷新余额
+  useEffect(() => {
+    refreshUserBalance();
+  }, [refreshUserBalance]);
 
   // Initial load
   useEffect(() => {

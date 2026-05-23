@@ -10,14 +10,14 @@ import type { RechargePackage, Order } from '@/lib/api/types';
 // Mock data for MVP - in real app this would come from API
 const MOCK_PACKAGES: RechargePackage[] = [
   {
-    id: '1',
-    name: '入门套餐',
+    id: '51f6d6d0-14ac-4712-8c14-f8ce7e7c90d6',
+    name: '体验包',
     description: '适合初次体验',
-    original_price: 30,
-    sale_price: 30,
-    base_points: 300,
-    bonus_points: 20,
-    bonus_percentage: 6.67,
+    original_price: 9.9,
+    sale_price: 9.9,
+    base_points: 100,
+    bonus_points: 0,
+    bonus_percentage: 0,
     is_popular: false,
     sort_order: 1,
     is_active: true,
@@ -25,14 +25,14 @@ const MOCK_PACKAGES: RechargePackage[] = [
     updated_at: Date.now(),
   },
   {
-    id: '2',
-    name: '进阶套餐',
+    id: 'd308f0c4-d058-4e56-81ff-e22ede76b4a9',
+    name: '基础包',
     description: '最受欢迎选择',
-    original_price: 120,
-    sale_price: 100,
-    base_points: 1000,
-    bonus_points: 100,
-    bonus_percentage: 10,
+    original_price: 29.9,
+    sale_price: 29.9,
+    base_points: 300,
+    bonus_points: 0,
+    bonus_percentage: 0,
     is_popular: true,
     sort_order: 2,
     is_active: true,
@@ -40,14 +40,14 @@ const MOCK_PACKAGES: RechargePackage[] = [
     updated_at: Date.now(),
   },
   {
-    id: '3',
-    name: '专业套餐',
+    id: '8b73d309-c6eb-4b8e-968f-3da2fa3aa13b',
+    name: '进阶包',
     description: '深度用户首选',
-    original_price: 380,
-    sale_price: 300,
-    base_points: 3000,
-    bonus_points: 400,
-    bonus_percentage: 13.33,
+    original_price: 68,
+    sale_price: 68,
+    base_points: 700,
+    bonus_points: 0,
+    bonus_percentage: 0,
     is_popular: false,
     sort_order: 3,
     is_active: true,
@@ -55,14 +55,14 @@ const MOCK_PACKAGES: RechargePackage[] = [
     updated_at: Date.now(),
   },
   {
-    id: '4',
-    name: '企业套餐',
+    id: '6ae9f90e-9976-4bd9-84c1-5bba15d63f4c',
+    name: '专业包',
     description: '团队/企业使用',
-    original_price: 1280,
-    sale_price: 1000,
-    base_points: 10000,
-    bonus_points: 2000,
-    bonus_percentage: 20,
+    original_price: 128,
+    sale_price: 128,
+    base_points: 1400,
+    bonus_points: 0,
+    bonus_percentage: 0,
     is_popular: false,
     sort_order: 4,
     is_active: true,
@@ -79,22 +79,6 @@ const PaymentResultPage: React.FC<{
 }> = ({ order, isSuccess, onBack }) => {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-[#E4E7EB]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">AI</span>
-                </div>
-                <span className="font-bold text-xl text-[#1E3A5F]">灵创AI</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Result content */}
       <div className="max-w-md mx-auto px-4 py-16">
         <div className="bg-white rounded-2xl border border-[#E4E7EB] p-8 text-center shadow-sm">
@@ -173,6 +157,11 @@ const PaymentResultPage: React.FC<{
 const PaymentPage: React.FC = () => {
   const { user, refreshUserBalance } = useUserStore();
 
+  // 页面挂载时刷新余额
+  useEffect(() => {
+    refreshUserBalance();
+  }, [refreshUserBalance]);
+
   const [packages, setPackages] = useState<RechargePackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<RechargePackage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -211,18 +200,21 @@ const PaymentPage: React.FC = () => {
     try {
       // Create order
       const response = await paymentApi.createOrder({
-        package_id: selectedPackage.id,
+        recharge_package_id: selectedPackage.id,
         payment_provider: 'simulated',
       });
 
       // Simulate payment for MVP
-      const paidOrder = await paymentApi.simulatePayment(response.order.id);
+      const paidOrder = await paymentApi.simulatePayment(response.order_no);
+
+      // Merge pay_amount from createOrder response into paidOrder
+      const resultOrder = { ...paidOrder, pay_amount: response.pay_amount };
 
       // Refresh user balance
       await refreshUserBalance();
 
       // Show success result
-      setPaymentResult({ isSuccess: true, order: paidOrder });
+      setPaymentResult({ isSuccess: true, order: resultOrder });
       setShowResult(true);
     } catch (error) {
       console.error('Payment failed:', error);

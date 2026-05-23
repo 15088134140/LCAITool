@@ -88,7 +88,8 @@ export default function TaskProgressPage() {
           taskApi.getTaskLogs(taskId)
         ]);
         setTask(taskData);
-        setLogs(logsData);
+        // getTaskLogs 返回 PaginatedResponse，提取 items 数组
+        setLogs(Array.isArray(logsData) ? logsData : (logsData as any).items || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : '加载失败');
       } finally {
@@ -130,12 +131,50 @@ export default function TaskProgressPage() {
     return unsubscribe;
   }, [taskId, subscribeToTask]);
 
+  // 轮询任务状态（作为 SSE 的 fallback，防止 SSE 不可用导致页面卡住）
+  useEffect(() => {
+    if (!taskId || !task) return;
+    // 只在非终态时轮询
+    const terminalStatuses = ['completed', 'failed', 'cancelled', 'timeout'];
+    if (terminalStatuses.includes(task.status)) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const taskData = await taskApi.getTask(taskId);
+        // 始终更新状态（不能用 progress 变化作为条件 — 当 progress=100 且 status→completed 时会遗漏状态更新）
+        setTask(prev => {
+          if (!prev) return prev;
+          const hasChanges = taskData.status !== prev.status
+            || taskData.progress !== prev.progress
+            || taskData.progressMessage !== prev.progressMessage
+            || (taskData.resultPreview && taskData.resultPreview !== prev.resultPreview);
+          if (!hasChanges) return prev;
+          return {
+            ...prev,
+            status: taskData.status,
+            progress: taskData.progress,
+            progressMessage: taskData.progressMessage,
+            resultPreview: taskData.resultPreview || prev.resultPreview,
+          };
+        });
+
+        // 也获取最新的日志
+        const logsData = await taskApi.getTaskLogs(taskId);
+        setLogs(Array.isArray(logsData) ? logsData : (logsData as any).items || []);
+      } catch (err) {
+        console.error('轮询任务状态失败:', err);
+      }
+    }, 2000); // 每 2 秒轮询一次
+
+    return () => clearInterval(pollInterval);
+  }, [taskId, task?.status]);
+
   // 任务完成后自动跳转
   useEffect(() => {
     if (task?.status === 'completed' && task.resultPreview) {
       // 延迟3秒后跳转，让用户看到完成状态
       const timer = setTimeout(() => {
-        router.push(`/works/${task.resultPreview}`);
+        router.push(`/works/detail/${task.resultPreview}`);
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -332,7 +371,7 @@ export default function TaskProgressPage() {
             <div className="flex gap-4">
               {isCompleted && task?.resultPreview && (
                 <Link
-                  href={`/works/${task.resultPreview}`}
+                  href={`/works/detail/${task.resultPreview}`}
                   className="btn-primary px-8 py-4 text-white font-semibold rounded-xl flex items-center justify-center gap-2 flex-1"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
