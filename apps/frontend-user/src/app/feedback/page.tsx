@@ -2,6 +2,14 @@
 
 import { useState } from 'react';
 import { toast } from '@/lib/toast';
+import { feedbackApi } from '@/lib/api/modules/feedback';
+
+const typeMapping: Record<string, string> = {
+  '功能建议': 'feature',
+  'Bug反馈': 'bug',
+  '使用咨询': 'consult',
+  '其他': 'other',
+};
 
 const faqItems = [
   {
@@ -57,10 +65,29 @@ export default function FeedbackPage() {
     contact: '',
   });
 
-  const handleSubmit = () => {
-    toast.success('提交成功！我们会尽快处理您的反馈。');
-    setFormData({ name: '', email: '', title: '', description: '', contact: '' });
-    setSelectedType('');
+  const handleSubmit = async () => {
+    if (!selectedType) {
+      toast.warning('请选择反馈类型');
+      return;
+    }
+    if (!formData.title.trim()) {
+      toast.warning('请输入反馈标题');
+      return;
+    }
+    try {
+      const apiType = typeMapping[selectedType] || 'other';
+      await feedbackApi.create({
+        type: apiType,
+        title: formData.title.trim(),
+        description: formData.description.trim() || undefined,
+        contact: formData.contact.trim() || undefined,
+      });
+      toast.success('提交成功！我们会尽快处理您的反馈。');
+      setFormData({ name: '', email: '', title: '', description: '', contact: '' });
+      setSelectedType('');
+    } catch (error) {
+      toast.error('提交失败，请稍后重试');
+    }
   };
 
   return (

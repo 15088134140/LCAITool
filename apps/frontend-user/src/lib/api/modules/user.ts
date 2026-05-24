@@ -154,6 +154,30 @@ export const userApi = {
   getStats: async (): Promise<UserStats> => {
     return api.get<UserStats>('/users/stats');
   },
+
+  /**
+   * 获取签到状态
+   */
+  getCheckinStatus: () =>
+    api.get<{ today_checked: boolean; streak: number; can_checkin: boolean }>('/users/checkin/status'),
+
+  /**
+   * 执行签到
+   */
+  doCheckin: () =>
+    api.post<{ streak: number; points_earned: number; total_points: number }>('/users/checkin'),
+
+  /**
+   * 获取邀请信息
+   */
+  getInviteInfo: () =>
+    api.get<{ invite_code: string; invite_url: string; invited_count: number; total_rewards: number }>('/users/invite/info'),
+
+  /**
+   * 获取邀请记录列表
+   */
+  getInviteList: () =>
+    api.get<Array<{ invited_user: string; registered_at: number; recharge_status: string; reward: number }>>('/users/invite/list'),
 };
 
 export default userApi;

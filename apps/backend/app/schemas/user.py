@@ -18,6 +18,7 @@ class UserCreate(BaseModel):
     phone: Optional[str] = Field(None, max_length=11, description="手机号")
     code: Optional[str] = Field(None, max_length=6, description="验证码")
     email: Optional[EmailStr] = Field(None, max_length=100, description="邮箱")
+    invite_code: Optional[str] = Field(None, max_length=20, description="邀请码")
 
     @model_validator(mode="after")
     def check_username_or_phone(self) -> "UserCreate":
@@ -146,3 +147,33 @@ class ChangePhoneRequest(BaseModel):
     """更换手机号请求"""
     phone: str = Field(..., max_length=20, description="新手机号")
     code: str = Field(..., max_length=10, description="验证码")
+
+
+class CheckinStatusResponse(BaseModel):
+    """签到状态响应"""
+    today_checked: bool = Field(..., description="今日是否已签到")
+    streak: int = Field(0, description="连续签到天数")
+    can_checkin: bool = Field(..., description="是否可以签到")
+
+
+class CheckinResponse(BaseModel):
+    """签到响应"""
+    streak: int = Field(..., description="连续签到天数")
+    points_earned: int = Field(..., description="获得积分")
+    total_points: int = Field(..., description="总积分余额")
+
+
+class InviteInfoResponse(BaseModel):
+    """邀请信息响应"""
+    invite_code: str = Field(..., description="邀请码")
+    invite_url: str = Field(..., description="邀请链接")
+    invited_count: int = Field(..., description="已邀请人数")
+    total_rewards: int = Field(..., description="累计奖励积分")
+
+
+class InviteRecord(BaseModel):
+    """邀请记录"""
+    invited_user: str = Field(..., description="被邀请人昵称")
+    registered_at: int = Field(..., description="注册时间")
+    recharge_status: str = Field(..., description="充值状态: none/first_done")
+    reward: int = Field(..., description="奖励积分")

@@ -195,6 +195,32 @@ async def get_tool_ratings(
     }
 
 
+@router.get("/{tool_id}/ratings/stats", summary="获取工具评分统计")
+async def get_tool_rating_stats(
+    tool_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """获取工具的评分统计：平均分、总数、星级分布"""
+    stats = await ToolService.get_rating_stats(db, tool_id)
+    return stats
+
+
+@router.post("/ratings/{rating_id}/useful", summary="标记评价有用")
+async def mark_rating_useful(
+    rating_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """标记评价为有用"""
+    rating = await ToolService.mark_rating_useful(db, rating_id, current_user.id)
+    if not rating:
+        raise HTTPException(status_code=404, detail="评价不存在")
+    return {
+        "is_useful_count": rating.is_useful_count,
+        "message": "标记成功",
+    }
+
+
 # ============== 6. 工具分类列表 API ==============
 
 @router.get("/categories/list", summary="获取工具分类列表")

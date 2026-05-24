@@ -24,7 +24,8 @@ from app.models import (
     BaseModel, User, Role, PointTransaction,
     Tool, ToolCategory, ToolFavorite, ToolRating, ToolDemo,
     Task, TaskLog, Work, WorkFile, WorkShare,
-    RealNameVerification, IdeaSubmission, IdeaVote, AdminAuditLog
+    RealNameVerification, IdeaSubmission, IdeaVote, AdminAuditLog,
+    Feedback, SystemConfig, AiProvider
 )
 
 target_metadata = Base.metadata

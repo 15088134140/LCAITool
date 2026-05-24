@@ -23,6 +23,9 @@ async def register(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     user = await UserService.create(db, user_in)
+    # 处理邀请奖励
+    if user_in.invite_code:
+        await UserService.process_invite_reward(db, user, user_in.invite_code)
     return user
 
 

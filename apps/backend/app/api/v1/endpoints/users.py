@@ -12,6 +12,10 @@ from app.schemas.user import (
     ChangePasswordRequest,
     ChangePhoneRequest,
     SendCodeRequest,
+    CheckinStatusResponse,
+    CheckinResponse,
+    InviteInfoResponse,
+    InviteRecord,
 )
 from app.schemas.stats import UserStatsResponse
 from app.schemas.payment import PointTransaction as PointTransactionSchema
@@ -150,3 +154,34 @@ async def change_phone(
     await db.commit()
 
     return {"message": "手机号更换成功", "phone": request.phone}
+
+
+@router.get("/checkin/status", response_model=CheckinStatusResponse, summary="查询签到状态")
+async def get_checkin_status(
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    return await UserService.get_checkin_status(current_user)
+
+
+@router.post("/checkin", response_model=CheckinResponse, summary="执行签到")
+async def do_checkin(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    return await UserService.do_checkin(db, current_user)
+
+
+@router.get("/invite/info", response_model=InviteInfoResponse, summary="我的邀请信息")
+async def get_invite_info(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    return await UserService.get_invite_info(db, current_user)
+
+
+@router.get("/invite/list", summary="邀请记录列表")
+async def get_invite_list(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    return await UserService.get_invite_list(db, current_user)

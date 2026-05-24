@@ -3,3 +3,8 @@ export * from './user';
 export * from './role';
 export * from './admin';
 export * from './tool';
+export * from './settings';
+export * from './rating';
+export * from './feedback';
+export * from './ideas';
+export * from './refunds';

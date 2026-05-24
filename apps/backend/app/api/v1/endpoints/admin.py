@@ -1,10 +1,14 @@
+import time
 from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Body, Query
-from sqlalchemy import select
+from sqlalchemy import select, func, or_
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db, get_current_admin_user
 from app.models.user import User
-from app.models.tool import ToolCategory, ToolDemo as ToolDemoModel
+from app.models.tool import Tool, ToolCategory, ToolRating, ToolDemo as ToolDemoModel
+from app.models.task import Task
+from app.models.system import IdeaSubmission, AdminAuditLog
 from app.schemas.user import (
     User as UserSchema,
     UserUpdate,
@@ -744,3 +748,573 @@ async def reject_verification(
     await db.commit()
     await db.refresh(user)
     return {"message": "审核已驳回"}
+
+
+# ==================== 评价管理 ====================
+
+@router.get("/ratings", summary="评价列表（分页+筛选）")
+async def get_admin_ratings(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    tool_id: Optional[str] = Query(None, description="按工具ID筛选"),
+    rating_value: Optional[int] = Query(None, ge=1, le=5, description="按评分值筛选"),
+    status: Optional[int] = Query(None, description="按状态筛选：0隐藏 1显示"),
+    keyword: Optional[str] = Query(None, description="搜索关键词（评价内容）"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """获取评价列表，支持按工具、评分、状态、关键词筛选"""
+    import uuid
+
+    query = select(ToolRating)
+
+    if tool_id:
+        query = query.where(ToolRating.tool_id == uuid.UUID(tool_id))
+    if rating_value is not None:
+        query = query.where(ToolRating.rating == rating_value)
+    if status is not None:
+        query = query.where(ToolRating.status == status)
+    if keyword:
+        query = query.where(ToolRating.content.ilike(f"%{keyword}%"))
+
+    # 获取总数
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+
+    # 分页查询（关联用户和工具信息）
+    skip = (page - 1) * page_size
+    query = query.offset(skip).limit(page_size).order_by(ToolRating.created_at.desc())
+    result = await db.execute(query)
+    ratings = result.scalars().all()
+
+    # 组装返回数据
+    rating_list = []
+    for r in ratings:
+        # 获取用户信息
+        user_result = await db.execute(
+            select(User).where(User.id == r.user_id)
+        )
+        user = user_result.scalar_one_or_none()
+
+        # 获取工具信息
+        tool_result = await db.execute(
+            select(Tool).where(Tool.id == r.tool_id)
+        )
+        tool = tool_result.scalar_one_or_none()
+
+        rating_list.append({
+            "id": str(r.id),
+            "user_id": str(r.user_id),
+            "user_nickname": user.nickname if user else "未知用户",
+            "user_avatar": user.avatar if user else None,
+            "tool_id": str(r.tool_id),
+            "tool_name": tool.name if tool else "未知工具",
+            "task_id": str(r.task_id),
+            "rating": r.rating,
+            "content": r.content,
+            "images": r.images,
+            "is_useful_count": r.is_useful_count,
+            "status": r.status,
+            "admin_reply": r.admin_reply,
+            "replied_at": r.replied_at,
+            "created_at": r.created_at,
+        })
+
+    return {
+        "items": rating_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+@router.put("/ratings/{rating_id}/status", summary="切换评价显示状态")
+async def toggle_rating_status(
+    rating_id: str,
+    status: int = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """切换评价显示/隐藏状态"""
+    import uuid
+    result = await db.execute(
+        select(ToolRating).where(ToolRating.id == uuid.UUID(rating_id))
+    )
+    rating = result.scalar_one_or_none()
+    if not rating:
+        raise HTTPException(status_code=404, detail="评价不存在")
+
+    rating.status = status
+    await db.commit()
+    await db.refresh(rating)
+    return {"message": "状态更新成功", "status": rating.status}
+
+
+@router.post("/ratings/{rating_id}/reply", summary="管理员回复评价")
+async def reply_rating(
+    rating_id: str,
+    content: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """管理员回复用户评价"""
+    import uuid
+    import time
+    result = await db.execute(
+        select(ToolRating).where(ToolRating.id == uuid.UUID(rating_id))
+    )
+    rating = result.scalar_one_or_none()
+    if not rating:
+        raise HTTPException(status_code=404, detail="评价不存在")
+
+    rating.admin_reply = content
+    rating.replied_at = int(time.time())
+    await db.commit()
+    await db.refresh(rating)
+    return {"message": "回复成功", "admin_reply": rating.admin_reply}
+
+
+# ==================== 反馈管理 ====================
+
+@router.get("/feedbacks", summary="反馈列表（分页+筛选）")
+async def get_admin_feedbacks(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    status: Optional[str] = Query(None, description="按状态筛选：pending/processing/resolved/adopted"),
+    type_: Optional[str] = Query(None, alias="type", description="按类型筛选：feature/bug/consult/other"),
+    keyword: Optional[str] = Query(None, description="搜索关键词（标题）"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """获取反馈列表，支持状态、类型、关键词筛选和分页"""
+    from app.services.feedback_service import FeedbackService
+
+    result = await FeedbackService.get_admin_list(
+        db, status=status, type_=type_, keyword=keyword, page=page, page_size=page_size
+    )
+    # 将模型转换为可序列化字典
+    items = []
+    for fb in result["items"]:
+        # 获取用户信息
+        user_result = await db.execute(
+            select(User).where(User.id == fb.user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        items.append({
+            "id": str(fb.id),
+            "user_id": str(fb.user_id),
+            "user_nickname": user.nickname if user else "未知用户",
+            "user_avatar": user.avatar if user else None,
+            "type": fb.type,
+            "title": fb.title,
+            "description": fb.description,
+            "contact": fb.contact,
+            "status": fb.status,
+            "admin_reply": fb.admin_reply,
+            "reply_points": fb.reply_points,
+            "replied_at": fb.replied_at,
+            "rewarded_at": fb.rewarded_at,
+            "created_at": int(fb.created_at) if hasattr(fb.created_at, 'timestamp') else fb.created_at,
+        })
+    return {
+        "items": items,
+        "total": result["total"],
+        "page": result["page"],
+        "page_size": result["page_size"],
+    }
+
+
+@router.post("/feedbacks/{feedback_id}/reply", summary="管理员回复反馈")
+async def reply_feedback(
+    feedback_id: str,
+    reply: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """管理员回复用户反馈"""
+    import uuid
+    from app.services.feedback_service import FeedbackService
+
+    feedback = await FeedbackService.reply(db, uuid.UUID(feedback_id), reply, current_user.id)
+    return {
+        "message": "回复成功",
+        "id": str(feedback.id),
+        "admin_reply": feedback.admin_reply,
+    }
+
+
+@router.post("/feedbacks/{feedback_id}/reward", summary="采纳反馈并奖励积分")
+async def reward_feedback(
+    feedback_id: str,
+    points: int = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """采纳反馈并发放积分奖励"""
+    import uuid
+    from app.services.feedback_service import FeedbackService
+
+    feedback = await FeedbackService.reward(db, uuid.UUID(feedback_id), points, current_user.id)
+    return {
+        "message": "奖励发放成功",
+        "id": str(feedback.id),
+        "reply_points": feedback.reply_points,
+        "status": feedback.status,
+    }
+
+
+# ==================== 构思管理 ====================
+
+@router.get("/ideas", summary="构思列表（管理端，支持状态+关键词筛选+分页）")
+async def get_admin_ideas(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    status: Optional[str] = Query(None, description="状态筛选：pending/approved/rejected/implemented"),
+    keyword: Optional[str] = Query(None, description="搜索关键词（标题/描述）"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """获取构思列表，支持按状态和关键词筛选"""
+    query = select(IdeaSubmission).options(selectinload(IdeaSubmission.user))
+
+    if status:
+        query = query.where(IdeaSubmission.status == status)
+
+    if keyword:
+        pattern = f"%{keyword}%"
+        query = query.where(
+            or_(IdeaSubmission.title.ilike(pattern), IdeaSubmission.description.ilike(pattern))
+        )
+
+    # Get total
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+
+    # Paginate
+    skip = (page - 1) * page_size
+    query = query.offset(skip).limit(page_size).order_by(IdeaSubmission.created_at.desc())
+    result = await db.execute(query)
+    ideas = result.scalars().all()
+
+    idea_list = []
+    for idea in ideas:
+        tags = []
+        if idea.tags:
+            try:
+                import json
+                tags = json.loads(idea.tags)
+            except (json.JSONDecodeError, TypeError):
+                tags = []
+
+        idea_list.append({
+            "id": str(idea.id),
+            "user_id": str(idea.user_id),
+            "user_nickname": idea.user.nickname if idea.user else "未知用户",
+            "title": idea.title,
+            "description": idea.description,
+            "category": idea.category,
+            "tags": tags,
+            "vote_count": idea.vote_count,
+            "view_count": idea.view_count,
+            "status": idea.status,
+            "admin_remark": idea.admin_remark,
+            "admin_id": str(idea.admin_id) if idea.admin_id else None,
+            "reviewed_at": idea.reviewed_at,
+            "created_at": idea.created_at,
+        })
+
+    return {
+        "items": idea_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+@router.put("/ideas/{idea_id}/approve", summary="审核通过构思")
+async def approve_idea(
+    idea_id: str,
+    remark: Optional[str] = Body(None, embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """审核通过构思创意"""
+    import uuid
+    idea_uuid = uuid.UUID(idea_id)
+    result = await db.execute(select(IdeaSubmission).where(IdeaSubmission.id == idea_uuid))
+    idea = result.scalar_one_or_none()
+    if not idea:
+        raise HTTPException(status_code=404, detail="构思不存在")
+
+    idea.approve(admin_id=current_user.id, remark=remark)
+    await db.commit()
+    await db.refresh(idea)
+    return {"message": "审核通过", "id": str(idea.id), "status": idea.status}
+
+
+@router.put("/ideas/{idea_id}/reject", summary="驳回构思")
+async def reject_idea(
+    idea_id: str,
+    remark: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """驳回构思创意"""
+    import uuid
+    idea_uuid = uuid.UUID(idea_id)
+    result = await db.execute(select(IdeaSubmission).where(IdeaSubmission.id == idea_uuid))
+    idea = result.scalar_one_or_none()
+    if not idea:
+        raise HTTPException(status_code=404, detail="构思不存在")
+
+    idea.reject(admin_id=current_user.id, remark=remark)
+    await db.commit()
+    await db.refresh(idea)
+    return {"message": "已驳回", "id": str(idea.id), "status": idea.status}
+
+
+@router.put("/ideas/{idea_id}/implement", summary="标记构思为已实现")
+async def implement_idea(
+    idea_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """标记构思为已实现"""
+    import uuid
+    idea_uuid = uuid.UUID(idea_id)
+    result = await db.execute(select(IdeaSubmission).where(IdeaSubmission.id == idea_uuid))
+    idea = result.scalar_one_or_none()
+    if not idea:
+        raise HTTPException(status_code=404, detail="构思不存在")
+
+    idea.implement()
+    idea.admin_id = current_user.id
+    await db.commit()
+    await db.refresh(idea)
+    return {"message": "已标记为已实现", "id": str(idea.id), "status": idea.status}
+
+
+# ==================== 退款管理 ====================
+
+@router.get("/refunds", summary="退款订单列表（按状态筛选+分页）")
+async def get_refunds(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    status: Optional[str] = Query(None, description="状态筛选：pending(待处理)/done(已处理)"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """获取退款订单列表"""
+    from app.models.payment import Order as OrderModel
+
+    # 待处理 = 待退款的已支付订单, 已处理 = refunded 状态的订单
+    query = select(OrderModel).options(selectinload(OrderModel.user))
+
+    if status == "pending":
+        # 已支付、备注包含"申请退款" 或者 特殊标记的订单
+        # 简化：查询状态为 PAID 且包含退款申请的订单
+        query = query.where(
+            OrderModel.status == OrderStatus.PAID,
+            OrderModel.remark.ilike("%申请退款%"),
+        )
+    elif status == "done":
+        query = query.where(OrderModel.status == OrderStatus.REFUNDED)
+    else:
+        # 全部退款相关 = PAID(含退款申请) 或 REFUNDED
+        query = query.where(
+            or_(
+                OrderModel.status == OrderStatus.REFUNDED,
+                (OrderModel.status == OrderStatus.PAID) & (OrderModel.remark.ilike("%申请退款%")),
+            )
+        )
+
+    # Get total
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+
+    # Paginate
+    skip = (page - 1) * page_size
+    query = query.offset(skip).limit(page_size).order_by(OrderModel.created_at.desc())
+    result = await db.execute(query)
+    orders = result.scalars().all()
+
+    refund_list = []
+    for order in orders:
+        refund_list.append({
+            "id": str(order.id),
+            "order_no": order.order_no,
+            "user_id": str(order.user_id),
+            "user_nickname": order.user.nickname if order.user else "未知用户",
+            "pay_amount": float(order.pay_amount),
+            "base_points": order.base_points,
+            "bonus_points": order.bonus_points,
+            "total_points": order.total_points,
+            "payment_provider": order.payment_provider.value,
+            "status": order.status.value,
+            "remark": order.remark,
+            "paid_at": order.paid_at,
+            "created_at": order.created_at,
+        })
+
+    return {
+        "items": refund_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+@router.post("/refunds/{order_id}/process", summary="处理退款")
+async def process_refund(
+    order_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """处理退款：退款积分给用户，更新订单状态为 REFUNDED"""
+    import uuid
+    from app.models.payment import Order as OrderModel
+    from app.models.payment import PointTransactionType
+
+    order_uuid = uuid.UUID(order_id)
+    result = await db.execute(
+        select(OrderModel).where(OrderModel.id == order_uuid).options(selectinload(OrderModel.user))
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+
+    if order.status != OrderStatus.PAID:
+        raise HTTPException(status_code=400, detail="只有已支付订单才能退款")
+
+    # 退积分：将 total_points 返还给用户
+    user = order.user
+    if user:
+        user.balance += order.total_points
+        db.add(user)
+
+        # 记录积分流水
+        await PointService.create_transaction(
+            db=db,
+            user_id=user.id,
+            amount=order.total_points,
+            transaction_type="refund",
+            reason=f"订单退款：{order.order_no}",
+            related_id=str(order.id),
+            related_type="order",
+            operator=str(current_user.id),
+        )
+
+    # 更新订单状态
+    order.status = OrderStatus.REFUNDED
+    order.remark = (order.remark or "") + f" | 管理员退款处理于 {int(time.time())}"
+    db.add(order)
+    await db.commit()
+    await db.refresh(order)
+
+    # 记录审计日志
+    audit_log = AdminAuditLog.create_log(
+        admin_id=current_user.id,
+        action_type="refund_order",
+        target_type="order",
+        target_id=order_id,
+    )
+    db.add(audit_log)
+    await db.commit()
+
+    return {"message": "退款成功", "order_id": order_id, "refund_amount": order.total_points}
+
+
+# ==================== Dashboard 统计 ====================
+
+@router.get("/dashboard/stats", summary="仪表盘统计数据")
+async def get_dashboard_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """获取仪表盘统计数据：用户数、收入、任务数、工具排行、最近活动"""
+    from app.models.payment import Order as OrderModel
+
+    # 1. 总用户数
+    user_count_result = await db.execute(select(func.count(User.id)))
+    total_users = user_count_result.scalar() or 0
+
+    # 2. 实名认证用户数
+    verified_result = await db.execute(
+        select(func.count(User.id)).where(User.id_card_verified == True)
+    )
+    verified_users = verified_result.scalar() or 0
+
+    # 3. 总收入（已支付订单的 pay_amount 总和）
+    revenue_result = await db.execute(
+        select(func.sum(OrderModel.pay_amount)).where(OrderModel.status == OrderStatus.PAID)
+    )
+    total_revenue = float(revenue_result.scalar() or 0)
+
+    # 4. 今日任务数
+    today_start = int(time.mktime(time.localtime()))  # 今日 00:00
+    today_start = today_start - (today_start % 86400)  # 对齐到当天零点
+
+    today_tasks_result = await db.execute(
+        select(func.count(Task.id)).where(Task.created_at >= today_start)
+    )
+    today_tasks = today_tasks_result.scalar() or 0
+
+    # 5. 工具使用排行（Top 5 by task count）
+    top_tools_result = await db.execute(
+        select(
+            Tool.name,
+            Tool.slug,
+            func.count(Task.id).label("usage_count"),
+        )
+        .select_from(Task)
+        .join(Tool, Tool.id == Task.tool_id, isouter=True)
+        .group_by(Tool.id, Tool.name, Tool.slug)
+        .order_by(func.count(Task.id).desc())
+        .limit(5)
+    )
+    top_tools_rows = top_tools_result.fetchall()
+    top_tools = [
+        {"name": row.name or "未知工具", "slug": row.slug, "usage_count": row.usage_count}
+        for row in top_tools_rows
+    ]
+
+    # 6. 最近活动（最近10个任务，包含用户昵称）
+    recent_result = await db.execute(
+        select(Task, User.nickname)
+        .join(User, User.id == Task.user_id, isouter=True)
+        .order_by(Task.created_at.desc())
+        .limit(10)
+    )
+    recent_rows = recent_result.fetchall()
+    recent_activities = []
+    for row in recent_rows:
+        task = row[0]
+        nickname = row[1] or "未知用户"
+        # 构建人类可读的活动描述
+        status_map = {
+            "pending": "创建了任务",
+            "running": "正在执行任务",
+            "completed": "完成了任务",
+            "failed": "任务失败",
+            "cancelled": "取消了任务",
+            "timeout": "任务超时",
+        }
+        action = status_map.get(task.status, f"任务状态：{task.status}")
+        recent_activities.append({
+            "user": nickname,
+            "action": action,
+            "task_type": task.task_type,
+            "time": task.created_at,
+        })
+
+    return {
+        "total_users": total_users,
+        "verified_users": verified_users,
+        "total_revenue": total_revenue,
+        "today_tasks": today_tasks,
+        "top_tools": top_tools,
+        "recent_activities": recent_activities,
+    }

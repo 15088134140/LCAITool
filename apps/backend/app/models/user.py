@@ -46,3 +46,15 @@ class User(BaseModel):
     roles = relationship("Role", secondary=user_roles, back_populates="users")
     transactions = relationship("PointTransaction", back_populates="user", cascade="all, delete-orphan")
 
+    # 邀请机制字段
+    invited_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True, comment="邀请人用户ID")
+    invite_code = Column(String(20), unique=True, nullable=True, index=True, comment="唯一邀请码")
+
+    # 签到字段
+    checkin_streak = Column(Integer, default=0, nullable=False, comment="连续签到天数")
+    last_checkin_date = Column(String(10), nullable=True, comment="最后签到日期(YYYY-MM-DD)")
+    total_checkin_days = Column(Integer, default=0, nullable=False, comment="累计签到天数")
+
+    # 关系
+    invited_users = relationship("User", backref="inviter", remote_side=[id])
+

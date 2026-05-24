@@ -11,6 +11,8 @@ import { taskApi } from '@/lib/api/modules/task';
 import { workApi } from '@/lib/api/modules/work';
 import { getFirstImage } from '@/lib/utils/image';
 import { API_BASE_URL, tokenStorage } from '@/lib/api/client';
+import CheckinModal from '@/components/checkin/CheckinModal';
+import InvitePanel from '@/components/invite/InvitePanel';
 import type { UserStats, ToolRecentItem, Task as TaskType, Work } from '@/lib/api/types';
 
 const formatRelativeTime = (timestamp: number | string | null | undefined): string => {
@@ -42,6 +44,8 @@ export default function UserCenterPage() {
   const [latestWorks, setLatestWorks] = useState<Work[]>([]);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [dataLoading, setDataLoading] = useState(true);
+  const [showCheckin, setShowCheckin] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -215,6 +219,13 @@ export default function UserCenterPage() {
                       充值
                     </Link>
                   </div>
+                  <button
+                    onClick={() => setShowCheckin(true)}
+                    className="mt-3 w-full py-2 bg-gradient-to-r from-[#2563EB] to-[#3B82F6] text-white text-sm font-medium rounded-lg shadow-md shadow-blue-500/20 hover:shadow-lg transition-all"
+                  >
+                    每日签到
+                  </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -277,6 +288,21 @@ export default function UserCenterPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
+
+                <button onClick={() => setShowInvite(true)} className="flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition-colors group w-full text-left">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                    <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">邀请好友</p>
+                    <p className="text-xs text-gray-500">分享得积分奖励</p>
+                  </div>
+                  <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
 
                 <Link href="/feedback" className="flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
@@ -609,6 +635,9 @@ export default function UserCenterPage() {
           </div>
         </div>
       </main>
+
+      <CheckinModal isOpen={showCheckin} onClose={() => setShowCheckin(false)} />
+      <InvitePanel isOpen={showInvite} onClose={() => setShowInvite(false)} />
     </div>
   );
 }

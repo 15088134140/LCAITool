@@ -9,11 +9,13 @@ from app.core.security import get_password_hash, aes_encrypt, mask_id_card, mask
 from app.core.exceptions import UserAlreadyExistsException, UserNotFoundException, InvalidVerificationCodeException, InvalidIdCardFormatException
 from app.models.user import User, Role
 from app.models.task import Task, Work
-from app.models.payment import PointTransaction
+from app.models.payment import PointTransaction, PointTransactionType
 from app.schemas.user import UserCreate, UserUpdate, UserIdVerifyRequest
 
 
 class UserService:
+    CHECKIN_REDIS_PREFIX = "checkin"
+
     @staticmethod
     async def get_by_id(db: AsyncSession, user_id: uuid.UUID) -> Optional[User]:
         result = await db.execute(select(User).where(User.id == user_id))
@@ -360,3 +362,228 @@ class UserService:
         await db.commit()
         await db.refresh(user)
         return user
+
+    # ----- 签到相关方法 -----
+
+    @staticmethod
+    async def get_checkin_status(user: User) -> dict:
+        """查询签到状态"""
+        from datetime import date
+        from app.core.redis import get_redis_client
+        today = date.today().isoformat()
+        redis = get_redis_client()
+        checked = await redis.get(f"{UserService.CHECKIN_REDIS_PREFIX}:{user.id}:{today}")
+        return {
+            "today_checked": checked == b"1",
+            "streak": user.checkin_streak or 0,
+            "can_checkin": checked != b"1",
+        }
+
+    @staticmethod
+    async def do_checkin(db: AsyncSession, user: User) -> dict:
+        """执行签到"""
+        from datetime import date, timedelta
+        from app.core.redis import get_redis_client
+
+        today = date.today().isoformat()
+        redis = get_redis_client()
+
+        # 检查是否已签到
+        checked = await redis.get(f"{UserService.CHECKIN_REDIS_PREFIX}:{user.id}:{today}")
+        if checked == b"1":
+            raise HTTPException(status_code=400, detail="今日已签到")
+
+        # 计算连续天数
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        last_date = user.last_checkin_date
+
+        if last_date == yesterday:
+            streak = (user.checkin_streak or 0) + 1
+            if streak > 7:
+                streak = 1
+        elif last_date == today:
+            raise HTTPException(status_code=400, detail="今日已签到")
+        else:
+            streak = 1
+
+        # 计算奖励: 第 N 天得 N 积分
+        points = streak
+        extra_bonus = 5 if streak == 7 else 0
+
+        total_earned = points + extra_bonus
+
+        # 更新用户字段
+        user.checkin_streak = streak
+        user.last_checkin_date = today
+        user.total_checkin_days = (user.total_checkin_days or 0) + 1
+        user.balance += total_earned
+
+        # 记录积分流水
+        reason = f"每日签到: 第{streak}天 + {points}积分"
+        if extra_bonus:
+            reason += f"，满7天额外奖励 +{extra_bonus}积分"
+        db.add(PointTransaction(
+            user_id=user.id,
+            amount=total_earned,
+            type=PointTransactionType.REWARD,
+            reason=reason,
+            balance_before=user.balance - total_earned,
+            balance_after=user.balance,
+        ))
+
+        await db.commit()
+
+        # Redis 记录签到状态，7天过期
+        await redis.set(f"{UserService.CHECKIN_REDIS_PREFIX}:{user.id}:{today}", "1", ex=86400 * 7)
+
+        return {
+            "streak": streak,
+            "points_earned": total_earned,
+            "total_points": user.balance,
+        }
+
+    # ----- 邀请相关方法 -----
+
+    @staticmethod
+    def generate_invite_code() -> str:
+        """生成8位邀请码: LCA + 5位字母数字"""
+        import random
+        import string
+        suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        return f"LCA{suffix}"
+
+    @staticmethod
+    async def get_invite_info(db: AsyncSession, user: User) -> dict:
+        if not user.invite_code:
+            user.invite_code = UserService.generate_invite_code()
+            await db.commit()
+            await db.refresh(user)
+
+        # 查询邀请人数
+        result = await db.execute(
+            select(User).where(User.invited_by == user.id)
+        )
+        invited_users = result.scalars().all()
+
+        # 查询奖励总额
+        from sqlalchemy import func as sa_func
+        rewards = await db.execute(
+            select(sa_func.coalesce(sa_func.sum(PointTransaction.amount), 0))
+            .where(
+                PointTransaction.user_id == user.id,
+                PointTransaction.type == PointTransactionType.REWARD,
+                PointTransaction.reason.like("邀请%"),
+            )
+        )
+        total_rewards = rewards.scalar() or 0
+
+        return {
+            "invite_code": user.invite_code,
+            "invite_url": f"https://lingchuang.ai?invite={user.invite_code}",
+            "invited_count": len(invited_users),
+            "total_rewards": total_rewards,
+        }
+
+    @staticmethod
+    async def get_invite_list(db: AsyncSession, user: User) -> list:
+        result = await db.execute(
+            select(User).where(User.invited_by == user.id)
+        )
+        users = result.scalars().all()
+        records = []
+        for invited in users:
+            from app.models.payment import Order, OrderStatus
+            order_result = await db.execute(
+                select(Order).where(
+                    Order.user_id == invited.id,
+                    Order.status == OrderStatus.PAID,
+                ).limit(1)
+            )
+            has_recharged = order_result.first() is not None
+            records.append({
+                "invited_user": invited.nickname or "用户",
+                "registered_at": invited.created_at or 0,
+                "recharge_status": "first_done" if has_recharged else "none",
+                "reward": 10,
+            })
+        return records
+
+    @staticmethod
+    async def process_invite_reward(db: AsyncSession, new_user: User, invite_code: str):
+        """处理邀请奖励"""
+        from datetime import date
+        from app.core.redis import get_redis_client
+
+        if not invite_code:
+            return
+
+        # 查找邀请人
+        result = await db.execute(
+            select(User).where(User.invite_code == invite_code)
+        )
+        inviter = result.scalar_one_or_none()
+        if not inviter or inviter.id == new_user.id:
+            return
+
+        # 关联邀请关系
+        new_user.invited_by = inviter.id
+
+        # 每日上限检查
+        today = date.today().isoformat()
+        redis = get_redis_client()
+        daily_key = f"invite:daily:{inviter.id}:{today}"
+        daily_count = await redis.get(daily_key)
+        daily_limit = 50
+        if daily_count and int(daily_count) >= daily_limit:
+            return
+
+        # 双方各得 10 积分
+        for u, role in [(new_user, "被邀请人"), (inviter, "邀请人")]:
+            u.balance += 10
+            db.add(PointTransaction(
+                user_id=u.id, amount=10,
+                type=PointTransactionType.REWARD,
+                reason=f"邀请奖励({role})",
+                balance_before=u.balance - 10,
+                balance_after=u.balance,
+            ))
+
+        # Redis 记录每日邀请次数
+        await redis.incr(daily_key)
+        await redis.expire(daily_key, 86400)
+
+        await db.commit()
+
+    @staticmethod
+    async def process_invite_recharge_reward(db: AsyncSession, user: User):
+        """处理首次充值奖励"""
+        from app.models.payment import Order, OrderStatus
+
+        if not user.invited_by:
+            return
+
+        # 检查是否首次充值
+        order_result = await db.execute(
+            select(Order).where(
+                Order.user_id == user.id,
+                Order.status == OrderStatus.PAID,
+            ).limit(1)
+        )
+        if order_result.first():
+            return
+
+        # 奖励邀请人 20 积分
+        result = await db.execute(select(User).where(User.id == user.invited_by))
+        inviter = result.scalar_one_or_none()
+        if not inviter:
+            return
+
+        inviter.balance += 20
+        db.add(PointTransaction(
+            user_id=inviter.id, amount=20,
+            type=PointTransactionType.REWARD,
+            reason="邀请首次充值奖励",
+            balance_before=inviter.balance - 20,
+            balance_after=inviter.balance,
+        ))
+        await db.commit()

@@ -4,15 +4,45 @@ import { Users, UserCheck, DollarSign, Zap, Clock, Wrench, ShoppingCart, Lightbu
 import ReactECharts from 'echarts-for-react';
 import StatCard from '@/components/StatCard';
 import { Link } from 'react-router-dom';
+import request from '@/utils/request';
+import { formatDate } from '@/utils';
+
+interface DashboardStats {
+  total_users: number;
+  verified_users: number;
+  total_revenue: number;
+  today_tasks: number;
+  top_tools: { name: string; slug: string; usage_count: number }[];
+  recent_activities: { user: string; action: string; task_type: string; time: number }[];
+}
 
 const Dashboard = () => {
   const { setCurrentPageTitle, setBreadcrumbs } = useAppStore();
   const [chartPeriod, setChartPeriod] = useState<'7d' | '30d'>('7d');
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setCurrentPageTitle('仪表盘');
     setBreadcrumbs([{ label: '首页' }, { label: '仪表盘' }]);
   }, [setCurrentPageTitle, setBreadcrumbs]);
+
+  // Fetch real stats from API
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    setLoading(true);
+    try {
+      const data = await request.get('/admin/dashboard/stats');
+      setStats(data);
+    } catch (error) {
+      console.error('获取仪表盘数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const chartData7d = {
     dates: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
@@ -128,6 +158,10 @@ const Dashboard = () => {
     ],
   };
 
+  // Build top tools chart from API data
+  const topToolNames = (stats?.top_tools || []).map((t) => t.name);
+  const topToolCounts = (stats?.top_tools || []).map((t) => t.usage_count);
+
   const barChartOption = {
     tooltip: {
       trigger: 'axis',
@@ -142,7 +176,7 @@ const Dashboard = () => {
     },
     xAxis: {
       type: 'category',
-      data: ['有声绘本', '电商详情页', 'AI绘画', '文案生成', '视频制作'],
+      data: topToolNames.length > 0 ? topToolNames : ['暂无数据'],
     },
     yAxis: {
       type: 'value',
@@ -152,7 +186,7 @@ const Dashboard = () => {
       {
         name: '使用次数',
         type: 'bar',
-        data: [1234, 987, 876, 765, 543],
+        data: topToolCounts.length > 0 ? topToolCounts : [0],
         itemStyle: {
           color: {
             type: 'linear',
@@ -171,33 +205,11 @@ const Dashboard = () => {
     ],
   };
 
-  const recentActivities = [
-    {
-      user: '张三',
-      action: '完成了一次有声绘本生成',
-      time: '2分钟前',
-    },
-    {
-      user: '李四',
-      action: '充值了1000积分',
-      time: '15分钟前',
-    },
-    {
-      user: '王五',
-      action: '完成了实名认证',
-      time: '1小时前',
-    },
-    {
-      user: '赵六',
-      action: '提交了工具构思',
-      time: '2小时前',
-    },
-    {
-      user: '孙七',
-      action: '使用了电商详情页工具',
-      time: '3小时前',
-    },
-  ];
+  const recentActivities = (stats?.recent_activities || []).map((activity) => ({
+    user: activity.user,
+    action: activity.action,
+    time: activity.time,
+  }));
 
   const quickActions = [
     { path: '/tools', icon: Wrench, label: '工具管理', color: 'text-blue-500', bgColor: 'bg-blue-50' },
@@ -206,42 +218,43 @@ const Dashboard = () => {
     { path: '/ideas', icon: Lightbulb, label: '构思审核', color: 'text-purple-500', bgColor: 'bg-purple-50' },
   ];
 
+  // Format numbers with commas
+  const formatNumber = (num: number) => {
+    return num.toLocaleString('zh-CN');
+  };
+
+  const formatCurrency = (num: number) => {
+    return `¥${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   return (
     <div className="space-y-6">
       {/* 统计卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="总用户数"
-          value="12,845"
-          change="+12.5%"
-          changeType="increase"
+          value={loading ? '...' : formatNumber(stats?.total_users || 0)}
           icon={Users}
           gradientFrom="#2563EB"
           gradientTo="#3B82F6"
         />
         <StatCard
           title="实名认证用户"
-          value="8,234"
-          change="+8.3%"
-          changeType="increase"
+          value={loading ? '...' : formatNumber(stats?.verified_users || 0)}
           icon={UserCheck}
           gradientFrom="#059669"
           gradientTo="#10B981"
         />
         <StatCard
           title="总收入"
-          value="¥156,430"
-          change="+15.2%"
-          changeType="increase"
+          value={loading ? '...' : formatCurrency(stats?.total_revenue || 0)}
           icon={DollarSign}
           gradientFrom="#F59E0B"
           gradientTo="#FBBF24"
         />
         <StatCard
           title="今日任务数"
-          value="1,234"
-          change="+5.8%"
-          changeType="increase"
+          value={loading ? '...' : formatNumber(stats?.today_tasks || 0)}
           icon={Zap}
           gradientFrom="#8B5CF6"
           gradientTo="#A78BFA"
@@ -313,19 +326,25 @@ const Dashboard = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">最近活动</h3>
           <div className="space-y-4">
-            {recentActivities.map((activity, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                  <Clock size={14} className="text-gray-500" />
+            {recentActivities.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">暂无活动</p>
+            ) : (
+              recentActivities.map((activity, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <Clock size={14} className="text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">{activity.user}</span> {activity.action}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {formatDate(activity.time as number)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">{activity.user}</span> {activity.action}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">{activity.time}</p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

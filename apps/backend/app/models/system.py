@@ -188,3 +188,58 @@ class AdminAuditLog(BaseModel):
             success=success,
             error_message=error_message
         )
+
+
+class Feedback(BaseModel):
+    """用户反馈表"""
+    __tablename__ = "feedbacks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, comment="用户ID")
+    type = Column(String(20), nullable=False, comment="类型: feature/bug/consult/other")
+    title = Column(String(200), nullable=False, comment="反馈标题")
+    description = Column(Text, nullable=True, comment="详细描述")
+    contact = Column(String(200), nullable=True, comment="联系方式")
+    status = Column(String(20), nullable=False, default="pending", index=True, comment="状态: pending/processing/resolved/adopted")
+    admin_reply = Column(Text, nullable=True, comment="管理员回复")
+    reply_points = Column(Integer, nullable=True, comment="采纳奖励积分")
+    replied_at = Column(Integer, nullable=True, comment="回复时间")
+    rewarded_at = Column(Integer, nullable=True, comment="奖励发放时间")
+    replied_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, comment="回复管理员ID")
+
+    user = relationship("User", foreign_keys=[user_id], backref="feedbacks")
+    replier = relationship("User", foreign_keys=[replied_by])
+
+    __table_args__ = (
+        Index("idx_feedback_status", "status"),
+        Index("idx_feedback_user", "user_id"),
+    )
+
+
+class SystemConfig(BaseModel):
+    """系统配置表"""
+    __tablename__ = "system_configs"
+
+    key = Column(String(100), primary_key=True, comment="配置键")
+    value = Column(Text, nullable=True, comment="配置值")
+    group = Column(String(50), nullable=False, index=True, comment="分组: basic/business")
+    label = Column(String(100), nullable=False, comment="显示名称")
+    description = Column(String(500), nullable=True, comment="配置说明")
+    type = Column(String(20), nullable=False, default="string", comment="值类型: string/number/boolean/richtext")
+    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, comment="更新人")
+
+
+class AiProvider(BaseModel):
+    """AI 提供商配置表"""
+    __tablename__ = "ai_providers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    slug = Column(String(50), unique=True, nullable=False, index=True, comment="标识符: volcano/deepseek/dify/openai")
+    name = Column(String(100), nullable=False, comment="显示名称")
+    provider_type = Column(String(50), nullable=False, comment="类型: openai/volcano/dify/custom")
+    config = Column(JSONType, nullable=True, comment="配置JSON: 含api_key/base_url/model等")
+    is_active = Column(Boolean, default=True, nullable=False, comment="是否启用")
+    sort_order = Column(Integer, default=0, nullable=False, comment="排序")
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, comment="创建人")
+
+    creator = relationship("User", foreign_keys=[created_by])

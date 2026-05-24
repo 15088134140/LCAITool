@@ -13,6 +13,7 @@ import {
   Undo2,
   Lightbulb,
   Star,
+  MessageSquare,
   Settings,
   ChevronDown,
   ChevronUp,
@@ -76,6 +77,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       children: [
         { path: '/ideas', label: '构思审核', icon: Lightbulb },
         { path: '/reviews', label: '评价管理', icon: Star },
+        { path: '/feedback', label: '反馈管理', icon: MessageSquare },
       ],
     },
     settings: {

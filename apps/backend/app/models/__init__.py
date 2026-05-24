@@ -9,7 +9,8 @@ from app.models.payment import (
     PaymentProvider, OrderStatus, ReconciliationStatus, PointTransactionType
 )
 from app.models.system import (
-    RealNameVerification, IdeaSubmission, IdeaVote, AdminAuditLog
+    RealNameVerification, IdeaSubmission, IdeaVote, AdminAuditLog,
+    Feedback, SystemConfig, AiProvider
 )
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "Task", "TaskLog", "Work", "WorkFile", "WorkShare",
     "Order", "RechargePackage", "PointTransaction",
     "PaymentProvider", "OrderStatus", "ReconciliationStatus", "PointTransactionType",
-    "RealNameVerification", "IdeaSubmission", "IdeaVote", "AdminAuditLog"
+    "RealNameVerification", "IdeaSubmission", "IdeaVote", "AdminAuditLog",
+    "Feedback", "SystemConfig", "AiProvider"
 ]
