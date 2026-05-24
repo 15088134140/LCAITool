@@ -4,10 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useUserStore } from '@/store/userStore';
 import { paymentApi } from '@/lib/api/modules/payment';
-import type { Order, OrderStatus } from '@/lib/api/types';
+import { userApi } from '@/lib/api/modules/user';
+import { toast } from '@/lib/toast';
+import { startOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import type { Order, OrderStatus, UserStats } from '@/lib/api/types';
 
 // Filter types
 type FilterType = 'all' | 'recharge' | 'expense' | 'refund';
+type TimeFilter = 'all' | 'today' | '7days' | '30days' | 'month' | 'lastMonth';
 
 // Format order status
 const getStatusDisplay = (status: OrderStatus): {
@@ -38,10 +42,14 @@ const OrdersPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [detailOrder, setDetailOrder] = useState<Order | null>(null);
 
-  // Format date
+  // Format date (后端时间戳为秒级，转毫秒)
   const formatDate = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleString('zh-CN', {
+    const t = timestamp < 1e12 ? timestamp * 1000 : timestamp;
+    return new Date(t).toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -51,12 +59,36 @@ const OrdersPage: React.FC = () => {
   };
 
   // Load orders
+  const getTimeRange = useCallback((filter: TimeFilter): { start?: number; end?: number } => {
+    const now = new Date();
+    switch (filter) {
+      case 'today':
+        return { start: Math.floor(startOfDay(now).getTime() / 1000) };
+      case '7days':
+        return { start: Math.floor(subDays(now, 7).getTime() / 1000) };
+      case '30days':
+        return { start: Math.floor(subDays(now, 30).getTime() / 1000) };
+      case 'month':
+        return { start: Math.floor(startOfMonth(now).getTime() / 1000) };
+      case 'lastMonth': {
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        return {
+          start: Math.floor(startOfMonth(lastMonth).getTime() / 1000),
+          end: Math.floor(endOfMonth(lastMonth).getTime() / 1000),
+        };
+      }
+      default:
+        return {};
+    }
+  }, []);
+
   const loadOrders = useCallback(async (reset = false) => {
     try {
       setLoading(true);
       const currentPage = reset ? 1 : page;
+      const timeRange = getTimeRange(timeFilter);
 
-      const response = await paymentApi.getOrders(currentPage, 20);
+      const response = await paymentApi.getOrders(currentPage, 20, timeRange.start, timeRange.end);
 
       if (reset) {
         setOrders(response.items);
@@ -146,13 +178,18 @@ const OrdersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, user?.id]);
+  }, [page, user?.id, timeFilter, getTimeRange]);
 
-  // Initial load
+  // Initial load (when tab or time filter changes)
   useEffect(() => {
     setPage(1);
     loadOrders(true);
-  }, [activeTab]);
+  }, [activeTab, timeFilter]);
+
+  // Load stats
+  useEffect(() => {
+    userApi.getStats().then(setStats).catch(() => {});
+  }, []);
 
   // Load more
   const loadMore = () => {
@@ -168,13 +205,42 @@ const OrdersPage: React.FC = () => {
     return true;
   });
 
-  // Calculate stats from mock data for MVP
-  const currentBalance = user?.balance || 156;
-  const totalRecharge = orders
-    .filter(o => o.pay_amount > 0)
-    .reduce((sum, o) => sum + o.total_points, 0) || 500;
-  const totalExpense = 344; // Mock value
-  const monthlyExpense = 88; // Mock value
+  // All stats from dedicated API (no pagination dependency)
+  const currentBalance = user?.balance ?? 0;
+  const totalRecharge = stats?.total_recharge ?? 0;
+  const totalExpense = stats?.total_consumed ?? 0;
+  const monthlyExpense = stats?.monthly_consumed ?? 0;
+
+  // Payment provider label
+  const getProviderLabel = (provider: string): string => {
+    const map: Record<string, string> = { wechat: '微信支付', alipay: '支付宝', simulated: '模拟支付' };
+    return map[provider] || provider;
+  };
+
+  // Export CSV
+  const handleExport = () => {
+    const headers = ['订单编号', '创建时间', '类型', '详情', '金额（积分）', '状态'];
+    const rows = filteredOrders.map(o => [
+      o.order_no,
+      formatDate(o.created_at),
+      o.pay_amount > 0 ? '充值' : '消费',
+      o.remark || '',
+      o.pay_amount > 0 ? `+${o.total_points}` : `-${Math.abs(o.total_points || 0)}`,
+      getStatusDisplay(o.status).label,
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `订单记录_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('导出成功');
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] page-bg-animated">
@@ -252,16 +318,23 @@ const OrdersPage: React.FC = () => {
               ))}
             </div>
             <div className="flex items-center gap-3">
-              <select className="px-4 py-2 bg-white border border-[#E4E7EB] rounded-lg text-sm text-[#64748B]">
-                <option>全部时间</option>
-                <option>今天</option>
-                <option>最近7天</option>
-                <option>最近30天</option>
-                <option>本月</option>
-                <option>上月</option>
-                <option>自定义</option>
+              <select
+                value={timeFilter}
+                onChange={e => setTimeFilter(e.target.value as TimeFilter)}
+                className="px-4 py-2 bg-white border border-[#E4E7EB] rounded-lg text-sm text-[#64748B]"
+              >
+                <option value="all">全部时间</option>
+                <option value="today">今天</option>
+                <option value="7days">最近7天</option>
+                <option value="30days">最近30天</option>
+                <option value="month">本月</option>
+                <option value="lastMonth">上月</option>
               </select>
-              <button className="btn-primary px-4 py-2 text-white rounded-lg text-sm font-medium flex items-center gap-2">
+              <button
+                onClick={handleExport}
+                disabled={filteredOrders.length === 0}
+                className="btn-primary px-4 py-2 text-white rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -333,7 +406,7 @@ const OrdersPage: React.FC = () => {
                           <span className="text-sm text-[#64748B]">{orderTypeLabel}</span>
                           <span className={`font-semibold ${amountClass}`}>{amountLabel}</span>
                         </div>
-                        <button className="text-sm text-[#2563EB] hover:underline">查看详情</button>
+                        <button onClick={() => setDetailOrder(order)} className="text-sm text-[#2563EB] hover:underline">查看详情</button>
                       </div>
 
                       {/* Desktop View */}
@@ -354,7 +427,7 @@ const OrdersPage: React.FC = () => {
                           </span>
                         </div>
                         <div>
-                          <button className="text-sm text-[#2563EB] hover:underline">查看详情</button>
+                          <button onClick={() => setDetailOrder(order)} className="text-sm text-[#2563EB] hover:underline">查看详情</button>
                         </div>
                       </div>
                     </div>
@@ -408,6 +481,77 @@ const OrdersPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Order Detail Modal */}
+      {detailOrder && (
+        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={() => setDetailOrder(null)}>
+          <div className="min-h-full flex items-center justify-center p-4 sm:p-6" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-[#1E3A5F]">订单详情</h3>
+                <button
+                  onClick={() => setDetailOrder(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[#64748B] hover:bg-[#F8FAFC] transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {/* Detail rows */}
+              <div className="space-y-4 text-sm">
+                <div className="flex justify-between py-2 border-b border-[#F8FAFC]">
+                  <span className="text-[#64748B]">订单编号</span>
+                  <span className="font-medium text-[#1E3A5F] text-right max-w-[60%] break-all">{detailOrder.order_no}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-[#F8FAFC]">
+                  <span className="text-[#64748B]">创建时间</span>
+                  <span className="font-medium text-[#1E3A5F]">{formatDate(detailOrder.created_at)}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-[#F8FAFC]">
+                  <span className="text-[#64748B]">支付金额</span>
+                  <span className="font-medium text-[#1E3A5F]">¥{detailOrder.pay_amount}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-[#F8FAFC]">
+                  <span className="text-[#64748B]">基础积分</span>
+                  <span className="font-medium text-[#1E3A5F]">{detailOrder.base_points}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-[#F8FAFC]">
+                  <span className="text-[#64748B]">赠送积分</span>
+                  <span className="font-medium text-[#1E3A5F]">{detailOrder.bonus_points}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-[#F8FAFC]">
+                  <span className="text-[#64748B]">总积分</span>
+                  <span className="font-medium text-[#059669]">{detailOrder.total_points}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-[#F8FAFC]">
+                  <span className="text-[#64748B]">支付方式</span>
+                  <span className="font-medium text-[#1E3A5F]">{getProviderLabel(detailOrder.payment_provider)}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-[#F8FAFC]">
+                  <span className="text-[#64748B]">状态</span>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusDisplay(detailOrder.status).class}`}>
+                    {getStatusDisplay(detailOrder.status).label}
+                  </span>
+                </div>
+                {detailOrder.paid_at && (
+                  <div className="flex justify-between py-2 border-b border-[#F8FAFC]">
+                    <span className="text-[#64748B]">支付时间</span>
+                    <span className="font-medium text-[#1E3A5F]">{formatDate(detailOrder.paid_at)}</span>
+                  </div>
+                )}
+                {detailOrder.remark && (
+                  <div className="flex justify-between py-2">
+                    <span className="text-[#64748B]">备注</span>
+                    <span className="font-medium text-[#1E3A5F] text-right max-w-[60%]">{detailOrder.remark}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
