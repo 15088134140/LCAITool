@@ -52,8 +52,15 @@ export const paymentApi = {
   /**
    * 获取订单列表
    */
-  getOrders: async (page: number = 1, pageSize: number = 20): Promise<PaginatedResponse<Order>> => {
-    return api.get<PaginatedResponse<Order>>('/payment/orders', { params: { page, page_size: pageSize } });
+  getOrders: async (
+    page: number = 1,
+    pageSize: number = 20,
+    startDate?: number,
+    endDate?: number,
+  ): Promise<PaginatedResponse<Order>> => {
+    return api.get<PaginatedResponse<Order>>('/payment/orders', {
+      params: { page, page_size: pageSize, start_date: startDate, end_date: endDate },
+    });
   },
 
   /**

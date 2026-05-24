@@ -53,6 +53,8 @@ export const useToolStore = create<ToolState>((set, get) => ({
       if (categoryId) queryParams['categoryId'] = categoryId;
       if (search) queryParams['search'] = search;
       if (params?.isFeatured) queryParams['isFeatured'] = true;
+      if (params?.page) queryParams['page'] = params.page;
+      if (params?.pageSize) queryParams['pageSize'] = params.pageSize;
       const result = await provider.getTools(queryParams);
       set({ tools: result.items, totalTools: result.total, loading: false });
     } catch (err) {

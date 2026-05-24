@@ -9,6 +9,7 @@ import type { ApiResponse } from './types';
 
 // API配置
 const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || 'http://localhost:8000/api/v1';
+export { API_BASE_URL };
 const TOKEN_KEY = 'lcaitool_access_token';
 const REFRESH_TOKEN_KEY = 'lcaitool_refresh_token';
 

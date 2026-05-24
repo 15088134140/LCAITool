@@ -91,7 +91,7 @@ export interface RefreshTokenResponse {
 
 // 实名认证相关
 export interface RealNameVerificationRequest {
-  id_card_name: string;
+  real_name: string;
   id_card_number: string;
   front_image?: string;
   back_image?: string;
@@ -486,7 +486,10 @@ export interface UserStats {
   today_count: number;
   total_works: number;
   total_consumed: number;
+  total_recharge: number;
+  total_income: number;
   reward_points: number;
+  monthly_consumed: number;
 }
 
 // ============== 最近使用的工具 ==============

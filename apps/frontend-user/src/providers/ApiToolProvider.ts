@@ -1,5 +1,6 @@
 import type { ToolProvider } from './ToolProvider';
 import type { Category, Tool, Review, GetToolsParams, PaginatedResult } from '../types';
+import { getFirstImage } from '@/lib/utils/image';
 import { categoryApi, toolApi } from '../lib/api';
 
 /** 后端API工具响应中的标签字段可能是JSON字符串或数组 */
@@ -44,7 +45,7 @@ function mapApiTool(apiItem: any): Tool {
     token_fee: apiItem.token_fee ?? 0,
     status: apiItem.status === 1 ? 'active' : apiItem.status === 2 ? 'maintenance' : 'coming_soon',
     createdAt: apiItem.created_at ? new Date(apiItem.created_at * 1000).toISOString() : '',
-    heroImage: apiItem.cover_image || apiItem.heroImage || '',
+    heroImage: getFirstImage(apiItem.cover_image) || apiItem.heroImage || '',
     reviewCount: apiItem.rating_count ?? apiItem.reviewCount ?? 0,
     stats: apiItem.stats || undefined,
     demos: apiItem.demos || undefined,
