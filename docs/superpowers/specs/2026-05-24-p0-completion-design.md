@@ -25,6 +25,7 @@
 | 管理端构思审核 | PlaceholderPage 占位 | 创意列表/审核/状态管理页 |
 | 管理端退款管理 | PlaceholderPage 占位 | 退款申请列表/处理页 |
 | 管理端反馈管理 | 不存在 | 反馈列表/回复/采纳奖励页 |
+| 管理端 Dashboard | 全 mock 数据 | 后端统计 API + 前端真实数据替换 |
 
 ---
 
@@ -387,7 +388,69 @@
 
 ---
 
-## 10. 管理端侧边栏更新
+## 10. 管理端 Dashboard 真实数据替换
+
+### 10.1 现状
+
+Dashboard 所有数据均为硬编码 mock：
+- 统计卡片：总用户数、实名认证数、总收入、今日任务数均为假数据
+- 趋势图：7天/30天用户数、任务数、收入为假数据
+- 工具使用排行：柱状图为假数据
+- 最近活动：假活动列表
+
+### 10.2 后端新增 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/v1/admin/dashboard/stats` | Dashboard 统计数据 |
+
+返回格式：
+```json
+{
+  "total_users": 12845,
+  "verified_users": 8234,
+  "total_revenue": 156430.00,
+  "today_tasks": 1234,
+  "trends": {
+    "dates": ["周一", "周二", ...],
+    "users": [120, 132, ...],
+    "tasks": [22, 18, ...],
+    "revenue": [4200, 3800, ...]
+  },
+  "top_tools": [
+    { "name": "有声绘本", "count": 1234 },
+    { "name": "电商详情页", "count": 987 }
+  ],
+  "recent_activities": [
+    { "user": "张三", "action": "完成了一次有声绘本生成", "time": "2分钟前" }
+  ]
+}
+```
+
+### 10.3 查询逻辑
+
+| 数据项 | SQL 来源 |
+|--------|---------|
+| total_users | `SELECT COUNT(*) FROM users` |
+| verified_users | `SELECT COUNT(*) FROM users WHERE id_card_verified = true` |
+| total_revenue | `SELECT SUM(pay_amount) FROM orders WHERE status = 'paid'` |
+| today_tasks | `SELECT COUNT(*) FROM tasks WHERE created_at >= 今日零点` |
+| trends.users | 按日分组注册用户数 (created_at) |
+| trends.tasks | 按日分组任务数 (created_at) |
+| trends.revenue | 按日分组支付金额 (paid_at) |
+| top_tools | `GROUP BY tool_id` 按任务数排序 |
+| recent_activities | UNION 最近订单/任务/注册记录 |
+
+### 10.4 前端更新
+
+- StatCard 组件改为从 API 获取数据
+- 图表数据改为 API 返回的真实数据
+- 最近活动列表改为 API 返回的数据
+- 保留图表样式和交互逻辑不变
+
+---
+
+## 11. 管理端侧边栏更新
 
 当前侧边栏"内容管理"分组已有构思审核、评价管理，需新增反馈管理。
 
@@ -400,9 +463,9 @@
 
 ---
 
-## 11. 数据库迁移
+## 12. 数据库迁移
 
-### 11.1 User 表变更（需迁移）
+### 12.1 User 表变更（需迁移）
 
 ```sql
 ALTER TABLE users ADD COLUMN invited_by UUID REFERENCES users(id);
@@ -414,7 +477,7 @@ CREATE INDEX idx_users_invited_by ON users(invited_by);
 CREATE INDEX idx_users_invite_code ON users(invite_code);
 ```
 
-### 11.2 新建表
+### 12.2 新建表
 
 - `feedbacks` 表
 - `system_configs` 表
@@ -422,7 +485,7 @@ CREATE INDEX idx_users_invite_code ON users(invite_code);
 
 ---
 
-## 12. 边界情况与错误处理
+## 13. 边界情况与错误处理
 
 | 场景 | 处理方式 |
 |------|---------|
@@ -437,7 +500,7 @@ CREATE INDEX idx_users_invite_code ON users(invite_code);
 
 ---
 
-## 13. 实现顺序建议
+## 14. 实现顺序建议
 
 考虑到依赖关系，推荐的实现顺序：
 
