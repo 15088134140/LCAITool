@@ -338,6 +338,46 @@ async def test_login_with_new_password(client: AsyncClient, db_session: AsyncSes
     assert len(new_data["access_token"]) > 0
 
 
+# ==================== 用户统计接口测试 ====================
+
+@pytest.mark.asyncio
+async def test_get_user_stats(client: AsyncClient, auth_headers: dict):
+    """测试获取用户统计数据 - GET /api/v1/users/stats"""
+    response = await client.get(
+        "/api/v1/users/stats",
+        headers=auth_headers
+    )
+
+    print(f"\n[test_get_user_stats] 响应状态码: {response.status_code}")
+    print(f"[test_get_user_stats] 响应内容: {response.json()}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "days_used" in data
+    assert "today_count" in data
+    assert "total_works" in data
+    assert "total_consumed" in data
+    assert "reward_points" in data
+    assert data["days_used"] >= 1
+    assert data["today_count"] >= 0
+    assert data["total_works"] >= 0
+    assert data["total_consumed"] >= 0
+    assert data["reward_points"] >= 0
+
+
+@pytest.mark.asyncio
+async def test_get_user_stats_unauthorized(client: AsyncClient):
+    """测试未登录获取用户统计 - GET /api/v1/users/stats"""
+    response = await client.get("/api/v1/users/stats")
+
+    print(f"\n[test_get_user_stats_unauthorized] 响应状态码: {response.status_code}")
+    print(f"[test_get_user_stats_unauthorized] 响应内容: {response.json()}")
+
+    assert response.status_code == 401
+    data = response.json()
+    assert data["code"] == 401
+
+
 # ==================== 用户查询接口测试 ====================
 
 @pytest.mark.asyncio

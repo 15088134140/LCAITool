@@ -1,5 +1,6 @@
 import uuid
 import time
+from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
@@ -277,12 +278,47 @@ class UserService:
         )
         reward_points = reward_result.scalar() or 0
 
+        # 总收入（所有正数交易）
+        income_result = await db.execute(
+            select(func.coalesce(func.sum(PointTransaction.amount), 0)).where(
+                PointTransaction.user_id == user_id,
+                PointTransaction.amount > 0
+            )
+        )
+        total_income = income_result.scalar() or 0
+
+        # 本月消费
+        now_utc = datetime.fromtimestamp(now_ts, tz=timezone.utc)
+        month_start = now_utc.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_start_ts = int(month_start.timestamp())
+        month_consumed_result = await db.execute(
+            select(func.abs(func.coalesce(func.sum(PointTransaction.amount), 0))).where(
+                PointTransaction.user_id == user_id,
+                PointTransaction.type == "consume",
+                PointTransaction.created_at >= month_start_ts
+            )
+        )
+        monthly_consumed = month_consumed_result.scalar() or 0
+
+        # 累计充值（recharge 基础积分 + reward 赠送积分，均关联订单）
+        recharge_result = await db.execute(
+            select(func.coalesce(func.sum(PointTransaction.amount), 0)).where(
+                PointTransaction.user_id == user_id,
+                PointTransaction.type.in_(["recharge", "reward"]),
+                PointTransaction.related_type == "order"
+            )
+        )
+        total_recharge = recharge_result.scalar() or 0
+
         return {
             "days_used": days_used,
             "today_count": today_count,
             "total_works": total_works,
             "total_consumed": total_consumed,
+            "total_recharge": total_recharge,
+            "total_income": total_income,
             "reward_points": reward_points,
+            "monthly_consumed": monthly_consumed,
         }
 
     @staticmethod

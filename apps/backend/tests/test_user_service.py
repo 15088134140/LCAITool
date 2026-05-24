@@ -317,7 +317,101 @@ async def test_get_users_with_search(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_users_with_status_filter(db_session: AsyncSession):
+async def test_get_user_stats(db_session: AsyncSession):
+    """测试获取用户统计数据"""
+    from app.models.task import Task, Work
+    from app.models.payment import PointTransaction
+    import time
+
+    # 创建测试用户
+    user_in = UserCreate(
+        nickname="statsuser",
+        password="testpassword123",
+        phone="13800138150",
+        code="8888"
+    )
+    user = await UserService.create(db_session, user_in)
+    now_ts = int(time.time())
+    today_start_ts = now_ts - (now_ts % 86400)
+
+    # 创建今天的任务（计入 today_count）
+    for i in range(3):
+        task = Task(
+            user_id=user.id,
+            task_type="test",
+            status="completed",
+            progress=100,
+            created_at=today_start_ts + i,
+        )
+        db_session.add(task)
+
+    # 创建昨天的任务（不计入 today_count）
+    yesterday_ts = today_start_ts - 86400
+    task_old = Task(
+        user_id=user.id,
+        task_type="test",
+        status="completed",
+        progress=100,
+        created_at=yesterday_ts,
+    )
+    db_session.add(task_old)
+
+    # 创建作品
+    for i in range(2):
+        work = Work(
+            user_id=user.id,
+            task_id=task_old.id,
+            title=f"作品{i}",
+            created_at=now_ts,
+        )
+        db_session.add(work)
+
+    # 创建消费记录
+    consume_tx = PointTransaction(
+        user_id=user.id,
+        amount=-30,
+        type="consume",
+        reason="测试消费",
+        balance_before=100,
+        balance_after=70,
+        created_at=now_ts,
+    )
+    db_session.add(consume_tx)
+
+    # 创建奖励记录
+    reward_tx = PointTransaction(
+        user_id=user.id,
+        amount=50,
+        type="reward",
+        reason="测试奖励",
+        balance_before=70,
+        balance_after=120,
+        created_at=now_ts,
+    )
+    db_session.add(reward_tx)
+
+    # 创建调账记录（正数应计入奖励）
+    adjust_tx = PointTransaction(
+        user_id=user.id,
+        amount=20,
+        type="adjust",
+        reason="测试调账",
+        balance_before=120,
+        balance_after=140,
+        created_at=now_ts,
+    )
+    db_session.add(adjust_tx)
+
+    await db_session.commit()
+
+    # 执行测试
+    stats = await UserService.get_user_stats(db_session, user.id)
+
+    assert stats["days_used"] >= 1
+    assert stats["today_count"] == 3, f"Expected 3, got {stats['today_count']}"
+    assert stats["total_works"] == 2, f"Expected 2, got {stats['total_works']}"
+    assert stats["total_consumed"] == 30, f"Expected 30, got {stats['total_consumed']}"
+    assert stats["reward_points"] == 70, f"Expected 70 (50+20), got {stats['reward_points']}"
     # 创建两个用户
     user1_in = UserCreate(
         nickname="statususer1",

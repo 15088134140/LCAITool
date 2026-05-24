@@ -6,4 +6,7 @@ class UserStatsResponse(BaseModel):
     today_count: int
     total_works: int
     total_consumed: int
+    total_recharge: int
+    total_income: int
     reward_points: int
+    monthly_consumed: int
