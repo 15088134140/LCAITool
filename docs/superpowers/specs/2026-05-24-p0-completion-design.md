@@ -500,7 +500,88 @@ CREATE INDEX idx_users_invite_code ON users(invite_code);
 
 ---
 
-## 14. 实现顺序建议
+## 14. 种子数据
+
+为确保新部署的系统各页面有内容可展示，需在数据库迁移后执行种子数据脚本。
+
+### 14.1 SystemConfig 默认值
+
+| Key | 默认值 | 说明 |
+|-----|--------|------|
+| site_name | 灵创AI工具箱 | |
+| site_slogan | 专业场景AI工具集合平台 | |
+| site_icp | 沪ICP备xxxxxx号 | |
+| contact_email | support@lingchuang.ai | |
+| checkin_base_points | 1 | |
+| checkin_streak_bonus | 5 | |
+| invite_register_reward | 10 | |
+| invite_recharge_reward | 20 | |
+| invite_daily_limit | 50 | |
+| register_bonus_points | 50 | |
+| verify_bonus_points | 50 | |
+| rating_text_reward | 2 | |
+| rating_image_reward | 5 | |
+| points_per_yuan | 10 | |
+
+### 14.2 AI Providers 默认数据
+
+| Slug | Name | Type | 说明 |
+|------|------|------|------|
+| volcano | 火山方舟 | volcano | 有声绘本插图生成使用 |
+| dify | Dify | dify | 电商详情页工作流使用 |
+| deepseek | DeepSeek | openai | 通用对话/文案生成 |
+
+> API Key 等敏感信息不写入种子数据，需在管理端系统设置中手动配置。
+
+### 14.3 示例评价数据
+
+为已有工具生成若干条示例评价，确保工具详情页评价区有内容展示：
+
+```sql
+-- 为每个已上线的工具生成 2-3 条示例评价
+-- 使用管理员或测试用户 ID，评分覆盖 3-5 星，含图文评价
+```
+
+评价内容示例：
+
+| 工具 | 评分 | 内容 |
+|------|------|------|
+| 有声绘本 | 5 | "生成的绘本质量很高，插图风格统一，孩子很喜欢！" |
+| 有声绘本 | 4 | "故事逻辑不错，部分插图细节可以更好" |
+| 电商详情页 | 5 | "详情页排版专业，省去了很多设计时间" |
+| 电商详情页 | 4 | "文案需要稍微调整，但整体效果很不错" |
+| 营销文案 | 5 | "文案质量超出预期，稍作修改就能用" |
+
+### 14.4 示例反馈数据
+
+| 类型 | 标题 | 状态 | 说明 |
+|------|------|------|------|
+| feature | 希望增加批量生成功能 | resolved | 已有回复 |
+| bug | 生成结果偶尔会丢失图片 | processing | 正在处理 |
+| consult | 生成的图片可以商用吗 | resolved | 已有回复 |
+
+### 14.5 示例创意数据
+
+沿用已有种子数据中的构思工具记录（如有），确保构思审核页有内容。
+
+### 14.6 执行方式
+
+种子数据通过 Alembic 迁移脚本（`data_migration`）或独立 seed 脚本执行：
+
+```
+apps/backend/scripts/seed_p0_data.py
+```
+
+执行命令：
+```bash
+cd apps/backend && python -m scripts.seed_p0_data
+```
+
+> 种子数据应幂等执行：已存在的数据不重复插入，通过 `ON CONFLICT` 或先检查后插入的方式处理。
+
+---
+
+## 15. 实现顺序建议
 
 考虑到依赖关系，推荐的实现顺序：
 
