@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/lib/toast';
 import { workApi } from '@/lib/api/modules/work';
 import { tokenStorage } from '@/lib/api/client';
+import { getFirstImage } from '@/lib/utils/image';
 import type { Work, WorkFile, Work as WorkVersion } from '@/lib/api/types';
 
 const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || 'http://localhost:8000/api/v1';
@@ -256,9 +257,9 @@ export default function WorkDetailPage() {
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Cover Banner */}
       <div className="relative h-80 lg:h-96 bg-gradient-to-br from-brand-dark to-brand-light overflow-hidden">
-        {work.cover_image ? (
+        {getFirstImage(work.cover_image) ? (
           <img
-            src={work.cover_image}
+            src={getFirstImage(work.cover_image)!}
             alt={work.title}
             className="w-full h-full object-cover opacity-50"
           />
@@ -287,8 +288,8 @@ export default function WorkDetailPage() {
               {/* Thumbnail */}
               <div className="flex-shrink-0 -mt-20 lg:-mt-24">
                 <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-brand-dark to-brand-light">
-                  {work.cover_image ? (
-                    <img src={work.cover_image} alt={work.title} className="w-full h-full object-cover" />
+                  {getFirstImage(work.cover_image) ? (
+                    <img src={getFirstImage(work.cover_image)!} alt={work.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl">
                       {toolInfo.icon}

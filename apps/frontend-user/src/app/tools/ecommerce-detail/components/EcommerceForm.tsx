@@ -58,6 +58,16 @@ export function EcommerceForm({ tool }: EcommerceFormProps) {
   };
 
   const handleStartGeneration = async () => {
+    // 必填校验
+    if (!formState.productName?.trim()) {
+      toast.error('请填写商品名称');
+      return;
+    }
+    if (!formState.productFeatures?.trim()) {
+      toast.error('请填写核心卖点');
+      return;
+    }
+
     try {
       // Map tool slug to task type for backend executor
       const taskTypeMap: Record<string, string> = {

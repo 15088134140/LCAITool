@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toolApi } from '@/lib/api';
+import { getFirstImage } from '@/lib/utils/image';
 
 export function NewAndHotTools() {
   const [newTools, setNewTools] = useState<any[]>([]);
@@ -26,7 +27,7 @@ export function NewAndHotTools() {
               price: item.base_fee ?? 0,
               slug: item.slug || '',
               icon: item.icon || '',
-              cover_image: item.cover_image || item.heroImage || '',
+              cover_image: getFirstImage(item.cover_image) || item.heroImage || '',
             })));
           }
         }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useToolStore } from '../../../store/useToolStore';
 import {
   ToolHero,
@@ -12,12 +13,20 @@ import {
 } from '../../../components/tool-detail';
 
 export default function GenericToolDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
   const { currentTool, detailLoading, error, fetchToolDetail, clearCurrentTool } = useToolStore();
 
   useEffect(() => {
     fetchToolDetail(params.id);
     return () => clearCurrentTool();
   }, [params.id, fetchToolDetail, clearCurrentTool]);
+
+  // 如果工具配置了 slug 且当前 URL 不是 slug，重定向
+  useEffect(() => {
+    if (currentTool?.slug && currentTool.slug !== params.id) {
+      router.replace(`/tools/${currentTool.slug}`);
+    }
+  }, [currentTool, params.id, router]);
 
   if (detailLoading) {
     return (

@@ -10,7 +10,7 @@ import { ToolSearch } from '../../components/tool/ToolSearch';
 type SortOption = 'popular' | 'newest' | 'rating';
 
 export default function ToolsPage() {
-  const { tools, loading, error, fetchTools, searchQuery, setSearchQuery, categoryFilter, setCategoryFilter } = useToolStore();
+  const { tools, totalTools, loading, error, fetchTools, searchQuery, setSearchQuery, categoryFilter, setCategoryFilter } = useToolStore();
   const { categories, fetchCategories } = useCategoryStore();
   const [sortOption, setSortOption] = useState<SortOption>('popular');
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,9 +52,9 @@ export default function ToolsPage() {
     }
   });
 
-  // 分页计算（如果后端已分页则使用 totalTools，否则基于当前数据）
-  const totalPages = Math.max(1, Math.ceil(sortedTools.length / pageSize));
-  const paginatedTools = sortedTools.slice(0, pageSize); // 如果后端已分页则全部显示
+  // 分页计算（使用后端返回的总数）
+  const totalPages = Math.max(1, Math.ceil(totalTools / pageSize));
+  const paginatedTools = sortedTools; // 后端已分页，直接使用
 
   if (loading) {
     return (
