@@ -35,6 +35,7 @@ class PointTransactionType(str, Enum):
     ADJUST = "adjust"
     FREEZE = "freeze"
     UNFREEZE = "unfreeze"
+    REWARD = "reward"
 
 
 # ========== Recharge Package Schemas ==========

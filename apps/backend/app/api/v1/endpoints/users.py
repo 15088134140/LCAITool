@@ -14,6 +14,7 @@ from app.schemas.user import (
     SendCodeRequest,
 )
 from app.schemas.stats import UserStatsResponse
+from app.schemas.payment import PointTransaction as PointTransactionSchema
 from app.services.user_service import UserService
 from app.services.point_service import PointService
 from app.core.security import verify_password, get_password_hash
@@ -80,7 +81,7 @@ async def get_transactions(
         db, current_user.id, skip=skip, limit=page_size
     )
     return {
-        "items": transactions,
+        "items": [PointTransactionSchema.model_validate(t) for t in transactions],
         "total": total,
         "page": page,
         "page_size": page_size,
