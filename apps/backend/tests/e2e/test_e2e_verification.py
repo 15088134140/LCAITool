@@ -69,7 +69,7 @@ class TestAccessVerificationPage:
         print("\n[Test 1] 访问实名认证页面...")
 
         page = logged_in_page
-        page.goto(f"{BASE_URL}/verification")
+        page.goto(f"{BASE_URL}/user-center/verification")
         page.wait_for_load_state("networkidle")
 
         # 验证页面标题
@@ -88,7 +88,7 @@ class TestAccessVerificationPage:
         print("\n[Test 1] 验证表单元素...")
 
         page = logged_in_page
-        page.goto(f"{BASE_URL}/verification")
+        page.goto(f"{BASE_URL}/user-center/verification")
         page.wait_for_load_state("networkidle")
 
         # 检查真实姓名输入框
@@ -143,7 +143,7 @@ class TestAccessVerificationPage:
         if not found:
             # 直接跳转作为备选方案
             print("  [INFO] 未找到个人中心的实名认证链接，直接跳转")
-            page.goto(f"{BASE_URL}/verification")
+            page.goto(f"{BASE_URL}/user-center/verification")
             page.wait_for_load_state("networkidle")
 
         take_screenshot(page, "01_via_user_center", SCREENSHOTS_DIR)
@@ -161,7 +161,7 @@ class TestSubmitVerificationSuccess:
         print("\n[Test 2] 提交实名认证成功流程...")
 
         page = logged_in_page
-        page.goto(f"{BASE_URL}/verification")
+        page.goto(f"{BASE_URL}/user-center/verification")
         page.wait_for_load_state("networkidle")
 
         # 填写真实姓名
@@ -244,7 +244,7 @@ class TestInvalidIdCardFormat:
         print("\n[Test 3] 测试无效身份证号格式...")
 
         page = logged_in_page
-        page.goto(f"{BASE_URL}/verification")
+        page.goto(f"{BASE_URL}/user-center/verification")
         page.wait_for_load_state("networkidle")
 
         # 填写真实姓名
@@ -307,7 +307,7 @@ class TestEmptyFieldsValidation:
         print("\n[Test 4] 测试空字段验证...")
 
         page = logged_in_page
-        page.goto(f"{BASE_URL}/verification")
+        page.goto(f"{BASE_URL}/user-center/verification")
         page.wait_for_load_state("networkidle")
 
         # 清空所有输入框
@@ -358,7 +358,7 @@ class TestVerificationStatusDisplay:
         page = logged_in_page
 
         # 首先尝试完成一次认证
-        page.goto(f"{BASE_URL}/verification")
+        page.goto(f"{BASE_URL}/user-center/verification")
         page.wait_for_load_state("networkidle")
 
         # 填写表单并提交
@@ -432,7 +432,7 @@ class TestVerificationEdgeCases:
         print("\n[Edge Test] 测试身份证号超过18位...")
 
         page = logged_in_page
-        page.goto(f"{BASE_URL}/verification")
+        page.goto(f"{BASE_URL}/user-center/verification")
         page.wait_for_load_state("networkidle")
 
         id_input = page.locator('input[placeholder*="身份证"]').first
@@ -457,7 +457,7 @@ class TestVerificationEdgeCases:
         print("\n[Edge Test] 测试姓名特殊字符...")
 
         page = logged_in_page
-        page.goto(f"{BASE_URL}/verification")
+        page.goto(f"{BASE_URL}/user-center/verification")
         page.wait_for_load_state("networkidle")
 
         name_input = page.locator('input[placeholder*="真实姓名"]').first

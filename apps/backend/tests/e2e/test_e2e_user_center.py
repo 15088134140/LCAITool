@@ -101,7 +101,7 @@ class TestUserCenterPageLoad:
         print("  [OK] Points balance section is displayed")
 
     def test_sidebar_navigation_menu(self, logged_in_page: Page):
-        """Verify sidebar navigation menu items exist"""
+        """Verify sidebar navigation menu items exist (3 groups, 8 items)"""
         print("\n[Test 1.4] Verifying sidebar navigation menu...")
 
         logged_in_page.goto(f"{BASE_URL}/user-center")
@@ -109,8 +109,18 @@ class TestUserCenterPageLoad:
 
         page_content = logged_in_page.content()
 
-        # Check navigation items
-        expected_items = ["个人信息", "账号安全", "实名认证", "积分明细"]
+        # Check group titles
+        expected_groups = ["创作管理", "互动中心", "账户设置"]
+        for group in expected_groups:
+            assert group in page_content, f"Group title '{group}' should exist"
+            print(f"  [OK] Group title '{group}' exists")
+
+        # Check all navigation items
+        expected_items = [
+            "我的作品", "订单记录",       # 创作管理
+            "我的收藏", "帮助与反馈",       # 互动中心
+            "个人信息", "账号安全", "实名认证", "积分明细",  # 账户设置
+        ]
         for item in expected_items:
             assert item in page_content, f"Navigation item '{item}' should exist"
             print(f"  [OK] Navigation item '{item}' exists")
@@ -130,7 +140,7 @@ class TestUserCenterPageLoad:
         print("  [OK] Welcome banner is displayed")
 
     def test_quick_stats_section(self, logged_in_page: Page):
-        """Verify quick stats section"""
+        """Verify quick stats section (作品总数, 累计消费, 奖励积分)"""
         print("\n[Test 1.6] Verifying quick stats section...")
 
         logged_in_page.goto(f"{BASE_URL}/user-center")
@@ -138,10 +148,11 @@ class TestUserCenterPageLoad:
 
         page_content = logged_in_page.content()
 
-        # Check stats items
-        assert "已完成任务" in page_content, "Completed tasks stat should exist"
-        assert "收藏工具" in page_content, "Favorite tools stat should exist"
-        print("  [OK] Quick stats section displayed correctly")
+        # Check new stats cards
+        assert "作品总数" in page_content, "作品总数 stat should exist"
+        assert "累计消费" in page_content, "累计消费 stat should exist"
+        assert "奖励积分" in page_content, "奖励积分 stat should exist"
+        print("  [OK] Quick stats section displayed correctly with new cards")
 
     def test_recent_tools_section(self, logged_in_page: Page):
         """Verify recent tools section"""
@@ -502,7 +513,12 @@ class TestNavigationFlow:
             ("/user-center", "个人中心", "Main dashboard"),
             ("/user-center/profile", "个人信息", "Profile page"),
             ("/user-center/security", "账号安全", "Security page"),
+            ("/user-center/verification", "实名认证", "Verification page"),
             ("/user-center/points", "积分明细", "Points page"),
+            ("/user-center/favorites", "我的收藏", "Favorites page"),
+            ("/works", "已创作成果", "Works page"),
+            ("/orders", "订单记录", "Orders page"),
+            ("/feedback", "帮助与反馈", "Feedback page"),
         ]
 
         for path, keyword, description in pages:
