@@ -1,6 +1,6 @@
 import pytest
 import uuid
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -39,12 +39,14 @@ async def db_session(test_engine):
 
 @pytest.fixture
 def mock_redis_client():
-    """Mock Redis客户端"""
+    """Mock Redis客户端（异步方法）"""
     mock_client = MagicMock()
-    mock_client.set = MagicMock(return_value=True)
-    mock_client.get = MagicMock(return_value=None)
-    mock_client.delete = MagicMock(return_value=1)
+    mock_client.set = AsyncMock(return_value=True)
+    mock_client.get = AsyncMock(return_value=None)
+    mock_client.delete = AsyncMock(return_value=1)
     mock_client.ping = MagicMock(return_value=True)
+    mock_client.incr = AsyncMock(return_value=1)
+    mock_client.expire = AsyncMock(return_value=True)
     return mock_client
 
 
@@ -54,14 +56,13 @@ async def client(db_session: AsyncSession, mock_redis_client):
     async def override_get_db():
         yield db_session
 
-    # 覆盖get_redis_client
-    with patch('app.core.middleware.get_redis_client', return_value=mock_redis_client):
-        with patch('app.api.v1.endpoints.health.get_redis_client', return_value=mock_redis_client):
-            app.dependency_overrides[get_db] = override_get_db
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-                yield ac
-            # 清理覆盖
-            app.dependency_overrides.clear()
+    # 覆盖get_redis_client（所有使用的位置，包括服务层懒导入）
+    with patch('app.core.redis.get_redis_client', return_value=mock_redis_client):
+        app.dependency_overrides[get_db] = override_get_db
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            yield ac
+        # 清理覆盖
+        app.dependency_overrides.clear()
 
 
 @pytest.fixture

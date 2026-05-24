@@ -1,5 +1,5 @@
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, Any
+from pydantic import BaseModel, field_validator
 
 
 class FeedbackCreate(BaseModel):
@@ -19,6 +19,11 @@ class FeedbackResponse(BaseModel):
     admin_reply: Optional[str] = None
     reply_points: Optional[int] = None
     created_at: int
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def coerce_id(cls, v: Any) -> str:
+        return str(v) if not isinstance(v, str) else v
 
     class Config:
         from_attributes = True
