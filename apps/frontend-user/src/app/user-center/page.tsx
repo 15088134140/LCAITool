@@ -10,12 +10,15 @@ import { toolApi } from '@/lib/api/modules/tool';
 import { taskApi } from '@/lib/api/modules/task';
 import { workApi } from '@/lib/api/modules/work';
 import { getFirstImage } from '@/lib/utils/image';
+import { API_BASE_URL, tokenStorage } from '@/lib/api/client';
 import type { UserStats, ToolRecentItem, Task as TaskType, Work } from '@/lib/api/types';
 
 const formatRelativeTime = (timestamp: number | string | null | undefined): string => {
   if (!timestamp) return '未知';
   const now = Date.now();
-  const t = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp;
+  let t = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp;
+  // 后端时间戳为秒级，转毫秒
+  if (t < 1e12) t *= 1000;
   const diff = now - t;
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return '刚刚';
@@ -84,6 +87,29 @@ export default function UserCenterPage() {
         setDataLoading(false);
       });
   }, [isAuthenticated]);
+
+  // 下载作品 ZIP（带 Token 认证）
+  const handleDownloadWork = async (workId: string) => {
+    try {
+      const token = tokenStorage.getToken();
+      const response = await fetch(
+        `${API_BASE_URL}/works/${workId}/download`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!response.ok) throw new Error('下载失败');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `work_${workId}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('下载失败:', err);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -483,8 +509,8 @@ export default function UserCenterPage() {
                     const coverImage = getFirstImage(work.cover_image);
                     return (
                       <div key={work.id} className="card-hover rounded-xl border border-gray-200 overflow-hidden group" style={{ transition: 'all 0.25s ease-out' }}>
-                        <Link href={`/works/detail/${work.id}`} className="block">
-                          <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                        <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                          <Link href={`/works/detail/${work.id}`} className="block w-full h-full">
                             {coverImage ? (
                               <img src={coverImage} alt={work.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
@@ -494,16 +520,16 @@ export default function UserCenterPage() {
                                 </svg>
                               </div>
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3 gap-2">
-                              <Link href={`/works/detail/${work.id}`} className="px-3 py-1.5 bg-white text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-100">
-                                查看
-                              </Link>
-                              <a href={`/api/v1/works/${work.id}/download`} className="px-3 py-1.5 bg-[#059669] text-white rounded-lg text-xs font-medium hover:bg-[#047857]">
-                                下载
-                              </a>
-                            </div>
+                          </Link>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3 gap-2">
+                            <Link href={`/works/detail/${work.id}`} className="px-3 py-1.5 bg-white text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-100">
+                              查看
+                            </Link>
+                            <button onClick={() => handleDownloadWork(work.id)} className="px-3 py-1.5 bg-[#059669] text-white rounded-lg text-xs font-medium hover:bg-[#047857]">
+                              下载
+                            </button>
                           </div>
-                        </Link>
+                        </div>
                         <div className="p-3">
                           <h3 className="font-semibold text-gray-900 text-sm truncate">{work.title || '未命名作品'}</h3>
                           <p className="text-xs text-gray-500">{work.tool_name || ''} · {formatRelativeTime(work.created_at)}</p>

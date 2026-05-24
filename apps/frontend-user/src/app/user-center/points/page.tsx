@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useUserStore } from '@/store/userStore';
 import { userApi } from '@/lib/api/modules/user';
-import type { PointTransaction, TransactionType } from '@/lib/api/types';
+import type { PointTransaction, TransactionType, UserStats } from '@/lib/api/types';
 
 // Filter options
 type FilterType = 'all' | 'income' | 'expense';
@@ -13,6 +13,7 @@ const PointsPage: React.FC = () => {
   const { user, refreshUserBalance } = useUserStore();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
+  const [stats, setStats] = useState<UserStats | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -64,7 +65,9 @@ const PointsPage: React.FC = () => {
 
   // Format date
   const formatDate = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleString('zh-CN', {
+    // 后端时间戳为秒级，转毫秒
+    const t = timestamp < 1e12 ? timestamp * 1000 : timestamp;
+    return new Date(t).toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -153,9 +156,10 @@ const PointsPage: React.FC = () => {
     }
   }, [page, filter, user?.id]);
 
-  // 每次页面挂载时刷新余额
+  // 每次页面挂载时刷新余额和统计
   useEffect(() => {
     refreshUserBalance();
+    userApi.getStats().then(setStats).catch(() => {});
   }, [refreshUserBalance]);
 
   // Initial load
@@ -164,6 +168,13 @@ const PointsPage: React.FC = () => {
     loadTransactions(true);
   }, [filter]);
 
+  // Load more when page changes
+  useEffect(() => {
+    if (page > 1) {
+      loadTransactions();
+    }
+  }, [page]);
+
   // Load more
   const loadMore = () => {
     setPage(p => p + 1);
@@ -171,19 +182,17 @@ const PointsPage: React.FC = () => {
 
   // Filter transactions client-side for MVP
   const filteredTransactions = transactions.filter(t => {
+    // 冻结/解冻是内部中间状态，对用户无实际意义，不展示
+    if (t.type === 'freeze' || t.type === 'unfreeze') return false;
     if (filter === 'all') return true;
     if (filter === 'income') return t.amount > 0;
     if (filter === 'expense') return t.amount < 0;
     return true;
   });
 
-  // Calculate stats
-  const totalIncome = transactions
-    .filter(t => t.amount > 0)
-    .reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = Math.abs(transactions
-    .filter(t => t.amount < 0)
-    .reduce((sum, t) => sum + t.amount, 0));
+  // 从接口获取统计数据（不分页，真实总数）
+  const totalIncome = stats?.total_income ?? 0;
+  const totalExpense = stats?.total_consumed ?? 0;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">

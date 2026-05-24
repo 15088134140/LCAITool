@@ -55,7 +55,7 @@ export default function VerificationPage() {
     setLoading(true);
     try {
       await userApi.submitRealNameVerification({
-        id_card_name: formData.real_name,
+        real_name: formData.real_name,
         id_card_number: formData.id_card,
       });
       updateUser({ id_card_verified: true, id_card: formData.id_card });
