@@ -10,7 +10,9 @@ import { getFirstImage } from '@/lib/utils/image';
 const formatRelativeTime = (timestamp: number | string | null | undefined): string => {
   if (!timestamp) return '未知';
   const now = Date.now();
-  const t = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp;
+  let t = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp;
+  // 后端时间戳为秒级，转毫秒
+  if (t < 1e12) t *= 1000;
   const diff = now - t;
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return '刚刚';

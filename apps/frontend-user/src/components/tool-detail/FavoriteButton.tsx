@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useFavoriteStore } from '../../store/useFavoriteStore';
 
 interface FavoriteButtonProps {
@@ -9,8 +10,12 @@ interface FavoriteButtonProps {
 }
 
 export function FavoriteButton({ toolId, size = 'md', className = '' }: FavoriteButtonProps) {
-  const { isFavorite, toggleFavorite } = useFavoriteStore();
+  const { isFavorite, toggleFavorite, loadFavorites, loaded } = useFavoriteStore();
   const isFavorited = isFavorite(toolId);
+
+  useEffect(() => {
+    loadFavorites();
+  }, []);
 
   const sizeClasses = {
     sm: 'w-8 h-8',
