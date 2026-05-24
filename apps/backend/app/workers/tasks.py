@@ -377,6 +377,14 @@ async def _execute_with_async_session(
                 # 结算任务（计算实际费用）
                 actual_cost = executor.estimate_cost(input_params)
 
+                logger.info(
+                    f"[Settlement] task={task_uuid} "
+                    f"tool_config={tool_config} "
+                    f"input_params_keys={list(input_params.keys())} "
+                    f"actual_cost={actual_cost} "
+                    f"estimated_cost={task.estimated_cost if task else 'N/A'}"
+                )
+
                 # 完成任务并结算
                 await TaskService.complete_task(
                     db=db,

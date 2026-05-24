@@ -5,6 +5,7 @@
 import json
 import os
 import uuid
+import logging
 from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +16,8 @@ from app.services.task_service import TaskService
 from app.services.work_service import WorkService
 from app.schemas.task import WorkCreate, WorkFileCreate
 from app.models.task import WorkFile
+
+logger = logging.getLogger(__name__)
 
 # Dify 节点 → 本地步骤映射
 DIFY_STEP_MAP = {
@@ -49,7 +52,13 @@ class EcommerceExecutor(BaseToolExecutor):
 
         base_fee = self._tool_config.get('base_fee', 12)
         image_fee = self._tool_config.get('image_fee', 2)
-        return base_fee + total_images * image_fee
+        result = base_fee + total_images * image_fee
+        logger.info(
+            f"[EcommerceExecutor.estimate_cost] "
+            f"main_image_count={main_image_count}, detail_image_count={detail_image_count}, "
+            f"base_fee={base_fee}, image_fee={image_fee}, result={result}"
+        )
+        return result
 
     async def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
         works_dir = self.get_works_dir()
