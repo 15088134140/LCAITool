@@ -331,13 +331,19 @@ class PaymentService:
         user_id: uuid.UUID,
         skip: int = 0,
         limit: int = 20,
-        status: Optional[OrderStatus] = None
+        status: Optional[OrderStatus] = None,
+        start_date: Optional[int] = None,
+        end_date: Optional[int] = None,
     ) -> Tuple[List[Order], int]:
         """获取用户订单列表"""
         query = select(Order).where(Order.user_id == user_id)
 
         if status:
             query = query.where(Order.status == status)
+        if start_date:
+            query = query.where(Order.created_at >= start_date)
+        if end_date:
+            query = query.where(Order.created_at <= end_date)
 
         # 获取总数
         count_query = select(func.count()).select_from(query.subquery())

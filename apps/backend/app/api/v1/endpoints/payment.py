@@ -207,6 +207,8 @@ async def get_user_orders(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     status: Optional[str] = Query(None, description="订单状态: pending/paid/failed/refunded"),
+    start_date: Optional[int] = Query(None, description="开始时间戳（秒）"),
+    end_date: Optional[int] = Query(None, description="结束时间戳（秒）"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
@@ -224,7 +226,9 @@ async def get_user_orders(
         user_id=current_user.id,
         skip=skip,
         limit=page_size,
-        status=order_status
+        status=order_status,
+        start_date=start_date,
+        end_date=end_date,
     )
 
     return {
