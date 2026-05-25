@@ -204,6 +204,26 @@ async def get_provider_from_db(cls, db, slug: str) -> BaseAIProvider:
 
 支持同时由环境变量和数据库配置。
 
+### 3.6 统一返回格式约定
+
+所有 Provider 的 `generate_image()` / `generate_audio()` / `generate_video()` 统一返回 **bytes 原始数据**：
+
+| 接口 | 原始返回 | Provider 内部转换 |
+|------|---------|-----------------|
+| Seedream 4.5 | base64 字符串 | `base64.b64decode(data)` → bytes |
+| CogView-3 | HTTP URL | `httpx.get(url).content` → bytes |
+| GLM-TTS | 二进制响应 | `response.content` → bytes |
+| Seedance 2.0 | 视频文件 URL | `httpx.get(url).content` → bytes |
+
+调用方（执行器/对外 API 端点）统一处理：
+```python
+content = await provider.generate_image(prompt)
+file_path = save_to_storage(content, "images/page_001.png")
+file_url = get_file_url(file_path)
+```
+
+`generate_text()` 返回格式不变（`str`）。
+
 ---
 
 ## 四、对外 API（OpenAI 兼容格式）
