@@ -11,6 +11,8 @@ from app.providers.ai import (
     AIProviderFactory,
     DoubaoProvider,
     DifyProvider,
+    DeepSeekProvider,
+    ZhipuProvider,
     AIResponse,
     BaseAIProvider
 )
@@ -417,3 +419,206 @@ def test_provider_config_merge():
     del os.environ["DOUBAO_API_KEY"]
     del os.environ["DOUBAO_API_BASE"]
     del os.environ["DOUBAO_MODEL"]
+
+
+# ============ DeepSeekProvider Tests ============
+
+@pytest.mark.asyncio
+async def test_deepseek_generate_text_success(httpx_mock):
+    """测试 DeepSeek 文本生成成功"""
+    mock_response = {
+        "choices": [
+            {
+                "message": {"content": "这是 DeepSeek 的回复"},
+                "finish_reason": "stop"
+            }
+        ],
+        "usage": {
+            "prompt_tokens": 15,
+            "completion_tokens": 25,
+            "total_tokens": 40
+        }
+    }
+
+    httpx_mock.add_response(json=mock_response)
+
+    provider = DeepSeekProvider(api_key="test_key")
+    response = await provider.generate_text("你好，请介绍一下自己")
+
+    assert response.success is True
+    assert response.content == "这是 DeepSeek 的回复"
+    assert response.usage["total_tokens"] == 40
+    assert response.error is None
+
+
+@pytest.mark.asyncio
+async def test_deepseek_generate_text_thinking_mode(httpx_mock):
+    """测试 DeepSeek 思考模式"""
+    mock_response = {
+        "choices": [
+            {
+                "message": {"content": "思考后的回复"},
+                "finish_reason": "stop"
+            }
+        ],
+        "usage": {"total_tokens": 50}
+    }
+
+    httpx_mock.add_response(json=mock_response)
+
+    provider = DeepSeekProvider(api_key="test_key")
+    response = await provider.generate_text("复杂推理问题", thinking=True)
+
+    assert response.success is True
+    assert response.content == "思考后的回复"
+
+    # 验证请求中使用了正确的模型和 extra_body
+    request = httpx_mock.get_request()
+    body = request.content.decode()
+    assert "deepseek-v4-pro" in body
+    assert "thinking" in body
+    assert "enabled" in body
+
+
+@pytest.mark.asyncio
+async def test_deepseek_generate_text_http_error(httpx_mock):
+    """测试 DeepSeek 文本生成 HTTP 错误"""
+    httpx_mock.add_response(status_code=401, text="Unauthorized")
+
+    provider = DeepSeekProvider(api_key="invalid_key")
+    response = await provider.generate_text("你好")
+
+    assert response.success is False
+    assert "401" in response.error
+
+
+@pytest.mark.asyncio
+async def test_deepseek_generate_text_timeout(httpx_mock):
+    """测试 DeepSeek 文本生成超时"""
+    import httpx
+    httpx_mock.add_exception(httpx.TimeoutException("Timeout"))
+
+    provider = DeepSeekProvider(api_key="test_key")
+    response = await provider.generate_text("你好")
+
+    assert response.success is False
+    assert "timeout" in response.error.lower()
+
+
+@pytest.mark.asyncio
+async def test_deepseek_unsupported_methods():
+    """测试 DeepSeek 不支持的生成方法"""
+    provider = DeepSeekProvider(api_key="test_key")
+
+    # 图片生成
+    img_response = await provider.generate_image("一只猫")
+    assert img_response.success is False
+    assert "not implemented" in img_response.error.lower()
+
+    # 音频生成
+    audio_response = await provider.generate_audio("你好")
+    assert audio_response.success is False
+    assert "not implemented" in audio_response.error.lower()
+
+    # 视频生成
+    video_response = await provider.generate_video("一只猫在跑步")
+    assert video_response.success is False
+    assert "not implemented" in video_response.error.lower()
+
+
+# ============ ZhipuProvider Tests ============
+
+@pytest.mark.asyncio
+async def test_zhipu_generate_text_success(httpx_mock):
+    """测试智谱文本生成成功"""
+    mock_response = {
+        "choices": [
+            {
+                "message": {"content": "这是智谱的回复"},
+                "finish_reason": "stop"
+            }
+        ],
+        "usage": {
+            "prompt_tokens": 10,
+            "completion_tokens": 20,
+            "total_tokens": 30
+        }
+    }
+
+    httpx_mock.add_response(json=mock_response)
+
+    provider = ZhipuProvider(api_key="test_key")
+    response = await provider.generate_text("你好，请介绍一下自己")
+
+    assert response.success is True
+    assert response.content == "这是智谱的回复"
+    assert response.usage["total_tokens"] == 30
+    assert response.error is None
+
+
+@pytest.mark.asyncio
+async def test_zhipu_generate_image_success(httpx_mock):
+    """测试智谱 CogView-3 图片生成成功"""
+    # 第一步：CogView API 返回图片 URL
+    httpx_mock.add_response(
+        json={"data": [{"url": "https://example.com/img.png"}]}
+    )
+    # 第二步：下载图片
+    httpx_mock.add_response(content=b"fake_image_bytes")
+
+    provider = ZhipuProvider(api_key="test_key")
+    response = await provider.generate_image("一只可爱的猫")
+
+    assert response.success is True
+    assert len(response.content) > 0  # base64 编码后的数据
+    # 验证 base64 解码后是原始图片数据
+    decoded = base64.b64decode(response.content)
+    assert decoded == b"fake_image_bytes"
+    assert response.usage["images"] == 1
+
+
+@pytest.mark.asyncio
+async def test_zhipu_generate_audio_success(httpx_mock):
+    """测试智谱 GLM-TTS 语音生成成功"""
+    mock_audio_data = b"fake audio data from zhipu"
+
+    httpx_mock.add_response(
+        content=mock_audio_data,
+        headers={"content-type": "audio/mpeg"}
+    )
+
+    provider = ZhipuProvider(api_key="test_key")
+    response = await provider.generate_audio("你好，世界")
+
+    assert response.success is True
+    assert len(response.content) > 0
+    decoded = base64.b64decode(response.content)
+    assert decoded == mock_audio_data
+    assert response.usage["characters"] == 5
+
+
+@pytest.mark.asyncio
+async def test_zhipu_generate_video_not_supported():
+    """测试智谱视频生成未实现"""
+    provider = ZhipuProvider(api_key="test_key")
+    response = await provider.generate_video("一只猫在跑步")
+
+    assert response.success is False
+    assert "not implemented" in response.error.lower()
+
+
+@pytest.mark.asyncio
+async def test_zhipu_generate_image_download_failure(httpx_mock):
+    """测试智谱 CogView 图片下载失败"""
+    # 第一步：CogView API 返回图片 URL
+    httpx_mock.add_response(
+        json={"data": [{"url": "https://example.com/img.png"}]}
+    )
+    # 第二步：下载图片时返回 404
+    httpx_mock.add_response(status_code=404, text="Not Found")
+
+    provider = ZhipuProvider(api_key="test_key")
+    response = await provider.generate_image("一只猫")
+
+    assert response.success is False
+    assert "404" in response.error

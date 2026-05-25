@@ -1,6 +1,6 @@
 """
 AI Providers Package
-提供各种AI提供商的实现：火山方舟-豆包、Dify工作流等
+提供各种AI提供商的实现：火山方舟-豆包、Dify工作流、DeepSeek、智谱等
 """
 from typing import Dict, Type
 import os
@@ -8,6 +8,8 @@ import os
 from .base import BaseAIProvider, AIResponse
 from .doubao import DoubaoProvider
 from .dify import DifyProvider
+from .deepseek import DeepSeekProvider
+from .zhipu import ZhipuProvider
 
 
 class AIProviderFactory:
@@ -16,13 +18,15 @@ class AIProviderFactory:
     _providers: Dict[str, Type[BaseAIProvider]] = {
         "doubao": DoubaoProvider,
         "dify": DifyProvider,
+        "deepseek": DeepSeekProvider,
+        "zhipu": ZhipuProvider,
     }
 
     @classmethod
     def get_provider(cls, provider_name: str, **config) -> BaseAIProvider:
         """
         根据提供商名称获取实例
-        :param provider_name: 提供商名称（doubao, dify）
+        :param provider_name: 提供商名称（doubao, dify, deepseek, zhipu）
         :param config: 配置参数，会与环境变量中的配置合并
         :return: BaseAIProvider 实例
         :raises ValueError: 如果提供商不支持
@@ -40,6 +44,25 @@ class AIProviderFactory:
         merged_config = {**env_config, **config}
 
         return provider_class(**merged_config)
+
+    @classmethod
+    async def get_provider_from_db(cls, db, slug: str) -> BaseAIProvider:
+        """
+        从数据库获取 AI Provider 配置并创建实例
+        :param db: 数据库会话（异步）
+        :param slug: 提供商标识（如 deepseek, zhipu）
+        :return: BaseAIProvider 实例
+        :raises ValueError: 如果提供商不存在
+        """
+        from sqlalchemy import select
+        from app.models.system import AiProvider
+
+        result = await db.execute(select(AiProvider).where(AiProvider.slug == slug))
+        provider = result.scalar_one_or_none()
+        if not provider:
+            raise ValueError(f"AI provider '{slug}' not found in database")
+
+        return cls.get_provider(provider.slug, **provider.config)
 
     @classmethod
     def _get_env_config(cls, provider_name: str) -> Dict[str, str]:
@@ -69,5 +92,7 @@ __all__ = [
     "AIResponse",
     "DoubaoProvider",
     "DifyProvider",
+    "DeepSeekProvider",
+    "ZhipuProvider",
     "AIProviderFactory",
 ]
