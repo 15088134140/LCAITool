@@ -35,6 +35,7 @@ const formatRelativeTime = (timestamp: number | string | null | undefined): stri
 export default function UserCenterPage() {
   const router = useRouter();
   const { user, isAuthenticated, logout, refreshBalance } = useAuthStore();
+  const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Data states
@@ -48,12 +49,20 @@ export default function UserCenterPage() {
   const [showInvite, setShowInvite] = useState(false);
 
   useEffect(() => {
+    // Zustand v5 persist 异步从 localStorage 恢复状态
+    // 等待下一个微任务确保 persist 已完成 hydration
+    Promise.resolve().then(() => setHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    // 等待 hydration 完成后再判断是否已登录
+    if (!hydrated) return;
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     setLoading(false);
-  }, [isAuthenticated, router]);
+  }, [hydrated, isAuthenticated, router]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -225,7 +234,6 @@ export default function UserCenterPage() {
                   >
                     每日签到
                   </button>
-                  </div>
                 </div>
               </div>
             </div>

@@ -10,7 +10,7 @@ interface FavoriteButtonProps {
 }
 
 export function FavoriteButton({ toolId, size = 'md', className = '' }: FavoriteButtonProps) {
-  const { isFavorite, toggleFavorite, loadFavorites, loaded } = useFavoriteStore();
+  const { isFavorite, toggleFavorite, loadFavorites } = useFavoriteStore();
   const isFavorited = isFavorite(toolId);
 
   useEffect(() => {

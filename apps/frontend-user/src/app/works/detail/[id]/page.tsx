@@ -9,6 +9,7 @@ import { workApi } from '@/lib/api/modules/work';
 import { tokenStorage } from '@/lib/api/client';
 import { getFirstImage } from '@/lib/utils/image';
 import type { Work, WorkFile, Work as WorkVersion } from '@/lib/api/types';
+import RatingModal from '@/components/rating/RatingModal';
 
 const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || 'http://localhost:8000/api/v1';
 
@@ -102,17 +103,18 @@ const getFileIcon = (fileType: WorkFile['file_type']) => {
 export default function WorkDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const workId = params.id as string;
+  const workId = params['id'] as string;
 
   const [work, setWork] = useState<Work | null>(null);
   const [files, setFiles] = useState<WorkFile[]>([]);
   const [versions, setVersions] = useState<WorkVersion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedVersion, setSelectedVersion] = useState<number>(2);
+  const [selectedVersion] = useState<number>(2);
   const [activeTab, setActiveTab] = useState<'preview' | 'files' | 'versions'>('preview');
   const [isLiked, setIsLiked] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const taskType = work?.task_type?.toLowerCase() || '';
   const toolInfo = taskType.includes('storybook') ? toolConfig.storybook :
@@ -382,6 +384,15 @@ export default function WorkDetailPage() {
                     </svg>
                     创建新作品
                   </Link>
+                  <button
+                    onClick={() => setShowRatingModal(true)}
+                    className="inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-xl border border-[#E4E7EB] text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#1E3A5F] transition-all"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    评价
+                  </button>
                 </div>
 
                 {/* Meta */}
@@ -459,11 +470,11 @@ export default function WorkDetailPage() {
                     {/* Main Preview */}
                     <div
                       className="aspect-video bg-[#F8FAFC] rounded-xl overflow-hidden cursor-pointer"
-                      onClick={() => setSelectedImage(previewImages[0].file_url)}
+                      onClick={() => setSelectedImage(previewImages[0]!.file_url)}
                     >
                       <img
-                        src={previewImages[0].file_url}
-                        alt={previewImages[0].file_name}
+                        src={previewImages[0]!.file_url}
+                        alt={previewImages[0]!.file_name}
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -471,7 +482,7 @@ export default function WorkDetailPage() {
                     {/* Thumbnail Grid */}
                     {previewImages.length > 1 && (
                       <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
-                        {previewImages.map((file, index) => (
+                        {previewImages.map((file) => (
                           <button
                             key={file.id}
                             onClick={() => setSelectedImage(file.file_url)}
@@ -569,7 +580,7 @@ export default function WorkDetailPage() {
             {activeTab === 'versions' && (
               <div>
                 <div className="space-y-4">
-                  {versions.map((version, index) => (
+                  {versions.map((version) => (
                     <div
                       key={version.id}
                       className={cn(
@@ -705,6 +716,17 @@ export default function WorkDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 评价弹窗 */}
+      {work && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          toolId={work.tool_id || ''}
+          taskId={work.task_id}
+          toolName={toolInfo.name}
+        />
       )}
     </div>
   );

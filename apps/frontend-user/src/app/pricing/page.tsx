@@ -63,7 +63,7 @@ export default function PricingPage() {
       if (popular) {
         setSelectedPackageId(popular.id);
       } else if (data.items?.length > 0) {
-        setSelectedPackageId(data.items[0].id);
+        setSelectedPackageId(data.items[0]!.id);
       }
     } catch (e) {
       console.error('加载充值档位失败', e);

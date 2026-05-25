@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Tool } from '@/lib/api/types';
+import type { Tool } from '@/types';
 import { taskApi } from '@/lib/api/modules/task';
 import { userApi } from '@/lib/api/modules/user';
 import { ProgressModal } from '@/components/tool-detail/ProgressModal';
@@ -73,7 +73,7 @@ export function EcommerceForm({ tool }: EcommerceFormProps) {
       const taskTypeMap: Record<string, string> = {
         'ecommerce-detail': 'ecommerce',
       };
-      const taskType = taskTypeMap[tool.slug] || tool.slug;
+      const taskType = taskTypeMap[tool.slug ?? ''] || tool.slug || '';
 
       // Collect form inputs
       const inputParams: Record<string, any> = {

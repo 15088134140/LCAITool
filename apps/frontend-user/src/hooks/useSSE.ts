@@ -3,12 +3,9 @@
  * 支持自动重连、断线重连状态恢复、事件分发等功能
  */
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type {
   SSEEvent,
-  TaskProgressEvent,
-  TaskCompletedEvent,
-  TaskFailedEvent,
 } from '../lib/api/types';
 import { tokenStorage } from '../lib/api/client';
 

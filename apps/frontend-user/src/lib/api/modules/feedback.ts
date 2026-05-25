@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+import { api } from '../client';
 
 export const feedbackApi = {
   create: (data: { type: string; title: string; description?: string; contact?: string }) =>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store';
 import { userApi } from '@/lib/api';
@@ -10,6 +10,15 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+
+  // 页面加载时从服务器刷新用户数据（确保实名信息等字段是最新的）
+  useEffect(() => {
+    userApi.getCurrentUser().then((freshUser) => {
+      if (freshUser) {
+        updateUser(freshUser as any);
+      }
+    }).catch(() => {});
+  }, [updateUser]);
 
   const [formData, setFormData] = useState({
     nickname: user?.nickname || '',
@@ -222,7 +231,8 @@ export default function ProfilePage() {
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">已认证</p>
-                          <p className="text-sm text-gray-500">身份证号：{user.id_card?.replace(/(\d{6})\d{8}(\d{4})/, '$1********$2') || ''}</p>
+                          <p className="text-sm text-gray-500">姓名：{user.real_name || ''}</p>
+                          <p className="text-sm text-gray-500">身份证号：{user.id_card_number || ''}</p>
                         </div>
                       </>
                     ) : (

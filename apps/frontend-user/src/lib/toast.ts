@@ -50,10 +50,10 @@ export const toast = {
     useToastStore.getState().addToast({ type: 'success', message });
   },
   error: (message: string, action?: { label: string; onClick: () => void }) => {
-    useToastStore.getState().addToast({ type: 'error', message, action });
+    useToastStore.getState().addToast({ type: 'error', message, ...(action ? { action } : {}) });
   },
   warning: (message: string, action?: { label: string; onClick: () => void }) => {
-    useToastStore.getState().addToast({ type: 'warning', message, action });
+    useToastStore.getState().addToast({ type: 'warning', message, ...(action ? { action } : {}) });
   },
   info: (message: string) => {
     useToastStore.getState().addToast({ type: 'info', message });

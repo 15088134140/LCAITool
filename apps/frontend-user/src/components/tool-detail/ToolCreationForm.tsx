@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { DialogMode } from './DialogMode';
-import type { Tool } from '@/lib/api/types';
+import type { Tool } from '@/types';
 
 interface ToolCreationFormProps {
   tool: Tool;

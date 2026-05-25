@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Tool } from '@/lib/api/types';
+import type { Tool } from '@/types';
 import { chatApi, type ChatMessage } from '@/lib/api/modules/chat';
 import { taskApi } from '@/lib/api/modules/task';
 import { userApi } from '@/lib/api/modules/user';
@@ -103,7 +103,7 @@ export function DialogMode({ tool }: DialogModeProps) {
         'ecommerce-detail': 'ecommerce',
         'product-description': 'marketing',
       };
-      const taskType = taskTypeMap[tool.slug] || tool.slug;
+      const taskType = (taskTypeMap[tool.slug ?? ''] || tool.slug) ?? '';
 
       const task = await taskApi.createTask({
         tool_id: tool.id,

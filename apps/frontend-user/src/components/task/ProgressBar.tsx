@@ -81,7 +81,6 @@ export function ProgressBar({
 
 interface StepIndicatorProps {
   currentStep: number;
-  totalSteps: number;
   steps: string[];
   status?: 'pending' | 'running' | 'completed' | 'failed';
 }
@@ -111,7 +110,6 @@ function CompletedStep({ step, index, totalSteps }: { step: string; index: numbe
 
 export function StepIndicator({
   currentStep,
-  totalSteps,
   steps,
   status = 'running'
 }: StepIndicatorProps) {
@@ -121,7 +119,6 @@ export function StepIndicator({
         const stepNumber = index + 1;
         const isCompleted = stepNumber < currentStep;
         const isCurrent = stepNumber === currentStep;
-        const isPending = stepNumber > currentStep;
 
         // 任务已完成 -> 所有步骤标记完成
         if (status === 'completed') {

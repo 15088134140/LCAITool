@@ -40,7 +40,7 @@ const ecommerceSteps = [
 export default function TaskProgressPage() {
   const params = useParams();
   const router = useRouter();
-  const taskId = params.id as string;
+  const taskId = params['id'] as string;
 
   const [task, setTask] = useState<Task | null>(null);
   const [logs, setLogs] = useState<TaskLog[]>([]);
@@ -108,22 +108,23 @@ export default function TaskProgressPage() {
       // 更新任务状态
       setTask(prev => prev ? {
         ...prev,
-        status: event.status ?? prev.status,
+        status: (event.status as Task['status']) ?? prev.status,
         progress: event.progress ?? prev.progress,
-        progressMessage: event.progressMessage ?? prev.progressMessage,
-        resultPreview: event.work_id ? event.work_id : prev.resultPreview
-      } : null);
+        progress_message: event.progressMessage ?? prev.progress_message,
+        result_preview: event.work_id ?? prev.result_preview,
+      } as Task : null);
 
       // 添加日志
       if (event.progressMessage) {
+        const now = Math.floor(Date.now() / 1000);
         setLogs(prev => [...prev, {
           id: `log-${Date.now()}`,
-          taskId: taskId,
-          level: 'info',
+          task_id: taskId,
+          level: 'info' as const,
           message: event.progressMessage,
-          timestamp: Math.floor(Date.now() / 1000),
-          createdAt: Math.floor(Date.now() / 1000),
-          updatedAt: Math.floor(Date.now() / 1000)
+          timestamp: now,
+          created_at: now,
+          updated_at: now
         } as TaskLog]);
       }
     });
@@ -146,16 +147,16 @@ export default function TaskProgressPage() {
           if (!prev) return prev;
           const hasChanges = taskData.status !== prev.status
             || taskData.progress !== prev.progress
-            || taskData.progressMessage !== prev.progressMessage
-            || (taskData.resultPreview && taskData.resultPreview !== prev.resultPreview);
+            || taskData.progress_message !== prev.progress_message
+            || (taskData.result_preview && taskData.result_preview !== prev.result_preview);
           if (!hasChanges) return prev;
           return {
             ...prev,
             status: taskData.status,
             progress: taskData.progress,
-            progressMessage: taskData.progressMessage,
-            resultPreview: taskData.resultPreview || prev.resultPreview,
-          };
+            progress_message: taskData.progress_message,
+            result_preview: taskData.result_preview || prev.result_preview,
+          } as Task;
         });
 
         // 也获取最新的日志
@@ -171,14 +172,15 @@ export default function TaskProgressPage() {
 
   // 任务完成后自动跳转
   useEffect(() => {
-    if (task?.status === 'completed' && task.resultPreview) {
+    if (task?.status === 'completed' && task.result_preview) {
       // 延迟3秒后跳转，让用户看到完成状态
       const timer = setTimeout(() => {
-        router.push(`/works/detail/${task.resultPreview}`);
+        router.push(`/works/detail/${task.result_preview}`);
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [task?.status, task?.resultPreview, router]);
+    return;
+  }, [task?.status, task?.result_preview, router]);
 
   // 处理重试
   const handleRetry = async () => {
@@ -191,7 +193,7 @@ export default function TaskProgressPage() {
         taskApi.getTaskLogs(taskId)
       ]);
       setTask(taskData);
-      setLogs(logsData);
+      setLogs(logsData.items || []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : '重试失败');
@@ -253,7 +255,7 @@ export default function TaskProgressPage() {
     );
   }
 
-  const steps = getStepsForTask(task?.taskType);
+  const steps = getStepsForTask(task?.task_type);
   const currentStep = getCurrentStep(task?.progress || 0, steps);
   const isCompleted = task?.status === 'completed';
   const isFailed = task?.status === 'failed' || task?.status === 'timeout';
@@ -295,7 +297,7 @@ export default function TaskProgressPage() {
              '🔄 正在处理您的任务'}
           </h1>
           <p className="text-[#64748B]">
-            {task?.taskType || 'AI创作任务'} · 任务ID: {taskId}
+            {task?.task_type || 'AI创作任务'} · 任务ID: {taskId}
           </p>
         </div>
 
@@ -330,16 +332,16 @@ export default function TaskProgressPage() {
 
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-[#1E3A5F] mb-2">
-                    {task?.progressMessage ||
+                    {task?.progress_message ||
                      (isCompleted ? '您的成果已准备好！' :
                       isFailed ? '任务处理过程中遇到问题' :
                       isCancelled ? '任务已被取消' :
                       '请稍候，AI正在努力创作中...')}
                   </h2>
 
-                  {task?.errorMessage && (
+                  {task?.error_message && (
                     <p className="text-red-500 bg-red-50 rounded-lg p-4 mb-4">
-                      {task.errorMessage}
+                      {task.error_message}
                     </p>
                   )}
 
@@ -347,7 +349,7 @@ export default function TaskProgressPage() {
                   <div className="max-w-md">
                     <ProgressBar
                       progress={task?.progress || 0}
-                      status={task?.status || 'pending'}
+                      status={(task?.status === 'cancelled' ? 'failed' : task?.status) || 'pending'}
                       size="lg"
                       animated={isRunning}
                     />
@@ -360,7 +362,6 @@ export default function TaskProgressPage() {
                 <h3 className="font-semibold text-[#1E3A5F] mb-6">处理步骤</h3>
                 <StepIndicator
                   currentStep={isFailed ? currentStep : isCompleted ? steps.length : currentStep}
-                  totalSteps={steps.length}
                   steps={steps}
                   status={isFailed ? 'failed' : isCompleted ? 'completed' : isCancelled ? 'failed' : 'running'}
                 />
@@ -369,9 +370,9 @@ export default function TaskProgressPage() {
 
             {/* Action Buttons */}
             <div className="flex gap-4">
-              {isCompleted && task?.resultPreview && (
+              {isCompleted && task?.result_preview && (
                 <Link
-                  href={`/works/detail/${task.resultPreview}`}
+                  href={`/works/detail/${task.result_preview}`}
                   className="btn-primary px-8 py-4 text-white font-semibold rounded-xl flex items-center justify-center gap-2 flex-1"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -487,12 +488,12 @@ export default function TaskProgressPage() {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-[#64748B]">预估费用</span>
-                  <span className="font-medium text-[#1E3A5F]">{task?.estimatedCost || 0} 积分</span>
+                  <span className="font-medium text-[#1E3A5F]">{task?.estimated_cost || 0} 积分</span>
                 </div>
-                {task?.actualCost !== undefined && task?.actualCost !== null && (
+                {task?.actual_cost !== undefined && task?.actual_cost !== null && (
                   <div className="flex justify-between text-sm pt-2 border-t border-[#E4E7EB]">
                     <span className="text-[#64748B]">实际费用</span>
-                    <span className="font-bold text-success-dark">{task.actualCost} 积分</span>
+                    <span className="font-bold text-success-dark">{task.actual_cost} 积分</span>
                   </div>
                 )}
               </div>

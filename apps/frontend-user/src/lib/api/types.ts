@@ -32,7 +32,8 @@ export interface User {
   email?: string;
   nickname?: string;
   avatar?: string;
-  id_card_name?: string;
+  real_name?: string;
+  id_card_number?: string;
   id_card_verified: boolean;
   balance: number;
   frozen_balance: number;
@@ -74,6 +75,7 @@ export interface RegisterRequest {
   email?: string;
   nickname?: string;
   code?: string;
+  invite_code?: string;
 }
 
 export interface RegisterResponse {
@@ -99,16 +101,9 @@ export interface RealNameVerificationRequest {
 }
 
 export interface RealNameVerification {
-  id: UUID;
-  user_id: UUID;
-  id_card_name: string;
-  verification_status: 'pending' | 'reviewing' | 'approved' | 'rejected';
-  review_remark?: string;
-  reviewer_id?: UUID;
-  reviewed_at?: Timestamp;
-  submitted_at?: Timestamp;
-  created_at: Timestamp;
-  updated_at: Timestamp;
+  id_card_verified: boolean;
+  real_name?: string;
+  id_card_number?: string;
 }
 
 // ============== 工具相关类型 ==============

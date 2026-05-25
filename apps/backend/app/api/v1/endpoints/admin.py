@@ -270,23 +270,21 @@ async def get_verifications(
 ) -> Any:
     skip = (page - 1) * page_size
     # Get users with verified status filtering
+    # When no status filter, only return users who have submitted verification (have real_name)
     users, total = await UserService.get_multi(
-        db, skip=skip, limit=page_size, status=1
+        db, skip=skip, limit=page_size, status=1,
+        real_name_not_null=True if status is None else None
     )
-    # Filter by verification status if provided
+    # Filter by id_card_verified status if provided (in-memory, small subset)
     if status is not None:
         users = [u for u in users if u.id_card_verified == status]
-        total = len(users)
-    else:
-        # Only show users who have applied (have id_card_name)
-        users = [u for u in users if u.id_card_name is not None]
         total = len(users)
     # Return simplified verification info
     verification_list = [
         {
             "user_id": str(u.id),
             "nickname": u.nickname,
-            "real_name": u.id_card_name,
+            "real_name": u.real_name,
             "id_card_verified": u.id_card_verified,
             "phone": u.phone,
         }
@@ -741,7 +739,7 @@ async def reject_verification(
         raise HTTPException(status_code=404, detail="用户不存在")
     user.id_card_verified = False
     # 可以选择清除身份信息或保留作为记录
-    # user.id_card_name = None
+    # user.real_name = None
     # user.id_card_number_encrypted = None
     user.remark = f"审核驳回：{reject_reason}" if hasattr(user, 'remark') else None
     db.add(user)
@@ -1094,6 +1092,27 @@ async def implement_idea(
     await db.commit()
     await db.refresh(idea)
     return {"message": "已标记为已实现", "id": str(idea.id), "status": idea.status}
+
+
+@router.put("/ideas/{idea_id}/unapprove", summary="弃审构思")
+async def unapprove_idea(
+    idea_id: str,
+    remark: Optional[str] = Body(None, embed=True),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """将已审核的构思回退到待审核状态"""
+    import uuid
+    idea_uuid = uuid.UUID(idea_id)
+    result = await db.execute(select(IdeaSubmission).where(IdeaSubmission.id == idea_uuid))
+    idea = result.scalar_one_or_none()
+    if not idea:
+        raise HTTPException(status_code=404, detail="构思不存在")
+
+    idea.unapprove(admin_id=current_user.id, remark=remark)
+    await db.commit()
+    await db.refresh(idea)
+    return {"message": "已弃审", "id": str(idea.id), "status": idea.status}
 
 
 # ==================== 退款管理 ====================

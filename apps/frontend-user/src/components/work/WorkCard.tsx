@@ -23,16 +23,16 @@ const toolTypeMap: Record<string, { label: string; color: string; icon: string }
 
 export function WorkCard({ work }: WorkCardProps) {
   const getToolType = (taskType?: string) => {
-    if (!taskType) return toolTypeMap.default;
+    if (!taskType) return toolTypeMap['default']!;
     for (const [key, value] of Object.entries(toolTypeMap)) {
       if (taskType.toLowerCase().includes(key)) {
         return value;
       }
     }
-    return toolTypeMap.default;
+    return toolTypeMap['default']!;
   };
 
-  const toolType = getToolType(work.taskType || 'default');
+  const toolType = getToolType(work.task_type || 'default');
 
   const getStatusColor = () => {
     switch (work.status) {
@@ -109,13 +109,13 @@ export function WorkCard({ work }: WorkCardProps) {
           </div>
 
           {/* File Count Badge */}
-          {work.fileCount && work.fileCount > 0 && (
+          {work.file_count && work.file_count > 0 && (
             <div className="absolute bottom-3 right-3">
               <span className="bg-white/90 text-brand-dark px-2 py-1 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                {work.fileCount}
+                {work.file_count}
               </span>
             </div>
           )}
@@ -138,26 +138,26 @@ export function WorkCard({ work }: WorkCardProps) {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>{formatDate(work.createdAt)}</span>
+              <span>{formatDate(work.created_at)}</span>
             </div>
 
             <div className="flex items-center gap-3">
-              {work.viewCount > 0 && (
+              {work.view_count > 0 && (
                 <div className="flex items-center gap-1 text-sm text-text-muted">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
-                  <span>{work.viewCount}</span>
+                  <span>{work.view_count}</span>
                 </div>
               )}
 
-              {work.likeCount > 0 && (
+              {work.like_count > 0 && (
                 <div className="flex items-center gap-1 text-sm text-text-muted">
                   <svg className="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                   </svg>
-                  <span>{work.likeCount}</span>
+                  <span>{work.like_count}</span>
                 </div>
               )}
             </div>
