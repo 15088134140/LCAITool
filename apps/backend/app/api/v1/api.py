@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, admin, health, points, stream, tasks, works, ideas, tools, payment, files, chat, settings, feedback
+from app.api.v1.endpoints import auth, users, admin, health, points, stream, tasks, works, ideas, tools, payment, files, chat, settings, feedback, external, external_files
 
 api_router = APIRouter()
 
@@ -19,3 +19,5 @@ api_router.include_router(settings.public_router, tags=["公开配置"])
 api_router.include_router(files.router, prefix="/files", tags=["files"])
 api_router.include_router(chat.router, prefix="/chat", tags=["对话模式"])
 api_router.include_router(feedback.router, prefix="/feedback", tags=["用户反馈"])
+api_router.include_router(external.router, prefix="/external", tags=["外部API"])
+api_router.include_router(external_files.router, prefix="/external", tags=["外部API"])
