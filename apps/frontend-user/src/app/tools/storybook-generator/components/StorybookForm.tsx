@@ -17,8 +17,10 @@ interface StorybookFormState {
   theme?: string;
   storyContent?: string;
   art_style?: string;
+  custom_style?: string;
   voiceType?: string;
   page_count?: number;
+  smart_page_count?: boolean;
   hasBackgroundMusic?: boolean;
   hasSoundEffects?: boolean;
   target_age?: string;
@@ -32,6 +34,7 @@ export function StorybookForm({ tool }: StorybookFormProps) {
     page_count: 10,
     art_style: 'cartoon',
     voiceType: 'warm',
+    smart_page_count: false,
   });
 
   const [totalCost, setTotalCost] = useState(0);
@@ -70,11 +73,15 @@ export function StorybookForm({ tool }: StorybookFormProps) {
       const taskType = tool.slug || '';
 
       // Collect form inputs
+      const resolvedArtStyle = formState.art_style === 'custom' && formState.custom_style
+        ? formState.custom_style
+        : formState.art_style;
       const inputParams: Record<string, any> = {
         theme: formState.theme,
         storyContent: formState.storyContent,
-        art_style: formState.art_style,
-        page_count: formState.page_count,
+        art_style: resolvedArtStyle,
+        page_count: formState.smart_page_count ? null : formState.page_count,
+        smart_page_count: formState.smart_page_count,
         voiceType: formState.voiceType,
         include_audio: formState.voiceType && formState.voiceType !== 'none',
         target_age: formState.target_age || '3-6',
@@ -175,7 +182,8 @@ export function StorybookForm({ tool }: StorybookFormProps) {
                         { value: 'cartoon', label: '卡通水彩', icon: '🎨' },
                         { value: 'oil', label: '梦幻油画', icon: '🖼️' },
                         { value: 'watercolor', label: '日系动漫', icon: '🌸' },
-                        { value: 'watercolor', label: '扁平插画', icon: '💎' },
+                        { value: 'flat', label: '扁平插画', icon: '💎' },
+                        { value: 'custom', label: '自定义', icon: '✏️' },
                       ].map((style, idx) => (
                         <label key={`${style.value}-${idx}`} className="cursor-pointer">
                           <input
@@ -193,6 +201,17 @@ export function StorybookForm({ tool }: StorybookFormProps) {
                         </label>
                       ))}
                     </div>
+                    {formState.art_style === 'custom' && (
+                      <div className="mt-4">
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                          placeholder="请输入自定义风格，如：日式动漫、水墨画..."
+                          value={formState.custom_style || ''}
+                          onChange={(e) => updateFormState('custom_style', e.target.value)}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-base font-medium text-gray-600 mb-4">配音音色</label>
@@ -264,6 +283,18 @@ export function StorybookForm({ tool }: StorybookFormProps) {
                   页数设置
                 </h3>
                 <div className="space-y-6">
+                  <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500"
+                      checked={formState.smart_page_count || false}
+                      onChange={(e) => updateFormState('smart_page_count', e.target.checked)}
+                    />
+                    <div>
+                      <span className="font-semibold text-brand-dark">智能决策页数</span>
+                      <p className="text-sm text-gray-500">AI 根据故事内容自动决定最佳页数</p>
+                    </div>
+                  </label>
                   <div>
                     <label className="block text-base font-medium text-gray-600 mb-3">
                       绘本页数：<span className="text-blue-500 font-bold text-xl">{formState.page_count}</span>页
@@ -273,7 +304,8 @@ export function StorybookForm({ tool }: StorybookFormProps) {
                       min={5}
                       max={30}
                       value={formState.page_count}
-                      className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      disabled={formState.smart_page_count}
+                      className={`w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500 ${formState.smart_page_count ? 'opacity-50 cursor-not-allowed' : ''}`}
                       onChange={(e) => updateFormState('page_count', parseInt(e.target.value))}
                     />
                     <div className="flex justify-between text-sm text-gray-500 mt-2">
