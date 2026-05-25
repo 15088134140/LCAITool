@@ -533,6 +533,49 @@ async def seed_admin_role(db: AsyncSession):
         print("  ✓ 系统用户已有管理员角色")
 
 
+async def seed_ai_providers(db: AsyncSession):
+    """配置 AI 提供商信息"""
+    from app.models.system import AiProvider
+
+    providers = [
+        AiProvider(
+            slug="volcano", name="火山方舟(豆包)",
+            provider_type="volcano",
+            config={
+                "api_key": "ark-126678e1-ed22-4716-8ce6-41b7e614327f-2606a",
+                "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+            },
+            is_active=True, sort_order=1,
+        ),
+        AiProvider(
+            slug="zhipu", name="智谱AI",
+            provider_type="openai",
+            config={
+                "api_key": "51ec9d1b59934faebafce2b40b54091e.oJe0NMOFhPbFcjJb",
+                "base_url": "https://open.bigmodel.cn/api/paas/v4",
+            },
+            is_active=True, sort_order=2,
+        ),
+        AiProvider(
+            slug="deepseek", name="DeepSeek",
+            provider_type="openai",
+            config={
+                "api_key": "sk-7fefd3a83a494eed8706b03f8e3cd516",
+                "base_url": "https://api.deepseek.com/v1",
+            },
+            is_active=True, sort_order=3,
+        ),
+    ]
+    created = 0
+    for p in providers:
+        existing = await db.execute(select(AiProvider).where(AiProvider.slug == p.slug))
+        if not existing.scalar_one_or_none():
+            db.add(p)
+            created += 1
+    await db.commit()
+    print(f"  ✓ 已创建 {created} 个 AI 提供商配置")
+
+
 async def main():
     print("\n🌱 开始初始化种子数据...\n")
     async with AsyncSessionLocal() as db:
@@ -543,6 +586,7 @@ async def main():
         await seed_demos(db)
         await seed_ideas(db)
         await seed_packages(db)
+        await seed_ai_providers(db)
     print("\n✅ 种子数据初始化完成！\n")
 
 
