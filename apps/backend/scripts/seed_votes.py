@@ -78,7 +78,7 @@ async def seed_votes():
                         balance=1000,
                         status=1,
                         id_card_verified=True,  # 标记为已实名认证，允许投票
-                        id_card_name=nickname,
+                        real_name=nickname,
                         phone=f"138{nickname}",
                     )
                     db.add(user)
@@ -89,7 +89,7 @@ async def seed_votes():
                     # 确保已实名认证
                     if not user.id_card_verified:
                         user.id_card_verified = True
-                        user.id_card_name = nickname
+                        user.real_name = nickname
                     if not user.avatar:
                         user.avatar = user_data["avatar"]
                     await db.flush()

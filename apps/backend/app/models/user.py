@@ -35,7 +35,7 @@ class User(BaseModel):
     nickname = Column(String(50), nullable=True, comment="昵称")
     avatar = Column(String(255), nullable=True, comment="头像URL")
     password_hash = Column(String(255), nullable=True, comment="密码哈希")
-    id_card_name = Column(String(50), nullable=True, comment="身份证姓名")
+    real_name = Column(String(50), nullable=True, comment="身份证姓名")
     id_card_number_encrypted = Column(String(255), nullable=True, comment="身份证号(AES-256加密)")
     id_card_verified = Column(Boolean, default=False, nullable=False, comment="是否实名认证")
     balance = Column(Integer, default=0, nullable=False, comment="积分余额")

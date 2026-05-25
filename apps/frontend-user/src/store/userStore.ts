@@ -42,7 +42,7 @@ interface UserStoreState {
   fetchCurrentUser: () => Promise<void>;
   refreshUserBalance: () => Promise<void>;
   submitRealNameVerification: (data: {
-    id_card_name: string;
+    real_name: string;
     id_card_number: string;
     front_image?: string;
     back_image?: string;
@@ -132,7 +132,13 @@ export const useUserStore = create<UserStoreState>()(
       submitRealNameVerification: async (data) => {
         set({ isLoading: true, error: null });
         try {
-          const verification = await userApi.submitRealNameVerification(data);
+          const verification = await userApi.submitRealNameVerification({
+            real_name: data.real_name,
+            id_card_number: data.id_card_number,
+            front_image: data.front_image,
+            back_image: data.back_image,
+            hold_image: data.hold_image,
+          });
           // 更新用户的认证状态
           set((state) => ({
             user: state.user ? { ...state.user, id_card_verified: verification.verification_status === 'approved' } : null,

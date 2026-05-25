@@ -1,16 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
 import { toast } from '@/lib/toast';
+import { API_BASE_URL } from '@/lib/api/client';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [registerBonus, setRegisterBonus] = useState(50);
+  const [verifyBonus, setVerifyBonus] = useState(50);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/public/config?keys=register_bonus_points,verify_bonus_points`)
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          if (data.register_bonus_points != null) setRegisterBonus(Number(data.register_bonus_points));
+          if (data.verify_bonus_points != null) setVerifyBonus(Number(data.verify_bonus_points));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -19,8 +34,22 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     nickname: '',
+    inviteCode: '',
     agreed: false
   });
+
+  // 从 URL 参数自动填充邀请码
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const invite = params.get('invite');
+      if (invite) {
+        setFormData(prev => ({ ...prev, inviteCode: invite }));
+      }
+    } catch {
+      // 忽略解析错误
+    }
+  }, []);
 
   const togglePassword = () => {
     setShowPassword(!showPassword);
@@ -81,12 +110,16 @@ export default function RegisterPage() {
 
     try {
       // 调用注册API
-      await authApi.register({
+      const registerData: any = {
         phone: formData.phone,
         password: formData.password,
         nickname: formData.nickname || `user_${formData.phone.slice(-4)}`,
-        code: formData.code
-      } as any);
+        code: formData.code,
+      };
+      if (formData.inviteCode) {
+        registerData.invite_code = formData.inviteCode;
+      }
+      await authApi.register(registerData);
 
       toast.success('注册成功！请登录');
       router.push('/login');
@@ -172,7 +205,7 @@ export default function RegisterPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-white">新用户注册礼包</h3>
-                      <p className="text-blue-300 font-semibold text-lg">50 积分免费送</p>
+                      <p className="text-blue-300 font-semibold text-lg">{registerBonus} 积分免费送</p>
                     </div>
                   </div>
                 </div>
@@ -186,7 +219,7 @@ export default function RegisterPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-white">实名认证奖励</h3>
-                      <p className="text-green-300 font-semibold text-lg">额外 +50 积分</p>
+                      <p className="text-green-300 font-semibold text-lg">额外 +{verifyBonus} 积分</p>
                     </div>
                   </div>
                 </div>
@@ -340,6 +373,31 @@ export default function RegisterPage() {
                     />
                   </div>
 
+                  {/* 邀请码输入 */}
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-2">
+                      邀请码
+                      <span className="text-amber-300/60 ml-1 text-xs">（选填 · 有邀请码双方各得积分奖励）</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-400/60">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="inviteCode"
+                        value={formData.inviteCode}
+                        onChange={handleInputChange}
+                        placeholder="例如 LCA5XK8M"
+                        autoComplete="off"
+                        readOnly={!!formData.inviteCode && formData.inviteCode.startsWith('LCA')}
+                        className="w-full h-12 pl-10 pr-4 rounded-xl text-slate-800 placeholder-slate-400 bg-white/90 border border-amber-200/30 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20 focus:outline-none transition-all duration-200 read-only:opacity-75 read-only:cursor-default"
+                      />
+                    </div>
+                  </div>
+
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -369,11 +427,11 @@ export default function RegisterPage() {
                 <div className="lg:hidden mt-6 pt-6 border-t border-white/10">
                   <div className="flex items-center justify-around text-center">
                     <div>
-                      <div className="text-lg font-bold text-blue-300">50积分</div>
+                      <div className="text-lg font-bold text-blue-300">{registerBonus}积分</div>
                       <div className="text-xs text-blue-200/50">注册即送</div>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-green-300">+50积分</div>
+                      <div className="text-lg font-bold text-green-300">+{verifyBonus}积分</div>
                       <div className="text-xs text-blue-200/50">认证奖励</div>
                     </div>
                     <div>

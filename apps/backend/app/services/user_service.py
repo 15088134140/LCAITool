@@ -11,6 +11,7 @@ from app.models.user import User, Role
 from app.models.task import Task, Work
 from app.models.payment import PointTransaction, PointTransactionType
 from app.schemas.user import UserCreate, UserUpdate, UserIdVerifyRequest
+from app.services.settings_service import SettingsService
 
 
 class UserService:
@@ -51,7 +52,8 @@ class UserService:
         skip: int = 0,
         limit: int = 100,
         search: Optional[str] = None,
-        status: Optional[int] = None
+        status: Optional[int] = None,
+        real_name_not_null: Optional[bool] = None
     ) -> Tuple[List[User], int]:
         query = select(User)
 
@@ -67,6 +69,11 @@ class UserService:
 
         if status is not None:
             query = query.where(User.status == status)
+
+        if real_name_not_null is True:
+            query = query.where(User.real_name.isnot(None))
+        elif real_name_not_null is False:
+            query = query.where(User.real_name.is_(None))
 
         # Get total count
         count_query = select(func.count()).select_from(query.subquery())
@@ -98,12 +105,13 @@ class UserService:
             if existing_phone:
                 raise UserAlreadyExistsException()
 
+            register_bonus = await SettingsService.get_config_value(db, "register_bonus_points", 50)
             db_obj = User(
                 nickname=obj_in.nickname or obj_in.username or f"用户{obj_in.phone[-4:]}",
                 phone=obj_in.phone,
                 email=obj_in.email,
                 password_hash=get_password_hash(obj_in.password),
-                balance=100,  # 赠送新人积分
+                balance=register_bonus,  # 赠送新人积分（从系统配置读取）
                 status=1,
             )
         # 用户名注册模式
@@ -113,11 +121,12 @@ class UserService:
             if existing_user:
                 raise UserAlreadyExistsException()
 
+            register_bonus = await SettingsService.get_config_value(db, "register_bonus_points", 50)
             db_obj = User(
                 nickname=obj_in.nickname or obj_in.username,
                 email=obj_in.email,
                 password_hash=get_password_hash(obj_in.password),
-                balance=100,  # 赠送新人积分
+                balance=register_bonus,  # 赠送新人积分（从系统配置读取）
                 status=1,
             )
         else:
@@ -130,11 +139,12 @@ class UserService:
 
     @staticmethod
     async def create_by_wechat(db: AsyncSession, openid: str, nickname: Optional[str] = None, avatar: Optional[str] = None) -> User:
+        register_bonus = await SettingsService.get_config_value(db, "register_bonus_points", 50)
         db_obj = User(
             openid=openid,
             nickname=nickname or "微信用户",
             avatar=avatar,
-            balance=100,  # 赠送新人积分
+            balance=register_bonus,  # 赠送新人积分（从系统配置读取）
             status=1,
         )
         db.add(db_obj)
@@ -180,12 +190,13 @@ class UserService:
             raise InvalidIdCardFormatException()
 
         # 加密存储身份证号
-        user.id_card_name = obj_in.real_name
+        user.real_name = obj_in.real_name
         user.id_card_number_encrypted = aes_encrypt(obj_in.id_card_number)
         user.id_card_verified = True
 
-        # 赠送认证奖励积分
-        user.balance += 50
+        # 赠送认证奖励积分（从系统配置读取）
+        verify_bonus = await SettingsService.get_config_value(db, "verify_bonus_points", 50)
+        user.balance += verify_bonus
 
         db.add(user)
         await db.commit()
@@ -200,7 +211,7 @@ class UserService:
 
         return {
             "id_card_verified": user.id_card_verified,
-            "real_name": user.id_card_name,
+            "real_name": user.real_name,
             "id_card_number": mask_id_card_encrypted(user.id_card_number_encrypted) if user.id_card_number_encrypted else None,
         }
 
@@ -406,9 +417,10 @@ class UserService:
         else:
             streak = 1
 
-        # 计算奖励: 第 N 天得 N 积分
-        points = streak
-        extra_bonus = 5 if streak == 7 else 0
+        # 计算奖励（从系统配置读取积分参数）
+        base_points = await SettingsService.get_config_value(db, "checkin_base_points", 1)
+        points = streak * base_points
+        extra_bonus = await SettingsService.get_config_value(db, "checkin_streak_bonus", 5) if streak == 7 else 0
 
         total_earned = points + extra_bonus
 
@@ -479,7 +491,7 @@ class UserService:
 
         return {
             "invite_code": user.invite_code,
-            "invite_url": f"https://lingchuang.ai?invite={user.invite_code}",
+            "invite_url": f"https://lingchuang.ai/register?invite={user.invite_code}",
             "invited_count": len(invited_users),
             "total_rewards": total_rewards,
         }
@@ -490,6 +502,7 @@ class UserService:
             select(User).where(User.invited_by == user.id)
         )
         users = result.scalars().all()
+        invite_reward = await SettingsService.get_config_value(db, "invite_register_reward", 10)
         records = []
         for invited in users:
             from app.models.payment import Order, OrderStatus
@@ -504,7 +517,7 @@ class UserService:
                 "invited_user": invited.nickname or "用户",
                 "registered_at": invited.created_at or 0,
                 "recharge_status": "first_done" if has_recharged else "none",
-                "reward": 10,
+                "reward": invite_reward,
             })
         return records
 
@@ -533,15 +546,16 @@ class UserService:
         redis = get_redis_client()
         daily_key = f"invite:daily:{inviter.id}:{today}"
         daily_count = await redis.get(daily_key)
-        daily_limit = 50
+        daily_limit = await SettingsService.get_config_value(db, "invite_daily_limit", 50)
         if daily_count and int(daily_count) >= daily_limit:
             return
 
-        # 双方各得 10 积分
+        # 双方各得积分（从系统配置读取）
+        invite_reward = await SettingsService.get_config_value(db, "invite_register_reward", 10)
         for u, role in [(new_user, "被邀请人"), (inviter, "邀请人")]:
-            u.balance += 10
+            u.balance += invite_reward
             db.add(PointTransaction(
-                user_id=u.id, amount=10,
+                user_id=u.id, amount=invite_reward,
                 type=PointTransactionType.REWARD,
                 reason=f"邀请奖励({role})",
                 balance_before=u.balance - 10,
@@ -572,15 +586,16 @@ class UserService:
         if order_result.first():
             return
 
-        # 奖励邀请人 20 积分
+        # 奖励邀请人积分（从系统配置读取）
+        recharge_reward = await SettingsService.get_config_value(db, "invite_recharge_reward", 20)
         result = await db.execute(select(User).where(User.id == user.invited_by))
         inviter = result.scalar_one_or_none()
         if not inviter:
             return
 
-        inviter.balance += 20
+        inviter.balance += recharge_reward
         db.add(PointTransaction(
-            user_id=inviter.id, amount=20,
+            user_id=inviter.id, amount=recharge_reward,
             type=PointTransactionType.REWARD,
             reason="邀请首次充值奖励",
             balance_before=inviter.balance - 20,

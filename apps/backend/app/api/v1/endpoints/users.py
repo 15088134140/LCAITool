@@ -21,7 +21,7 @@ from app.schemas.stats import UserStatsResponse
 from app.schemas.payment import PointTransaction as PointTransactionSchema
 from app.services.user_service import UserService
 from app.services.point_service import PointService
-from app.core.security import verify_password, get_password_hash
+from app.core.security import verify_password, get_password_hash, mask_id_card_encrypted
 
 router = APIRouter()
 
@@ -30,6 +30,9 @@ router = APIRouter()
 async def get_current_user_info(
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
+    # 脱敏身份证号后返回
+    if current_user.id_card_number_encrypted:
+        current_user.id_card_number = mask_id_card_encrypted(current_user.id_card_number_encrypted)
     return current_user
 
 

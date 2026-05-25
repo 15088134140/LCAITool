@@ -129,8 +129,8 @@ async def test_point_freeze_and_settle(db_session: AsyncSession):
     )
     user = await UserService.create(db_session, user_in)
 
-    # 初始状态：balance=100, frozen_balance=0
-    assert user.balance == 100
+    # 初始状态：balance=50, frozen_balance=0
+    assert user.balance == 50
     assert user.frozen_balance == 0
 
     # 冻结30积分
@@ -142,7 +142,7 @@ async def test_point_freeze_and_settle(db_session: AsyncSession):
         related_id="task_001"
     )
 
-    assert user.balance == 70  # 100 - 30
+    assert user.balance == 20  # 50 - 30
     assert user.frozen_balance == 30
     assert user.version == 1  # 版本号递增
 
@@ -155,7 +155,7 @@ async def test_point_freeze_and_settle(db_session: AsyncSession):
         related_id="task_001"
     )
 
-    assert user.balance == 70  # 保持不变
+    assert user.balance == 20  # 保持不变
     assert user.frozen_balance == 10  # 30 - 20
     assert user.version == 2  # 版本号递增
 
@@ -168,7 +168,7 @@ async def test_point_freeze_and_settle(db_session: AsyncSession):
         related_id="task_001"
     )
 
-    assert user.balance == 80  # 70 + 10
+    assert user.balance == 30  # 20 + 10
     assert user.frozen_balance == 0
     assert user.version == 3  # 版本号递增
 

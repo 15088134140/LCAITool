@@ -21,7 +21,7 @@ async def test_create_real_name_verification(db_session: AsyncSession):
 
     verification = RealNameVerification(
         user_id=user.id,
-        id_card_name="张三",
+        real_name="张三",
         id_card_number_encrypted="encrypted_id_card_123",
         id_card_hash="sha256_hash_abc123",
         front_image="https://example.com/front.jpg",
@@ -35,7 +35,7 @@ async def test_create_real_name_verification(db_session: AsyncSession):
 
     assert verification.id is not None
     assert verification.user_id == user.id
-    assert verification.id_card_name == "张三"
+    assert verification.real_name == "张三"
     assert verification.verification_status == "pending"
     assert verification.created_at is not None
 
@@ -49,7 +49,7 @@ async def test_real_name_verification_submit(db_session: AsyncSession):
 
     verification = RealNameVerification(
         user_id=user.id,
-        id_card_name="张三",
+        real_name="张三",
         id_card_number_encrypted="encrypted_id_card_123",
         id_card_hash="sha256_hash_abc123"
     )
@@ -75,7 +75,7 @@ async def test_real_name_verification_approve(db_session: AsyncSession):
 
     verification = RealNameVerification(
         user_id=user.id,
-        id_card_name="张三",
+        real_name="张三",
         id_card_number_encrypted="encrypted_id_card_123",
         id_card_hash="sha256_hash_abc123"
     )
@@ -103,7 +103,7 @@ async def test_real_name_verification_reject(db_session: AsyncSession):
 
     verification = RealNameVerification(
         user_id=user.id,
-        id_card_name="张三",
+        real_name="张三",
         id_card_number_encrypted="encrypted_id_card_123",
         id_card_hash="sha256_hash_abc123"
     )
@@ -130,7 +130,7 @@ async def test_real_name_verification_relationships(db_session: AsyncSession):
 
     verification = RealNameVerification(
         user_id=user.id,
-        id_card_name="张三",
+        real_name="张三",
         id_card_number_encrypted="encrypted_id_card_123",
         id_card_hash="sha256_hash_abc123"
     )

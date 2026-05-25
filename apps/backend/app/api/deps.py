@@ -2,6 +2,7 @@ from typing import AsyncGenerator, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
+from jose.exceptions import ExpiredSignatureError
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,7 +56,7 @@ async def get_optional_current_user(
     db: AsyncSession = Depends(get_db),
     token: Optional[str] = Depends(oauth2_scheme_optional),
 ) -> Optional[User]:
-    """获取当前用户（可选）— 无 token 时返回 None 而非抛 401"""
+    """获取当前用户（可选）— 无 token 时返回 None，过期 token 返回 401"""
     if not token:
         return None
     try:
@@ -63,6 +64,13 @@ async def get_optional_current_user(
         token_data = TokenPayload(**payload)
         if token_data.type != "access":
             return None
+    except ExpiredSignatureError:
+        # token 过期 → 返回 401，触发前端自动刷新 token 后重试
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except (jwt.JWTError, ValidationError):
         return None
 

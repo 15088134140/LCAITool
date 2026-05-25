@@ -10,7 +10,8 @@ export interface User {
   avatar: string | null;
   username?: string;
   avatar_url?: string;
-  id_card?: string;
+  real_name?: string;
+  id_card_number?: string;
   id_card_verified: boolean;
   balance: number;
   status: number; // 0=禁用, 1=启用

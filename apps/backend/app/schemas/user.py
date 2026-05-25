@@ -79,6 +79,8 @@ class UserBalanceResponse(BaseModel):
 class UserInDBBase(UserBase):
     id: uuid.UUID
     id_card_verified: bool
+    real_name: Optional[str] = Field(None, description="真实姓名")
+    id_card_number: Optional[str] = Field(None, description="身份证号（脱敏）")
     balance: int
     status: int
     created_at: int
@@ -95,7 +97,6 @@ class User(UserInDBBase):
 class UserInDB(UserInDBBase):
     """用户信息（数据库）"""
     password_hash: str
-    id_card_name: Optional[str]
     id_card_number_encrypted: Optional[str]
 
 

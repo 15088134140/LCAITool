@@ -333,7 +333,7 @@ const UserManagement = () => {
               ) : (
                 users.map((user) => {
                   const statusInfo = getUserStatusInfo(user.status);
-                  const verifyInfo = getVerificationStatusInfo(user.idCardVerified);
+                  const verifyInfo = getVerificationStatusInfo(user.id_card_verified);
                   return (
                     <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
@@ -356,7 +356,7 @@ const UserManagement = () => {
                           >
                             {verifyInfo.label}
                           </span>
-                          {user.idCardName && !user.idCardVerified && (
+                          {user.real_name && !user.id_card_verified && (
                             <button
                               onClick={() => openVerifyModal(user, 'approve')}
                               className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"

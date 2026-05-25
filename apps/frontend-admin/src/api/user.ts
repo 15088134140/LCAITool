@@ -7,7 +7,7 @@ export interface User {
   phone: string | null;
   email?: string | null;
   id_card_verified: boolean;
-  id_card_name?: string | null;
+  real_name?: string | null;
   balance: number;
   frozen_balance?: number;
   status: number; // 1=正常, 0=禁用

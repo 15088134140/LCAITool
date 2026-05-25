@@ -18,7 +18,7 @@ async def test_create_user(db_session: AsyncSession):
 
     assert user.nickname == "testuser"
     assert user.phone == "13800138100"
-    assert user.balance == 100  # 赠送新人积分
+    assert user.balance == 50  # 赠送新人积分（从系统配置读取，默认50）
     assert user.status == 1
     assert user.password_hash is not None
     assert user.password_hash != "testpassword123"  # 密码应该被哈希
@@ -106,7 +106,7 @@ async def test_get_balance(db_session: AsyncSession):
     created_user = await UserService.create(db_session, user_in)
 
     balance = await UserService.get_balance(db_session, created_user.id)
-    assert balance == 100  # 新用户赠送100积分
+    assert balance == 50  # 新用户赠送积分（从系统配置读取，默认50）
 
 
 @pytest.mark.asyncio
@@ -125,7 +125,7 @@ async def test_adjust_balance(db_session: AsyncSession):
         amount=100,
         reason="测试充值"
     )
-    assert user.balance == 200  # 初始100 + 充值100
+    assert user.balance == 150  # 初始50 + 充值100
 
     user = await UserService.adjust_balance(
         db=db_session,
@@ -133,7 +133,7 @@ async def test_adjust_balance(db_session: AsyncSession):
         amount=-50,
         reason="测试消费"
     )
-    assert user.balance == 150
+    assert user.balance == 100
 
 
 @pytest.mark.asyncio
@@ -153,9 +153,9 @@ async def test_verify_id_card(db_session: AsyncSession):
     verified_user = await UserService.verify_id_card(db_session, created_user.id, verify_in)
 
     assert verified_user.id_card_verified is True
-    assert verified_user.id_card_name == "张三"
+    assert verified_user.real_name == "张三"
     assert verified_user.id_card_number_encrypted is not None
-    assert verified_user.balance == 150  # 初始100 + 实名认证奖励50
+    assert verified_user.balance == 100  # 初始50（注册赠送） + 实名认证奖励50
 
 
 @pytest.mark.asyncio

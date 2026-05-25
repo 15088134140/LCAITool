@@ -1,15 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store';
 import { userApi } from '@/lib/api';
+import { API_BASE_URL } from '@/lib/api/client';
 
 export default function VerificationPage() {
   const { user, updateUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [verifyBonus, setVerifyBonus] = useState(50);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/public/config?keys=verify_bonus_points`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.verify_bonus_points != null) {
+          setVerifyBonus(Number(data.verify_bonus_points));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [formData, setFormData] = useState({
     real_name: '',
@@ -54,11 +67,11 @@ export default function VerificationPage() {
 
     setLoading(true);
     try {
-      await userApi.submitRealNameVerification({
+      const res = await userApi.submitRealNameVerification({
         real_name: formData.real_name,
         id_card_number: formData.id_card,
       });
-      updateUser({ id_card_verified: true, id_card: formData.id_card });
+      updateUser({ id_card_verified: true, real_name: formData.real_name, id_card_number: res.id_card_number });
       setSuccessMessage('实名认证提交成功！');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error: any) {
@@ -105,14 +118,12 @@ export default function VerificationPage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500">真实姓名</span>
-                  <span className="font-medium text-gray-900">
-                    {user.id_card ? `${user.id_card.charAt(0)}**` : '已认证'}
-                  </span>
+                  <span className="font-medium text-gray-900">{user.real_name || formData.real_name || '已认证'}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500">身份证号</span>
                   <span className="font-medium text-gray-900 font-mono">
-                    {user.id_card?.replace(/(\d{6})\d{8}(\d{4})/, '$1********$2') || ''}
+                    {user.id_card_number || ''}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -132,7 +143,7 @@ export default function VerificationPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                 </div>
-                <p className="text-sm font-medium text-gray-900">50积分奖励</p>
+                <p className="text-sm font-medium text-gray-900">{verifyBonus}积分奖励</p>
               </div>
               <div className="p-4 bg-green-50 rounded-xl">
                 <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-green-100 flex items-center justify-center">
@@ -217,7 +228,7 @@ export default function VerificationPage() {
             <div>
               <h3 className="font-bold text-gray-900 mb-1">为什么需要实名认证？</h3>
               <p className="text-sm text-gray-600">
-                根据国家相关法律法规要求，网络服务使用者需进行实名认证。完成认证后，您将获得 50 积分奖励，并解锁全部工具功能。
+                根据国家相关法律法规要求，网络服务使用者需进行实名认证。完成认证后，您将获得 {verifyBonus} 积分奖励，并解锁全部工具功能。
               </p>
             </div>
           </div>

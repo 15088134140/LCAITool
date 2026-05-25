@@ -342,7 +342,7 @@ const UserDetail = () => {
           </div>
           <div>
             <label className="text-sm text-gray-500">真实姓名</label>
-            <p className="text-gray-800 mt-1">{user.id_card_name || '未认证'}</p>
+            <p className="text-gray-800 mt-1">{user.real_name || '未认证'}</p>
           </div>
           <div>
             <label className="text-sm text-gray-500">注册时间</label>
