@@ -27,16 +27,13 @@ export interface AuthTokens {
 
 // localStorage key 常量，与 lib/api/client.ts 保持一致
 const TOKEN_KEY = 'lcaitool_access_token';
-const REFRESH_TOKEN_KEY = 'lcaitool_refresh_token';
 
 function syncTokensToStorage(tokens: AuthTokens | null) {
   if (typeof window === 'undefined') return;
   if (tokens?.access_token) {
     localStorage.setItem(TOKEN_KEY, tokens.access_token);
-    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
   } else {
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
   }
 }
 
@@ -128,12 +125,15 @@ export const useAuthStore = create<AuthState>()(
 export default useAuthStore;
 
 // 监听 axios 拦截器发出的强制登出事件
-// 当 token 过期且刷新失败时，axios 拦截器清除 localStorage 并派发 auth:logout
-// 此监听确保 Zustand store 状态同步更新
+// 当请求返回 401 时，清除登录状态并提示用户
 if (typeof window !== 'undefined') {
   window.addEventListener('auth:logout', () => {
     const state = useAuthStore.getState();
     if (state.isAuthenticated) {
+      // 使用动态 import 避免循环依赖
+      import('@/lib/toast').then(({ toast }) => {
+        toast.error('登录已过期，请重新登录');
+      });
       state.logout();
     }
   });

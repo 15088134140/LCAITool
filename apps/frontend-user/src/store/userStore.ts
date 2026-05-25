@@ -73,7 +73,6 @@ export const useUserStore = create<UserStoreState>()(
 
         // 同时更新 localStorage（与 tokenStorage 保持同步）
         tokenStorage.setToken(access_token);
-        tokenStorage.setRefreshToken(refresh_token);
 
         set({
           tokens: { access_token, refresh_token, token_type },
@@ -165,7 +164,6 @@ export const useUserStore = create<UserStoreState>()(
       onRehydrateStorage: () => (state) => {
         if (state?.tokens) {
           tokenStorage.setToken(state.tokens.access_token);
-          tokenStorage.setRefreshToken(state.tokens.refresh_token);
         }
       },
     }
