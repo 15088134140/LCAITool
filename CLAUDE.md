@@ -89,44 +89,52 @@
 
 ```
 LCAiTool/
-├── frontend-user/              # 用户端前端 (Next.js)
-│   ├── src/app/                # App Router 页面
-│   ├── src/components/ui/      # shadcn/ui 组件
-│   ├── src/components/common/  # 业务组件
-│   ├── src/lib/                # API客户端、工具函数
-│   ├── src/store/              # Zustand 状态管理
-│   └── src/styles/             # 全局样式
-│
-├── frontend-admin/             # 管理端前端 (React + Vite)
-│   ├── src/pages/              # 页面路由
-│   ├── src/components/         # 通用组件
-│   ├── src/api/                # API客户端
-│   └── src/store/              # 状态管理
-│
-├── backend/                    # FastAPI 后端
-│   ├── app/api/v1/             # API路由层
-│   ├── app/core/               # 核心配置
-│   ├── app/models/             # 数据模型层 (35张表)
-│   ├── app/schemas/            # Pydantic 模式
-│   ├── app/services/           # 业务服务层
-│   ├── app/providers/          # 第三方提供商
-│   │   ├── ai/                 # AI提供商 (OpenAI, Dify, 火山方舟)
-│   │   ├── storage/            # 存储提供商
-│   │   └── payment/            # 支付提供商
-│   ├── app/executors/          # 工具执行器
-│   │   ├── base.py             # 执行器基类
-│   │   ├── storybook.py        # 有声绘本执行器
-│   │   └── ecommerce.py        # 电商详情页执行器
-│   ├── app/workers/            # Celery 异步任务 (3级队列优先级)
-│   ├── alembic/                # 数据库迁移
-│   └── tests/                  # 测试目录
+├── apps/
+│   ├── frontend-user/          # 用户端前端 (Next.js)
+│   │   ├── src/app/            # App Router 页面
+│   │   ├── src/components/     # 组件 (ui/ 公共UI + common/ 业务组件 + layout/ + home/ + tool-detail/)
+│   │   ├── src/lib/            # API客户端 (api/modules/ 按模块拆分)、工具函数
+│   │   ├── src/store/          # Zustand 状态管理 (useAuthStore/useToolStore/useUserStore等)
+│   │   ├── src/providers/      # Provider 层 (数据接口定义 + Mock实现 + 真实API)
+│   │   └── src/styles/         # 全局样式
+│   │
+│   ├── frontend-admin/         # 管理端前端 (React + Vite)
+│   │   ├── src/pages/          # 页面路由
+│   │   ├── src/components/     # 通用组件
+│   │   ├── src/api/            # API客户端
+│   │   └── src/store/          # 状态管理
+│   │
+│   └── backend/                # FastAPI 后端
+│       ├── app/api/v1/         # API路由层 (endpoints/ 按模块拆分)
+│       ├── app/core/           # 核心配置
+│       ├── app/models/         # 数据模型层 (35张核心业务表)
+│       ├── app/schemas/        # Pydantic 模式
+│       ├── app/services/       # 业务服务层
+│       ├── app/providers/      # 第三方提供商
+│       │   ├── ai/             # AI提供商 (OpenAI / 火山方舟(豆包) / Dify)
+│       │   ├── storage/        # 存储提供商 (本地 + OSS)
+│       │   └── payment/        # 支付提供商 (微信 + 模拟)
+│       ├── app/executors/      # 工具执行器
+│       │   ├── base.py         # 执行器基类 (含Mock执行模式)
+│       │   ├── storybook.py    # 有声绘本执行器 (本地逐步执行: LLM→图片→音频→打包)
+│       │   ├── ecommerce.py    # 电商详情页执行器 (Dify SSE流式消费)
+│       │   └── marketing.py    # 营销文案执行器 (Celery转发+外部HTTP回调)
+│       ├── app/workers/        # Celery 异步任务 (3级队列优先级: fast/medium/heavy)
+│       ├── alembic/            # 数据库迁移
+│       ├── storage/            # 本地文件存储 (works/{task_id}/ 按任务隔离)
+│       └── tests/              # 测试目录 (unit/e2e/api)
 │
 ├── docs/                       # 文档目录
 │   ├── 灵创AI工具箱产品需求文档PRD.md
 │   ├── 灵创AI工具箱-技术方案文档-v1.1.md
-│   └── design/                 # 设计稿 (HTML原型)
+│   ├── design/                 # 设计稿 (HTML原型)
+│   └── superpowers/            # 设计文档与实施计划
+│       ├── specs/              # 设计文档
+│       └── plans/              # 实施计划
 │
-└── docker-compose.yml          # Docker编排
+├── packages/                   # 共享包
+├── docker-compose.yml          # Docker编排
+└── nginx/                      # Nginx配置
 ```
 
 ---
@@ -241,6 +249,12 @@ LCAiTool/
 - 基础费：12积分
 - 图片费：1积分/张
 - 输出：商品主图、详情页分段图片、营销文案、PSD源文件
+- 执行模式：Dify 平台工作流（SSE流式消费）
+
+### 标杆工具3：AI营销文案大师
+- 基础费：8积分
+- 输出：营销文案
+- 执行模式：Celery 转发 + 外部 HTTP 回调
 
 ---
 
@@ -279,21 +293,32 @@ LCAiTool/
 
 ## 📊 MVP功能范围
 
-### ✅ P0 - 必须完成（上线即有）
+### ✅ P0 - 已经完成（上线即有）
 - [x] 完整首页设计（8个区块）、工具卡片、分类导航、搜索
 - [x] 完整工具详情页、效果演示、定价说明、评价展示
 - [x] 微信一键登录注册、个人实名认证
-- [x] 积分充值（微信/支付宝）、按次扣费、消费明细
-- [x] AI有声绘本生成专家完整功能（表单模式）
-- [x] AI电商商品详情页生成器完整功能
-- [x] 成果列表、详情预览、打包下载
+- [x] 积分充值（微信/支付宝）、按次扣费、消费明细 — **统一在 /pricing 一站式完成**
+- [x] AI有声绘本生成专家完整功能（表单模式） — **含 Mock 执行模式**
+- [x] AI电商商品详情页生成器完整功能 — **Dify 平台对接**
+- [x] AI营销文案大师完整功能 — **HTTP 回调驱动**
+- [x] 成果列表、详情预览、打包下载（含文件服务 API）
 - [x] 构思工具列表、投票功能、查看全部
 - [x] 工具配置管理、用户管理、订单管理、基础数据看板
+- [x] 个人中心完整功能（侧边栏分组 + 4个内容区块 + 真实数据替换）
+- [x] 收藏管理（后端同步 + 乐观更新 + 独立收藏页面）
+- [x] 订单管理（时间筛选 + 统计卡片 + 详情弹窗 + CSV导出）
+- [x] SSE 实时进度推送（Redis Pub/Sub + progress/completed/error 事件）
+- [x] 通用进度更新 API（支持 Dify/外部平台 HTTP 回调）
+- [x] retryTask 任务重试机制（前后端完整实现）
+- [x] 本地文件存储服务（storage/works/{task_id}/ 按任务隔离）
 
-### ⭐ P1 - 重要功能（上线后2周内完成）
-- [ ] 迭代创作功能、对话模式工具
+### ⭐ P1 - 已部分完成 / 开发中
+- [x] 对话模式工具（通用对话界面 + 后端预留接口 POST /api/v1/chat/）
+- [x] 迭代创作基础能力（前端入口梳理 + 后端 parent_id/task_id 链路）
+- [x] 通用详情页 usage_modes 配置驱动（form/dialog Tab 切换）
 - [ ] 工具评价、通用反馈、建议奖励机制
-- [ ] 每日签到、积分奖励、邀请机制
+- [ ] 每日签到、连续签到奖励
+- [ ] 邀请机制（用户邀请表、奖励规则已设计，前端待接入）
 - [ ] 中英文切换支持
 
 ### 🚀 P2 - 后续迭代（上线后1-2个月）
@@ -406,10 +431,13 @@ Available skills: /office-hours, /plan-ceo-review, /plan-eng-review,
 | 文档 | 说明 |
 |------|------|
 | `docs/灵创AI工具箱产品需求文档PRD.md` | 完整产品需求说明 |
-| `docs/灵创AI工具箱-技术方案文档-v1.1.md` | 技术架构与详细设计 |
+| `docs/灵创AI工具箱-技术方案文档-v1.1.md` | 技术架构与详细设计 (V2.0) |
 | `docs/design/` | 页面设计稿与HTML原型 |
+| `docs/superpowers/specs/` | 各模块详细设计文档 |
+| `docs/superpowers/plans/` | 各模块实施计划 |
+| `docs/superpowers/plans/MVP完整开发实施计划.md` | MVP 整体开发计划 |
 
 ---
 
-**最后更新时间**：2026-05-18
-**文档版本**：V1.0
+**最后更新时间**：2026-05-24
+**文档版本**：V1.1

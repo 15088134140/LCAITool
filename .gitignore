@@ -58,3 +58,6 @@ apps/backend/tests/e2e/screenshots/
 apps/backend/tests/e2e/tests/
 
 storage/
+
+# Brainstorming visual companion
+.superpowers/

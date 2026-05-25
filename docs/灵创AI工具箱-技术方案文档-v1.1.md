@@ -1,8 +1,9 @@
 # 灵创AI工具箱 - 技术方案文档
 
-| 文档版本 | V1.1 |
+| 文档版本 | V2.0 |
 |----------|------|
 | 创建日期 | 2026-05-18 |
+| 最近更新 | 2026-05-24 |
 | 项目名称 | 灵创AI工具箱（LCAITool） |
 | 架构类型 | 单体架构 + 模块化设计 |
 
@@ -25,6 +26,10 @@
 13. [🟡 P1级优化项设计](#13-p1级优化项设计)
 14. [🔧 架构设计优化补充](#14-架构设计优化补充)
 15. [📊 数据库索引完整设计](#15-数据库索引完整设计)
+16. [🆕 新增 API 端点设计（P0 已实现）](#16-新增-api-端点设计p0-已实现)
+17. [🆕 SSE 事件模型（已实现）](#17-sse-事件模型已实现)
+18. [🆕 本地文件存储设计（已实现）](#18-本地文件存储设计已实现)
+19. [🆕 执行器架构扩展（已实现）](#19-执行器架构扩展已实现)
 
 ---
 
@@ -112,11 +117,14 @@
 
 ```
 LCAiTool/
-├── frontend-user/              # 用户端前端 (Next.js)
-├── frontend-admin/             # 管理端前端 (React + Vite)
-├── backend/                    # FastAPI 后端
+├── apps/
+│   ├── frontend-user/          # 用户端前端 (Next.js)
+│   ├── frontend-admin/         # 管理端前端 (React + Vite)
+│   └── backend/                # FastAPI 后端
+├── packages/                   # 共享包
 ├── docs/                       # 文档目录
-├── design-system/              # 设计系统
+│   ├── design/                 # 设计稿 (HTML原型)
+│   └── superpowers/            # 设计文档与实施计划
 ├── nginx/                      # Nginx配置
 ├── docker-compose.yml          # Docker编排
 └── README.md
@@ -125,16 +133,21 @@ LCAiTool/
 ### 3.2 后端目录结构
 
 ```
-backend/
+apps/backend/
 ├── app/
 │   ├── api/                    # API路由层
 │   │   ├── v1/
-│   │   │   ├── users.py        # 用户相关接口
-│   │   │   ├── tools.py        # 工具市场接口
-│   │   │   ├── tasks.py        # 任务执行接口
-│   │   │   ├── payment.py      # 支付相关接口
-│   │   │   ├── works.py        # 成果管理接口
-│   │   │   └── admin.py        # 管理后台接口
+│   │   │   ├── endpoints/      # 按模块拆分
+│   │   │   │   ├── users.py    # 用户相关接口 (含 /users/stats)
+│   │   │   │   ├── tools.py    # 工具市场接口 (含 /tools/recent)
+│   │   │   │   ├── tasks.py    # 任务执行接口 (含 /tasks/{id}/progress/retry)
+│   │   │   │   ├── payment.py  # 支付相关接口 (含 custom-recharge, 订单列表)
+│   │   │   │   ├── works.py    # 成果管理接口
+│   │   │   │   ├── files.py    # 文件服务接口
+│   │   │   │   ├── chat.py     # 对话模式接口（预留）
+│   │   │   │   └── admin.py    # 管理后台接口
+│   │   │   └── webhooks/
+│   │   │       └── dify.py     # Dify Webhook回调
 │   │   └── deps.py             # 依赖注入
 │   │
 │   ├── core/                   # 核心配置
@@ -145,7 +158,7 @@ backend/
 │   ├── models/                 # 数据模型层
 │   │   ├── base.py             # 基础模型
 │   │   ├── user.py             # 用户模型
-│   │   ├── tool.py             # 工具模型
+│   │   ├── tool.py             # 工具模型 (含 usage_modes)
 │   │   ├── task.py             # 任务模型
 │   │   ├── payment.py          # 支付模型
 │   │   └── work.py             # 成果模型
@@ -154,12 +167,14 @@ backend/
 │   │   ├── user.py
 │   │   ├── tool.py
 │   │   ├── task.py
-│   │   └── payment.py
+│   │   ├── payment.py
+│   │   ├── stats.py            # 用户统计 (新增)
+│   │   └── work.py
 │   │
 │   ├── services/               # 业务服务层
 │   │   ├── user_service.py     # 用户服务
 │   │   ├── tool_service.py     # 工具服务
-│   │   ├── task_service.py     # 任务服务
+│   │   ├── task_service.py     # 任务服务 (含进度更新与结算)
 │   │   ├── payment_service.py  # 支付服务
 │   │   ├── work_service.py     # 成果服务
 │   │   └── auth_service.py     # 认证服务
@@ -167,8 +182,7 @@ backend/
 │   ├── providers/              # 第三方提供商
 │   │   ├── ai/                 # AI提供商
 │   │   │   ├── base.py         # 抽象基类
-│   │   │   ├── openai.py       # OpenAI实现
-│   │   │   ├── zhipu.py        # 智谱AI实现
+│   │   │   ├── volcengine.py   # 火山方舟(豆包)实现
 │   │   │   └── dify.py         # Dify平台适配
 │   │   ├── storage/            # 存储提供商
 │   │   │   ├── base.py         # 抽象基类
@@ -179,18 +193,20 @@ backend/
 │   │       └── wechat.py       # 微信支付
 │   │
 │   ├── executors/              # 工具执行器
-│   │   ├── base.py             # 执行器基类
-│   │   ├── storybook.py        # 有声绘本执行器
-│   │   └── ecommerce.py        # 电商详情页执行器
+│   │   ├── base.py             # 执行器基类 (含Mock执行模式 + ProgressEvent)
+│   │   ├── storybook.py        # 有声绘本执行器 (本地逐步执行)
+│   │   ├── ecommerce.py        # 电商详情页执行器 (Dify SSE流式消费)
+│   │   └── marketing.py        # 营销文案执行器 (Celery转发+HTTP回调)
 │   │
 │   ├── workers/                # 异步任务
-│   │   ├── celery_app.py       # Celery配置
+│   │   ├── celery_app.py       # Celery配置 (3级队列: fast/medium/heavy)
 │   │   └── task_worker.py      # 任务执行器
 │   │
 │   └── main.py                 # 应用入口
 │
 ├── alembic/                    # 数据库迁移
-├── tests/                      # 测试目录
+├── storage/                    # 本地文件存储 (works/{task_id}/)
+├── tests/                      # 测试目录 (unit/e2e/api)
 ├── Dockerfile
 └── requirements.txt
 ```
@@ -198,24 +214,50 @@ backend/
 ### 3.3 用户端前端目录结构
 
 ```
-frontend-user/
+apps/frontend-user/
 ├── src/
 │   ├── app/                    # Next.js App Router
 │   │   ├── layout.tsx          # 根布局
 │   │   ├── page.tsx            # 首页 (SSG)
 │   │   ├── tools/              # 工具市场
 │   │   │   ├── page.tsx        # 列表页 (SSG)
-│   │   │   └── [id]/
-│   │   │       └── page.tsx    # 详情页 (SSR)
-│   │   ├── workspace/          # 工作台 (CSR)
-│   │   ├── works/              # 我的成果 (CSR)
-│   │   ├── payment/            # 充值中心 (CSR)
-│   │   └── user/               # 用户中心 (CSR)
+│   │   │   ├── [id]/
+│   │   │   │   └── page.tsx    # 通用详情页 (SSR, UUID降级)
+│   │   │   ├── storybook-generator/    # 定制页：有声绘本
+│   │   │   ├── ecommerce-detail/       # 定制页：电商详情
+│   │   │   └── marketing-copywriter/   # 定制页：营销文案
+│   │   ├── pricing/            # 充值中心 (CSR，一站式充值)
+│   │   ├── works/              # 成果管理 (CSR)
+│   │   ├── orders/             # 订单管理 (CSR)
+│   │   ├── user-center/        # 个人中心 (CSR，分组导航)
+│   │   │   ├── page.tsx        # 个人中心主页
+│   │   │   ├── favorites/      # 我的收藏
+│   │   │   ├── points/         # 积分明细
+│   │   │   ├── verification/   # 实名认证
+│   │   │   ├── profile/        # 个人信息
+│   │   │   └── security/       # 账号安全
+│   │   └── (auth)/             # 登录/注册
 │   ├── components/             # 组件
 │   │   ├── ui/                 # shadcn/ui 组件
-│   │   └── common/             # 业务组件
+│   │   ├── common/             # 公共业务组件
+│   │   ├── layout/             # 布局组件 (Navbar/Footer)
+│   │   ├── home/               # 首页组件
+│   │   ├── tool-detail/        # 工具详情公共组件
+│   │   └── payment/            # 支付相关组件
 │   ├── lib/                    # API客户端、工具函数
+│   │   ├── api/                # API 层
+│   │   │   ├── client.ts       # HTTP 客户端
+│   │   │   ├── modules/        # 按模块拆分
+│   │   │   │   ├── user.ts / tool.ts / task.ts / payment.ts / work.ts
+│   │   │   └── types.ts        # 类型定义
+│   │   └── utils/              # 工具函数
 │   ├── store/                  # Zustand 状态管理
+│   │   ├── useAuthStore.ts
+│   │   ├── useToolStore.ts
+│   │   ├── useUserStore.ts
+│   │   └── ...
+│   ├── providers/              # Provider 层
+│   │   └── ApiToolProvider.ts
 │   └── styles/                 # 全局样式
 ├── public/
 ├── package.json
@@ -225,11 +267,11 @@ frontend-user/
 ### 3.4 管理端前端目录结构
 
 ```
-frontend-admin/
+apps/frontend-admin/
 ├── src/
 │   ├── pages/                  # 页面路由
 │   │   ├── dashboard/          # 仪表盘
-│   │   ├── tools/              # 工具管理
+│   │   ├── tools/              # 工具管理 (含 usage_modes 配置)
 │   │   ├── users/              # 用户管理
 │   │   ├── orders/             # 订单管理
 │   │   ├── tasks/              # 任务监控
@@ -323,6 +365,7 @@ frontend-admin/
 | rating_avg | DECIMAL(3,2) | 平均评分 |
 | i18n_name | JSONB | 多语言名称 {"zh-CN": "", "en-US": ""} |
 | i18n_description | JSONB | 多语言描述 |
+| usage_modes | VARCHAR[] | 使用模式: ['form'] / ['dialog'] / ['form','dialog'] |
 | created_at | TIMESTAMP | 创建时间 |
 
 #### 任务表 (tasks)
@@ -1995,7 +2038,239 @@ CREATE INDEX idx_audit_resource ON admin_audit_logs(resource_type, resource_id);
 
 ---
 
-## ✅ 数据表汇总（总计35张核心业务表）
+## 16. 🆕 新增 API 端点设计（P0 已实现）
+
+### 16.1 GET /users/stats — 用户统计数据
+
+**业务场景**：个人中心欢迎横幅和统计卡片需要真实数据。
+
+**响应格式**：
+```json
+{
+  "days_used": 42,         // 注册天数
+  "today_count": 3,        // 今日任务数
+  "total_works": 15,       // 作品总数
+  "total_consumed": 280,   // 累计消费积分
+  "reward_points": 50      // 奖励积分
+}
+```
+
+**实现逻辑**：
+- days_used: `now() - user.created_at` 天数差
+- today_count: 当日 `Task.created_at >= 今日0点` 的总数
+- total_works: Work 表中该用户的记录数
+- total_consumed: PointTransaction type=consume 的绝对值之和
+- reward_points: PointTransaction type=reward/adjust 且 amount>0 之和
+
+### 16.2 GET /tools/recent — 最近使用工具
+
+**业务场景**：个人中心展示用户最近使用的工具（去重，最多3条）。
+
+**响应格式**：
+```json
+[
+  {
+    "id": "uuid",
+    "name": "AI有声绘本生成专家",
+    "cover_image": "cover.jpg",
+    "use_count": 42,
+    "last_used_at": 1716518400
+  }
+]
+```
+
+**实现逻辑**：
+- 查询当前用户最近的 Task 记录（按 created_at 倒序）
+- GROUP BY tool_id + 取最大 created_at
+- 仅筛选 status=completed 的任务
+- 关联 Tool 表获取 tool 元数据
+
+### 16.3 POST /payment/custom-recharge — 自定义充值
+
+**业务场景**：用户在 /pricing 页面输入自定义金额，一步完成充值。
+
+**请求**：
+```json
+{ "amount": 30 }
+```
+
+**响应**：
+```json
+{
+  "success": true,
+  "order_no": "ORD20260524xxxx",
+  "pay_amount": 30.0,
+  "total_points": 300,
+  "balance": 1300,
+  "message": "充值成功"
+}
+```
+
+**实现逻辑**：
+- 1元 = 10积分，自定义金额不额外赠送
+- 创建 Order 记录 → 模拟支付（同一事务）→ 积分到账
+- 前端一次调用即可完成充值，无需二次确认
+
+### 16.4 GET /payment/orders — 用户订单列表
+
+**业务场景**：用户查看自己的充值订单记录。
+
+**参数**：page, page_size, status(可选筛选)
+
+**响应**：
+```json
+{
+  "items": [Order],
+  "total": 50,
+  "page": 1,
+  "page_size": 20
+}
+```
+
+### 16.5 POST /tasks/{task_id}/progress — 通用进度更新
+
+**业务场景**：Dify 平台 / 外部 HTTP 服务主动汇报任务进度。
+
+**请求体**：
+```json
+{
+  "progress": 45,
+  "message": "正在生成商品主图...",
+  "data": { "node": "image_generation" },
+  "completed": false,
+  "actual_cost": null
+}
+```
+
+**completed=true 时后端逻辑**：
+- actual_cost = actual_cost ?? task.estimated_cost
+- TaskService.complete_task(task_id, actual_cost)
+- 差额 = 冻结金额 - actual_cost → 多退少补
+- status = completed, progress = 100
+- 写入交易流水 → Redis pubsub → SSE → 前端跳转成果页
+
+**鉴权方式**：
+- 内网: X-Internal-Token header（第三方平台用）
+- 外网: 用户 Bearer Token（调试用）
+
+### 16.6 POST /tasks/{id}/retry — 任务重试
+
+**业务场景**：任务失败后用户可点击重试。
+
+**实现逻辑**：
+- 重置 task 状态为 pending
+- 清除旧的错误信息和结算记录
+- 重新提交到 Celery 队列
+- 重新预冻结积分
+
+---
+
+## 17. 🆕 SSE 事件模型（已实现）
+
+### 17.1 三条独立事件线
+
+SSE 推送三条不同事件类型，不再混用：
+
+| 事件类型 | 触发时机 | 数据结构 |
+|---------|---------|---------|
+| `progress` | 进度更新（可多次） | `{percent, message, step_index, total_steps, step_status, sub_progress}` |
+| `completed` | 完成结算（终端事件，仅一次） | `{task_id, status, work_id, message}` |
+| `error` | 执行失败（终端事件，仅一次） | `{task_id, status, message}` |
+
+终端事件（`completed`/`error`）发出后 SSE 连接关闭。
+
+### 17.2 ProgressEvent 结构化进度
+
+```python
+class ProgressEvent:
+    percent: int           # 0-100 总进度
+    message: str           # 当前步骤描述
+    step_index: int        # 当前步骤索引 (0-based)
+    total_steps: int       # 总步骤数
+    step_status: str       # running | completed | pending
+    sub_progress: Optional[str]  # 如 "3/10" 表子进度
+```
+
+### 17.3 前端监听逻辑
+
+```typescript
+sse.addEventListener("progress", (e) => updateProgressModal(JSON.parse(e.data)));
+sse.addEventListener("completed", (e) => {
+  const { work_id } = JSON.parse(e.data);
+  window.location.href = `/works/detail/${work_id}`;
+});
+sse.addEventListener("error", (e) => showError(JSON.parse(e.data).message));
+```
+
+### 17.4 页面刷新恢复
+
+SSE 断开后，前端通过 REST API 恢复状态：
+1. `GET /tasks/{id}` → task.status + task.progress + task.work_id → 判定状态
+2. `GET /tasks/{id}/logs?level=progress` → TaskLog[] 按时间排序 → 恢复进度时间线
+
+---
+
+## 18. 🆕 本地文件存储设计（已实现）
+
+### 18.1 存储目录结构
+
+```
+./storage/
+└── works/
+    └── {task_id}/
+        ├── images/
+        │   ├── page_1.png
+        │   └── page_2.png
+        ├── audio/
+        │   ├── page_1.mp3
+        │   └── page_2.mp3
+        ├── storybook.pdf
+        ├── package.zip
+        └── metadata.json
+```
+
+### 18.2 文件服务 API
+
+`GET /api/v1/files/{work_file_id}` 从本地存储读取文件流。
+
+支持：
+- 图片预览（直接返回图片二进制）
+- ZIP 下载（设置 Content-Disposition: attachment）
+- 断点续传（支持 Range header）
+
+### 18.3 文件生命周期
+
+| 文件类型 | 存储位置 | TTL策略 |
+|---------|---------|---------|
+| 用户成果文件 | storage/works/{task_id}/ | 永久（用户主动删除） |
+| 导出打包ZIP | storage/works/{task_id}/package.zip | 7天自动清理 |
+| 工具演示图 | 静态目录/CDN | 永久 |
+
+---
+
+## 19. 🆕 执行器架构扩展（已实现）
+
+### 19.1 三种执行模式
+
+| 执行器 | 模式 | AI Provider | 进度驱动 |
+|--------|------|------------|---------|
+| StorybookExecutor | 本地逐步执行 | 火山方舟(豆包) | 每步直接调用 update_progress() |
+| EcommerceExecutor | Dify SSE 流式消费 | Dify Workflow | 消费 Dify SSE 事件流 → 映射为进度 |
+| MarketingExecutor | Celery 转发 + HTTP 回调 | 外部平台 | 外部平台通过 POST /tasks/{id}/progress 驱动 |
+
+### 19.2 Mock 执行模式
+
+通过环境变量 `MOCK_AI_EXECUTION=true` 开启，适用于开发和测试：
+
+- 模拟 7 步进度（从 0% → 100%）
+- 每步随机延迟 1-3 秒
+- 创建真实的 Work/WorkFile 记录
+- 不依赖任何外部 AI API
+- E2E 测试自动启用
+
+---
+
+## ✅ 数据表汇总（总计25张核心业务表）
 
 | 分类 | 表名 | 说明 |
 |------|------|------|
@@ -2004,21 +2279,21 @@ CREATE INDEX idx_audit_resource ON admin_audit_logs(resource_type, resource_id);
 | | user_checkins | 用户签到表 |
 | | user_invites | 用户邀请表 |
 | | user_sessions | 用户会话表 |
-| **工具相关** | tools | 工具主表 |
+| **工具相关** | tools | 工具主表（含 usage_modes 字段） |
 | | tool_categories | 工具分类表 |
 | | tool_favorites | 工具收藏表 |
 | | tool_ratings | 工具评价表 |
 | | tool_demos | 工具演示案例表 |
 | | idea_submissions | 创意提交表 |
 | | tool_idea_votes | 构思工具投票表 |
-| **任务与成果** | tasks | 任务表 |
-| | works | 成果表 |
+| **任务与成果** | tasks | 任务表（支持进度追踪与结算） |
+| | works | 成果表（支持版本迭代） |
 | | work_files | 成果文件表 |
 | | work_shares | 成果分享表 |
 | | scheduled_tasks | 用户定时任务表 |
 | | content_audit_logs | 内容审核日志表 |
-| **支付与积分** | orders | 订单表 |
-| | recharge_packages | 充值档位配置表 |
+| **支付与积分** | orders | 订单表（含对账状态） |
+| | recharge_packages | 充值档位配置表（4个PRD标准档位） |
 | | point_transactions | 积分交易表 |
 | **系统与运维** | api_rate_limits | API限流配置表 |
 | | dify_webhook_events | Dify Webhook事件记录表 |
@@ -2028,4 +2303,4 @@ CREATE INDEX idx_audit_resource ON admin_audit_logs(resource_type, resource_id);
 
 **文档结束**
 
-*本文档整合了技术方案 V1.0 与 V1.1 补充内容，完整覆盖 PRD 所有业务场景*
+*本文档整合了技术方案 V1.0、V1.1 与 V2.0 补充内容，完整覆盖 PRD 所有业务场景。V2.0 新增：目录结构修正(apps/前缀)、新API端点设计、SSE事件模型、本地文件存储、执行器架构扩展(三种模式+Mock)*
