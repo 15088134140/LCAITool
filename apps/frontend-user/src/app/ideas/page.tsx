@@ -3,12 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { IdeaCard } from '@/components/idea/IdeaCard';
-import type { IdeaSubmission } from '@/lib/api/types';
+import type { IdeaSubmission, ToolCategory } from '@/lib/api/types';
 import { ideaApi } from '@/lib/api/modules/idea';
-import { toolApi } from '@/lib/api/modules/tool';
+import { categoryApi, toolApi } from '@/lib/api/modules/tool';
 import { useAuthStore } from '@/store/useAuthStore';
 
-const categories = ['全部', '内容创作', '设计工具', '视频音频', '办公效率'];
 const sortOptions = [
   { value: 'votes', label: '票数最高' },
   { value: 'latest', label: '最新发布' },
@@ -17,13 +16,27 @@ const sortOptions = [
 
 export default function IdeasPage() {
   const { isAuthenticated } = useAuthStore();
-const [selectedCategory, setSelectedCategory] = useState('全部');
+  const [selectedCategory, setSelectedCategory] = useState('全部');
   const [sortBy, setSortBy] = useState('votes');
   const [ideas, setIdeas] = useState<IdeaSubmission[]>([]);
   const [totalIdeas, setTotalIdeas] = useState(0);
   const [totalTools, setTotalTools] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [page] = useState(1);
+  const [categories, setCategories] = useState<string[]>([
+    '全部', '内容创作', '设计工具', '视频音频', '办公效率',
+  ]);
+  const [implementedIdeas, setImplementedIdeas] = useState<IdeaSubmission[]>([]);
+
+  // 从工具管理同步分类列表
+  useEffect(() => {
+    categoryApi.getCategories().then((res) => {
+      const names = res.items.map((cat: ToolCategory) => cat.name);
+      setCategories(['全部', ...names]);
+    }).catch(() => {
+      // 接口失败时不做处理，使用默认值
+    });
+  }, []);
 
   useEffect(() => {
     const fetchIdeas = async () => {
@@ -50,6 +63,13 @@ const [selectedCategory, setSelectedCategory] = useState('全部');
   useEffect(() => {
     toolApi.getTools({ page: 1, page_size: 1 }).then((res) => {
       setTotalTools(res.total || 0);
+    }).catch(() => {});
+  }, []);
+
+  // 获取已实现的构思（成功案例）
+  useEffect(() => {
+    ideaApi.getIdeas({ status: 'implemented', page: 1, page_size: 10, sort: 'votes' }).then((res) => {
+      setImplementedIdeas(res.items || []);
     }).catch(() => {});
   }, []);
 
@@ -212,49 +232,55 @@ const [selectedCategory, setSelectedCategory] = useState('全部');
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-[#1E3A5F] mb-8 text-center">从构思到上线的成功案例</h2>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#059669] to-[#10B981] flex items-center justify-center">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-lg text-[#1E3A5F] mb-2">AI有声绘本生成专家</h3>
-              <p className="text-[#64748B] text-sm mb-3">从构思到上线仅用了 45 天</p>
-              <div className="flex items-center justify-center gap-2 text-sm">
-                <span className="px-3 py-1 bg-white rounded-full text-[#059669] font-medium">428 人参与投票</span>
-                <span className="px-3 py-1 bg-white rounded-full text-[#1E3A5F] font-medium">已上线</span>
-              </div>
-            </div>
+          {implementedIdeas.length > 0 ? (
+            <div className="grid md:grid-cols-3 gap-6">
+              {implementedIdeas.map((idea, index) => {
+                const gradients = [
+                  'from-green-50 to-emerald-50',
+                  'from-blue-50 to-indigo-50',
+                  'from-amber-50 to-orange-50',
+                ];
+                const iconColors = [
+                  'from-[#059669] to-[#10B981]',
+                  'from-[#2563EB] to-[#3B82F6]',
+                  'from-[#D97706] to-[#F59E0B]',
+                ];
+                const voteColors = [
+                  'text-[#059669]',
+                  'text-[#2563EB]',
+                  'text-[#D97706]',
+                ];
+                const g = index % 3;
+                const daysToLaunch = idea.reviewed_at && idea.created_at
+                  ? Math.round((idea.reviewed_at - idea.created_at) / 86400)
+                  : null;
 
-            <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#3B82F6] flex items-center justify-center">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-lg text-[#1E3A5F] mb-2">AI电商详情页生成器</h3>
-              <p className="text-[#64748B] text-sm mb-3">从构思到上线仅用了 38 天</p>
-              <div className="flex items-center justify-center gap-2 text-sm">
-                <span className="px-3 py-1 bg-white rounded-full text-[#2563EB] font-medium">386 人参与投票</span>
-                <span className="px-3 py-1 bg-white rounded-full text-[#1E3A5F] font-medium">已上线</span>
-              </div>
+                return (
+                  <div key={idea.id} className={`text-center p-6 bg-gradient-to-br ${gradients[g]} rounded-2xl`}>
+                    <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${iconColors[g]} flex items-center justify-center`}>
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h3 className="font-bold text-lg text-[#1E3A5F] mb-2">{idea.title}</h3>
+                    <p className="text-[#64748B] text-sm mb-3">
+                      从构思到上线{daysToLaunch ? `仅用了 ${daysToLaunch} 天` : '已成功上线'}
+                    </p>
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <span className={`px-3 py-1 bg-white rounded-full font-medium ${voteColors[g]}`}>
+                        {idea.vote_count} 人参与投票
+                      </span>
+                      <span className="px-3 py-1 bg-white rounded-full text-[#1E3A5F] font-medium">已上线</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
-            <div className="text-center p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#D97706] to-[#F59E0B] flex items-center justify-center">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-lg text-[#1E3A5F] mb-2">AI营销文案大师</h3>
-              <p className="text-[#64748B] text-sm mb-3">从构思到上线仅用了 32 天</p>
-              <div className="flex items-center justify-center gap-2 text-sm">
-                <span className="px-3 py-1 bg-white rounded-full text-[#D97706] font-medium">312 人参与投票</span>
-                <span className="px-3 py-1 bg-white rounded-full text-[#1E3A5F] font-medium">已上线</span>
-              </div>
+          ) : (
+            <div className="text-center py-12 text-[#64748B]">
+              暂无成功案例，敬请期待
             </div>
-          </div>
+          )}
         </div>
       </section>
 

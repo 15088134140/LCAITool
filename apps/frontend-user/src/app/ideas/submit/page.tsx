@@ -1,19 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ideaApi } from '@/lib/api/modules/idea';
-import type { CreateIdeaRequest } from '@/lib/api/types';
-
-const categories = ['内容创作', '设计工具', '视频音频', '办公效率', '其他'];
+import { categoryApi } from '@/lib/api/modules/tool';
+import type { CreateIdeaRequest, ToolCategory } from '@/lib/api/types';
 
 export default function SubmitIdeaPage() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  const [categories, setCategories] = useState<string[]>([
+    '内容创作', '设计工具', '视频音频', '办公效率', '其他',
+  ]);
 
   const [formData, setFormData] = useState<CreateIdeaRequest>({
     title: '',
@@ -23,6 +26,17 @@ export default function SubmitIdeaPage() {
     contact_info: '',
     cover_image: '',
   });
+
+  // 从工具管理同步分类列表
+  useEffect(() => {
+    categoryApi.getCategories().then((res) => {
+      const names = res.items.map((cat: ToolCategory) => cat.name);
+      if (names.length > 0) {
+        setCategories(names);
+        setFormData(prev => ({ ...prev, category: names[0] }));
+      }
+    }).catch(() => {});
+  }, []);
 
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<any>({});

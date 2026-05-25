@@ -2,6 +2,7 @@ import uuid
 from typing import Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, desc
+from sqlalchemy.orm import joinedload
 from app.models.tool import Tool, ToolCategory, ToolFavorite, ToolRating, ToolDemo
 from app.models.task import Task
 from app.models.user import User
@@ -12,6 +13,7 @@ from app.schemas.tool import (
     ToolDemoCreate
 )
 from app.core.exceptions import ToolNotFoundException, ToolCategoryNotFoundException
+from app.services.settings_service import SettingsService
 
 
 class ToolService:
@@ -269,6 +271,27 @@ class ToolService:
             tool.rating_count += 1
             tool.rating_avg = (old_total + rating_in.rating) / tool.rating_count
 
+        # 评价积分奖励（从系统配置读取）
+        has_images = bool(rating_in.images and rating_in.images.strip())
+        reward_key = "rating_image_reward" if has_images else "rating_text_reward"
+        reward_default = 5 if has_images else 2
+        reward_points = await SettingsService.get_config_value(db, reward_key, reward_default)
+
+        from app.models.payment import PointTransaction, PointTransactionType
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user_obj = user_result.scalar_one_or_none()
+        if user_obj:
+            user_obj.balance += reward_points
+            reason = f"工具评价奖励({'带图' if has_images else '文字'})"
+            db.add(PointTransaction(
+                user_id=user_id,
+                amount=reward_points,
+                type=PointTransactionType.REWARD,
+                reason=reason,
+                balance_before=user_obj.balance - reward_points,
+                balance_after=user_obj.balance,
+            ))
+
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -288,8 +311,14 @@ class ToolService:
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 
-        # 分页查询
-        query = query.offset(skip).limit(limit).order_by(ToolRating.created_at.desc())
+        # 分页查询（预加载用户信息）
+        query = (
+            select(ToolRating)
+            .options(joinedload(ToolRating.user))
+            .where(ToolRating.tool_id == tool_id)
+            .offset(skip).limit(limit)
+            .order_by(ToolRating.created_at.desc())
+        )
         result = await db.execute(query)
         ratings = result.scalars().all()
 

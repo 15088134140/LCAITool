@@ -129,6 +129,14 @@ class ToolRatingCreate(BaseModel):
     images: Optional[str] = Field(None, description="评价图片，JSON数组格式")
 
 
+class RatingUserInfo(BaseModel):
+    """评价用户基本信息"""
+    nickname: Optional[str] = None
+    avatar: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class ToolRatingResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
@@ -143,6 +151,7 @@ class ToolRatingResponse(BaseModel):
     replied_at: Optional[int]
     created_at: int
     updated_at: int
+    user: Optional[RatingUserInfo] = None
 
     model_config = {"from_attributes": True}
 

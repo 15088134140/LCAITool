@@ -40,4 +40,7 @@ export const ideasApi = {
 
   implement: (id: string): Promise<{ message: string; id: string; status: string }> =>
     request.put(`/admin/ideas/${id}/implement`),
+
+  unapprove: (id: string, remark?: string): Promise<{ message: string; id: string; status: string }> =>
+    request.put(`/admin/ideas/${id}/unapprove`, { remark }),
 };

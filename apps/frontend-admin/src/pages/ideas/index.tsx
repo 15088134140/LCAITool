@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   XCircle,
   Hammer,
+  Undo2,
 } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { ideasApi, AdminIdea } from '@/api/ideas';
@@ -75,7 +76,7 @@ const IdeasPage = () => {
   const [detailModal, setDetailModal] = useState<AdminIdea | null>(null);
   const [actionModal, setActionModal] = useState<{
     idea: AdminIdea;
-    action: 'approve' | 'reject' | 'implement';
+    action: 'approve' | 'reject' | 'implement' | 'unapprove';
   } | null>(null);
   const [remarkText, setRemarkText] = useState('');
 
@@ -131,6 +132,9 @@ const IdeasPage = () => {
       } else if (action === 'implement') {
         await ideasApi.implement(idea.id);
         toast.success('构思已标记为已实现');
+      } else if (action === 'unapprove') {
+        await ideasApi.unapprove(idea.id, remarkText || undefined);
+        toast.success('构思已弃审，回退到待审核');
       }
       setActionModal(null);
       setRemarkText('');
@@ -146,6 +150,7 @@ const IdeasPage = () => {
   const canApprove = (status: string) => status === 'pending' || status === 'reviewing';
   const canReject = (status: string) => status === 'pending' || status === 'reviewing';
   const canImplement = (status: string) => status === 'approved';
+  const canUnapprove = (status: string) => status === 'approved' || status === 'rejected' || status === 'implemented';
 
   return (
     <div>
@@ -280,6 +285,19 @@ const IdeasPage = () => {
                             <Hammer size={16} />
                           </button>
                         )}
+                        {canUnapprove(idea.status) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActionModal({ idea, action: 'unapprove' });
+                              setRemarkText('');
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-orange-50 text-orange-500 transition-colors"
+                            title="弃审"
+                          >
+                            <Undo2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -389,7 +407,9 @@ const IdeasPage = () => {
               ? '审核通过构思'
               : actionModal.action === 'reject'
               ? '驳回构思'
-              : '标记为已实现'
+              : actionModal.action === 'implement'
+              ? '标记为已实现'
+              : '弃审构思'
           }
           onClose={() => { setActionModal(null); setRemarkText(''); }}
         >
@@ -436,6 +456,24 @@ const IdeasPage = () => {
               </p>
             )}
 
+            {actionModal.action === 'unapprove' && (
+              <div>
+                <p className="text-sm text-gray-600 mb-3">
+                  确认弃审该构思？弃审后将回退到「待审核」状态，需重新审核。
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">备注（可选）</label>
+                  <textarea
+                    value={remarkText}
+                    onChange={(e) => setRemarkText(e.target.value)}
+                    placeholder="弃审原因..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => { setActionModal(null); setRemarkText(''); }}
@@ -450,14 +488,18 @@ const IdeasPage = () => {
                     ? 'bg-emerald-500 hover:bg-emerald-600'
                     : actionModal.action === 'reject'
                     ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-purple-500 hover:bg-purple-600'
+                    : actionModal.action === 'implement'
+                    ? 'bg-purple-500 hover:bg-purple-600'
+                    : 'bg-orange-500 hover:bg-orange-600'
                 }`}
               >
                 {actionModal.action === 'approve'
                   ? '确认通过'
                   : actionModal.action === 'reject'
                   ? '确认驳回'
-                  : '确认标记'}
+                  : actionModal.action === 'implement'
+                  ? '确认标记'
+                  : '确认弃审'}
               </button>
             </div>
           </div>

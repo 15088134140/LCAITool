@@ -36,6 +36,15 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
     };
   }, []);
 
+  // 同步父组件传来的投票状态
+  useEffect(() => {
+    setHasVoted(idea.has_voted || false);
+  }, [idea.has_voted]);
+
+  useEffect(() => {
+    setLocalVoteCount(idea.vote_count);
+  }, [idea.vote_count]);
+
   const category = idea.category || '其他';
   const colors = (categoryColors[category] ?? categoryColors['其他'])!;
   const percentage = Math.min(Math.round((localVoteCount / targetVotes) * 100), 100);
@@ -55,7 +64,11 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
 
       onVoteSuccess?.(idea.id, localVoteCount + 1);
     } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || '投票失败，请稍后重试';
+      const message = error?.response?.data?.message || error?.response?.data?.detail || error?.message || '投票失败，请稍后重试';
+      // 如果已投票过，同步本地状态
+      if (message.includes('已经投过票') || message.includes('已投票')) {
+        setHasVoted(true);
+      }
       setVoteError(message);
       console.error('投票失败:', error);
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
@@ -67,7 +80,7 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
 
   if (variant === 'compact') {
     return (
-      <div className={`bg-white rounded-xl border border-[#E4E7EB] p-5 flex items-center gap-4 hover:border-[#2563EB] transition-colors card-hover ${className}`}>
+      <div className={`bg-white rounded-xl border border-[#E4E7EB] p-5 flex items-center gap-4 hover:border-[#2563EB] transition-colors card-hover relative ${className}`}>
         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1E3A5F] to-[#2563EB] flex items-center justify-center flex-shrink-0">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -77,10 +90,48 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
           <h3 className="font-semibold text-[#1E3A5F] truncate">{idea.title}</h3>
           <p className="text-sm text-[#64748B] truncate">{idea.description}</p>
         </div>
-        <div className="text-right flex-shrink-0">
-          <div className="text-lg font-bold text-[#1E3A5F]">{localVoteCount}</div>
-          <div className="text-xs text-[#64748B]">票</div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="text-right">
+            <div className="text-lg font-bold text-[#1E3A5F]">{localVoteCount}</div>
+            <div className="text-xs text-[#64748B]">票</div>
+          </div>
+          {isAuthenticated ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleVote(); }}
+              disabled={hasVoted || isVoting}
+              className={`w-16 py-2 rounded-lg text-xs font-semibold transition-all text-center ${
+                hasVoted
+                  ? 'bg-[#059669] text-white cursor-default'
+                  : 'bg-[#1E3A5F] text-white hover:bg-[#2563EB]'
+              } ${voteAnimation ? 'vote-bounce' : ''}`}
+            >
+              {isVoting ? (
+                <span className="flex items-center gap-1">
+                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                </span>
+              ) : hasVoted ? (
+                '✓ 已投票'
+              ) : (
+                '投票'
+              )}
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="w-16 py-2 rounded-lg text-xs font-semibold bg-[#1E3A5F] text-white hover:bg-[#2563EB] transition-colors text-center inline-block"
+            >
+              登录投票
+            </Link>
+          )}
         </div>
+        {voteError && (
+          <div className="absolute bottom-0 left-0 right-0 translate-y-full mt-1 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 text-center z-10">
+            {voteError}
+          </div>
+        )}
       </div>
     );
   }

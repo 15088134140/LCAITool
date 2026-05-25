@@ -27,6 +27,7 @@ export const ideaApi = {
       page: params?.page,
       page_size: params?.page_size,
       category: params?.category,
+      status: params?.status,
       sort: params?.sort || 'votes',
     };
     return api.get<PaginatedResponse<IdeaSubmission>>('/ideas', { params: mappedParams });

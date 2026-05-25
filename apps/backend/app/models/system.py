@@ -20,7 +20,7 @@ class RealNameVerification(BaseModel):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True, comment="记录ID")
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, comment="用户ID")
-    id_card_name = Column(String(50), nullable=False, comment="身份证姓名")
+    real_name = Column(String(50), nullable=False, comment="身份证姓名")
     id_card_number_encrypted = Column(String(255), nullable=False, comment="身份证号(AES-256加密)")
     id_card_hash = Column(String(64), nullable=False, index=True, comment="身份证号SHA-256哈希")
     front_image = Column(String(255), nullable=True, comment="身份证正面照片URL")
@@ -117,6 +117,13 @@ class IdeaSubmission(BaseModel):
     def implement(self):
         """标记为已实现"""
         self.status = "implemented"
+        self.reviewed_at = int(time.time())
+
+    def unapprove(self, admin_id, remark=None):
+        """弃审：将已审核的创意回退到待审核状态"""
+        self.status = "pending"
+        self.admin_remark = remark
+        self.reviewed_at = int(time.time())
 
     def increment_vote(self, delta=1):
         """增加投票数（支持正负值，防止负数）"""

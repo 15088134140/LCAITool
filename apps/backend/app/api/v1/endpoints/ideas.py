@@ -46,6 +46,7 @@ async def get_ideas(
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     sort: str = Query("votes", description="排序方式: votes(最多票), newest(最新发布)"),
     category: Optional[str] = Query(None, description="分类筛选"),
+    status: Optional[str] = Query(None, description="状态筛选: pending/reviewing/approved/rejected/implemented"),
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> Any:
@@ -64,7 +65,7 @@ async def get_ideas(
         limit=page_size,
         sort_by=sort,
         category=category,
-        status="approved"  # 默认只显示已审核通过的创意
+        status=status if status else "approved",
     )
 
     # 批量查询当前用户的投票状态
@@ -95,6 +96,7 @@ async def get_ideas(
                     "status": idea.status,
                     "has_voted": idea.id in voted_ids,
                     "voters": voters_map.get(idea.id, []),
+                    "reviewed_at": idea.reviewed_at,
                     "created_at": idea.created_at,
                     "updated_at": idea.updated_at,
                 }
