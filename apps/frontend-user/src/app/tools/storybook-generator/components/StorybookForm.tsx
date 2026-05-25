@@ -7,6 +7,7 @@ import { taskApi } from '@/lib/api/modules/task';
 import { userApi } from '@/lib/api/modules/user';
 import { ProgressModal } from '@/components/tool-detail/ProgressModal';
 import { toast } from '@/lib/toast';
+import { useAuthStore } from '@/store';
 
 interface StorybookFormProps {
   tool: Tool;
@@ -35,6 +36,7 @@ export function StorybookForm({ tool }: StorybookFormProps) {
 
   const [totalCost, setTotalCost] = useState(0);
   const [balance, setBalance] = useState(0);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     calculateTotalCost();
@@ -64,11 +66,8 @@ export function StorybookForm({ tool }: StorybookFormProps) {
 
   const handleStartGeneration = async () => {
     try {
-      // Map tool slug to task type for backend executor
-      const taskTypeMap: Record<string, string> = {
-        'ai-storybook': 'storybook',
-      };
-      const taskType = taskTypeMap[tool.slug ?? ''] || tool.slug || '';
+      // Use tool slug directly as task type
+      const taskType = tool.slug || '';
 
       // Collect form inputs
       const inputParams: Record<string, any> = {
@@ -352,10 +351,20 @@ export function StorybookForm({ tool }: StorybookFormProps) {
               </div>
 
               <button
-                className="w-full py-5 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-2xl font-bold text-xl hover:shadow-2xl transition-all"
-                onClick={handleStartGeneration}
+                className={`w-full py-5 rounded-2xl font-bold text-xl transition-all ${
+                  isAuthenticated
+                    ? 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:shadow-2xl'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                onClick={() => {
+                  if (isAuthenticated) {
+                    handleStartGeneration();
+                  } else {
+                    router.push('/login');
+                  }
+                }}
               >
-                🚀 开始生成
+                🚀 {isAuthenticated ? '开始生成' : '请先登录'}
               </button>
               <p className="text-center text-sm text-gray-500 mt-4">预计耗时：2-5 分钟</p>
             </div>

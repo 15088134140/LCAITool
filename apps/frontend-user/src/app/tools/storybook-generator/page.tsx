@@ -12,7 +12,7 @@ import {
 import { StorybookForm } from './components/StorybookForm';
 
 // 工具配置
-const TOOL_ID = 'ai-storybook';
+const TOOL_ID = 'storybook-generator';
 
 export default function StorybookGeneratorPage() {
   const { currentTool, detailLoading, error, fetchToolDetail, clearCurrentTool } = useToolStore();
