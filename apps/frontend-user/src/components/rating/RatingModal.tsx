@@ -1,6 +1,16 @@
 'use client';
 import { useState } from 'react';
-import { Star, X } from 'lucide-react';
+// SVG icons (replacing lucide-react to avoid dependency)
+const StarIcon = ({ size, className }: { size: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+const XIcon = ({ size, className }: { size: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
 import ratingApi from '@/lib/api/modules/rating';
 
 interface RatingModalProps {
@@ -34,8 +44,8 @@ export default function RatingModal({
       await ratingApi.createRating(toolId, {
         task_id: taskId,
         rating,
-        content: content || undefined,
-        images: images.length > 0 ? JSON.stringify(images) : undefined,
+        ...(content ? { content } : {}),
+        ...(images.length > 0 ? { images: JSON.stringify(images) } : {}),
       });
       setSubmitted(true);
       onSubmitSuccess?.();
@@ -69,7 +79,7 @@ export default function RatingModal({
           onClick={handleClose}
           className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100 transition-colors"
         >
-          <X size={18} className="text-gray-400" />
+          <XIcon size={18} className="text-gray-400" />
         </button>
 
         {submitted ? (
@@ -96,7 +106,7 @@ export default function RatingModal({
                   onClick={() => setRating(star)}
                   className="p-1 transition-transform hover:scale-110"
                 >
-                  <Star
+                  <StarIcon
                     size={32}
                     className={
                       star <= (hoverRating || rating)

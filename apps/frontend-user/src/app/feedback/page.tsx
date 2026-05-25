@@ -79,8 +79,8 @@ export default function FeedbackPage() {
       await feedbackApi.create({
         type: apiType,
         title: formData.title.trim(),
-        description: formData.description.trim() || undefined,
-        contact: formData.contact.trim() || undefined,
+        description: formData.description.trim() || '',
+        contact: formData.contact.trim() || '',
       });
       toast.success('提交成功！我们会尽快处理您的反馈。');
       setFormData({ name: '', email: '', title: '', description: '', contact: '' });
