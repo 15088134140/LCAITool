@@ -12,6 +12,8 @@ from app.models.system import (
     RealNameVerification, IdeaSubmission, IdeaVote, AdminAuditLog,
     Feedback, SystemConfig, AiProvider
 )
+from app.models.api_key import ApiKey
+from app.models.external_file import ExternalFile
 
 __all__ = [
     "BaseModel",
@@ -21,5 +23,6 @@ __all__ = [
     "Order", "RechargePackage", "PointTransaction",
     "PaymentProvider", "OrderStatus", "ReconciliationStatus", "PointTransactionType",
     "RealNameVerification", "IdeaSubmission", "IdeaVote", "AdminAuditLog",
-    "Feedback", "SystemConfig", "AiProvider"
+    "Feedback", "SystemConfig", "AiProvider",
+    "ApiKey", "ExternalFile"
 ]
