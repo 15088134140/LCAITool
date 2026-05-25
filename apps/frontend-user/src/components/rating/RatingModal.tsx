@@ -12,6 +12,7 @@ const XIcon = ({ size, className }: { size: number; className?: string }) => (
   </svg>
 );
 import ratingApi from '@/lib/api/modules/rating';
+import { toast } from '@/lib/toast';
 
 interface RatingModalProps {
   isOpen: boolean;
@@ -54,7 +55,7 @@ export default function RatingModal({
         onClose();
       }, 2000);
     } catch (err: any) {
-      alert(err?.message || '提交评价失败');
+      toast.error(err?.message || '提交评价失败');
     } finally {
       setSubmitting(false);
     }

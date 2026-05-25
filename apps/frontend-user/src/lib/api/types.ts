@@ -213,6 +213,7 @@ export interface Task {
   updated_at: Timestamp;
   // 前端扩展字段
   tool_name?: string;
+  tool_cover?: string;
 }
 
 export interface TaskLog {

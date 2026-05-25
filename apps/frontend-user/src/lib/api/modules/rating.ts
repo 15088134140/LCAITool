@@ -21,6 +21,14 @@ export interface CreateRatingParams {
 
 export const ratingApi = {
   /**
+   * 获取当前用户对指定任务的评价
+   */
+  getTaskRating: async (taskId: string): Promise<ToolRating | null> => {
+    return api.get<ToolRating | null>(`/tasks/${taskId}/my-rating`);
+  },
+
+  /**
+  /**
    * 创建评价
    */
   createRating: async (toolId: string, data: Omit<CreateRatingParams, 'tool_id'>): Promise<ToolRating> => {

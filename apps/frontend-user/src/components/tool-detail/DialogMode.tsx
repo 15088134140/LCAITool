@@ -8,6 +8,7 @@ import { taskApi } from '@/lib/api/modules/task';
 import { userApi } from '@/lib/api/modules/user';
 import { ProgressModal } from './ProgressModal';
 import { toast } from '@/lib/toast';
+import { useAuthStore } from '@/store';
 
 interface DialogModeProps {
   tool: Tool;
@@ -24,6 +25,7 @@ export function DialogMode({ tool }: DialogModeProps) {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [totalCost, setTotalCost] = useState(0);
   const [balance, setBalance] = useState(0);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom on new messages
@@ -98,12 +100,8 @@ export function DialogMode({ tool }: DialogModeProps) {
       .join('\n');
 
     try {
-      const taskTypeMap: Record<string, string> = {
-        'ai-storybook': 'storybook',
-        'ecommerce-detail': 'ecommerce',
-        'product-description': 'marketing',
-      };
-      const taskType = (taskTypeMap[tool.slug ?? ''] || tool.slug) ?? '';
+      // Use tool slug directly as task type
+      const taskType = tool.slug || '';
 
       const task = await taskApi.createTask({
         tool_id: tool.id,
@@ -248,11 +246,21 @@ export function DialogMode({ tool }: DialogModeProps) {
                 </div>
               </div>
               <button
-                className="px-10 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-2xl font-bold text-lg hover:shadow-2xl transition-all disabled:opacity-50 whitespace-nowrap"
-                onClick={handleStartGeneration}
-                disabled={messages.length <= 1}
+                className={`px-10 py-4 rounded-2xl font-bold text-lg transition-all whitespace-nowrap ${
+                  isAuthenticated
+                    ? 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:shadow-2xl'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    router.push('/login');
+                    return;
+                  }
+                  if (messages.length <= 1) return;
+                  handleStartGeneration();
+                }}
               >
-                根据对话开始生成
+                {isAuthenticated ? '根据对话开始生成' : '请先登录'}
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-4 text-center">与AI充分沟通后，点击按钮即可基于对话内容开始创作</p>

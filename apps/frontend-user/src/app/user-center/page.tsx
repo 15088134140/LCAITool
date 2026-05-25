@@ -9,11 +9,14 @@ import { userApi } from '@/lib/api/modules/user';
 import { toolApi } from '@/lib/api/modules/tool';
 import { taskApi } from '@/lib/api/modules/task';
 import { workApi } from '@/lib/api/modules/work';
+import ratingApi from '@/lib/api/modules/rating';
 import { getFirstImage } from '@/lib/utils/image';
 import { API_BASE_URL, tokenStorage } from '@/lib/api/client';
 import CheckinModal from '@/components/checkin/CheckinModal';
 import InvitePanel from '@/components/invite/InvitePanel';
-import type { UserStats, ToolRecentItem, Task as TaskType, Work } from '@/lib/api/types';
+import RatingModal from '@/components/rating/RatingModal';
+import { toast } from '@/lib/toast';
+import type { UserStats, ToolRecentItem, Task as TaskType, Work, ToolRating } from '@/lib/api/types';
 
 const formatRelativeTime = (timestamp: number | string | null | undefined): string => {
   if (!timestamp) return '未知';
@@ -47,6 +50,12 @@ export default function UserCenterPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [showCheckin, setShowCheckin] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [ratingWork, setRatingWork] = useState<Work | null>(null);
+  const [ratedTasks, setRatedTasks] = useState<Set<string>>(new Set());
+  const [viewRating, setViewRating] = useState<ToolRating | null>(null);
+  const [viewingTaskId, setViewingTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     // Zustand v5 persist 异步从 localStorage 恢复状态
@@ -90,8 +99,17 @@ export default function UserCenterPage() {
           t => t.status === 'pending' || t.status === 'running'
         );
         setPendingTasks(active);
-        setLatestWorks(worksData.items || []);
+        const works = worksData.items || [];
+        setLatestWorks(works);
         setFavoriteCount(favData.total || 0);
+
+        // 并行查询每个作品的评价状态
+        const ratedIds = new Set<string>();
+        Promise.allSettled(
+          works.map(w =>
+            ratingApi.getTaskRating(w.task_id).then(r => { if (r) ratedIds.add(w.task_id); })
+          )
+        ).then(() => setRatedTasks(ratedIds));
       })
       .catch(err => {
         console.error('Failed to load user center data:', err);
@@ -100,6 +118,27 @@ export default function UserCenterPage() {
         setDataLoading(false);
       });
   }, [isAuthenticated]);
+
+  // 进行中的任务自动刷新（每 5 秒轮询一次）
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (pendingTasks.length === 0) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const tasksData = await taskApi.getTasks({ page: 1, page_size: 10 });
+        const active = (tasksData.items || []).filter(
+          t => t.status === 'pending' || t.status === 'running'
+        );
+        setPendingTasks(active);
+      } catch {
+        // 静默失败，下次继续
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, pendingTasks.length > 0]);
 
   // 下载作品 ZIP（带 Token 认证）
   const handleDownloadWork = async (workId: string) => {
@@ -121,6 +160,32 @@ export default function UserCenterPage() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('下载失败:', err);
+    }
+  };
+
+  const handleCancelTask = async (taskId: string, taskName: string) => {
+    if (!window.confirm(`确定要取消"${taskName}"任务吗？`)) return;
+    setCancellingId(taskId);
+    try {
+      await taskApi.cancelTask(taskId);
+      // 刷新任务列表
+      const tasksData = await taskApi.getTasks({ page: 1, page_size: 10 });
+      const active = (tasksData.items || []).filter(
+        t => t.status === 'pending' || t.status === 'running'
+      );
+      setPendingTasks(active);
+    } catch (err) {
+      // 取消失败（可能任务已完成/已取消），友好提示并刷新
+      toast.info('任务状态已更新，无需取消');
+      try {
+        const tasksData = await taskApi.getTasks({ page: 1, page_size: 10 });
+        const active = (tasksData.items || []).filter(
+          t => t.status === 'pending' || t.status === 'running'
+        );
+        setPendingTasks(active);
+      } catch { /* ignore */ }
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -490,22 +555,39 @@ export default function UserCenterPage() {
                     return (
                       <div key={task.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                         <div className="w-14 h-14 rounded-xl flex-shrink-0 overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600">
-                          <div className="w-full h-full flex items-center justify-center">
-                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                          </div>
+                          {task.tool_cover && !failedImages.has(task.id) ? (
+                            <img
+                              src={task.tool_cover}
+                              alt={task.tool_name || task.task_type || ''}
+                              className="w-full h-full object-cover"
+                              onError={() => setFailedImages(prev => new Set(prev).add(task.id))}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="font-semibold text-gray-900 truncate">{task.task_type || '未命名任务'}</h3>
-                              <p className="text-sm text-gray-500">{task.tool_name || ''}</p>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <h3 className="font-semibold text-gray-900 truncate">{task.tool_name || task.task_type || '未命名任务'}</h3>
+                              <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ${task.status === 'running' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                {task.status === 'running' ? '生成中' : '排队中'}
+                              </span>
                             </div>
-                            <span className={`px-3 py-1 text-sm font-medium rounded-full flex-shrink-0 ml-2 ${task.status === 'running' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                              {task.status === 'running' ? '生成中' : '排队中'}
-                            </span>
+                            <button
+                              onClick={() => handleCancelTask(task.id, task.task_type || '未命名任务')}
+                              disabled={cancellingId === task.id}
+                              className="flex-shrink-0 ml-2 px-2.5 py-1 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="取消任务"
+                            >
+                              {cancellingId === task.id ? '取消中...' : '取消'}
+                            </button>
                           </div>
+                          <p className="text-sm text-gray-500 mt-0.5">{task.tool_name ? task.task_type : ''}</p>
                           <div className="mt-2">
                             <div className="flex justify-between text-xs mb-1">
                               <span className="text-gray-500">{task.progress_message || ''}</span>
@@ -559,6 +641,24 @@ export default function UserCenterPage() {
                             <Link href={`/works/detail/${work.id}`} className="px-3 py-1.5 bg-white text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-100">
                               查看
                             </Link>
+                            {ratedTasks.has(work.task_id) ? (
+                              <button
+                                onClick={() => {
+                                  setViewingTaskId(work.task_id);
+                                  ratingApi.getTaskRating(work.task_id).then(r => {
+                                    if (r) setViewRating(r);
+                                    setViewingTaskId(null);
+                                  }).catch(() => setViewingTaskId(null));
+                                }}
+                                className="px-3 py-1.5 bg-gray-200 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-300"
+                              >
+                                {viewingTaskId === work.task_id ? '...' : '已评价'}
+                              </button>
+                            ) : (
+                              <button onClick={() => setRatingWork(work)} className="px-3 py-1.5 bg-white text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-100">
+                                评价
+                              </button>
+                            )}
                             <button onClick={() => handleDownloadWork(work.id)} className="px-3 py-1.5 bg-[#059669] text-white rounded-lg text-xs font-medium hover:bg-[#047857]">
                               下载
                             </button>
@@ -646,6 +746,62 @@ export default function UserCenterPage() {
 
       <CheckinModal isOpen={showCheckin} onClose={() => setShowCheckin(false)} />
       <InvitePanel isOpen={showInvite} onClose={() => setShowInvite(false)} />
+      {ratingWork && (
+        <RatingModal
+          isOpen={!!ratingWork}
+          onClose={() => setRatingWork(null)}
+          toolId={ratingWork.tool_id || ''}
+          taskId={ratingWork.task_id}
+          toolName={ratingWork.tool_name ?? ''}
+          onSubmitSuccess={() => {
+            toast.success('评价成功，感谢您的反馈！');
+            setRatedTasks(prev => new Set(prev).add(ratingWork.task_id));
+            setRatingWork(null);
+          }}
+        />
+      )}
+
+      {/* 查看评价详情弹窗 */}
+      {viewRating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setViewRating(null)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-8" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setViewRating(null)}
+              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <h3 className="text-2xl font-bold text-[#1E3A5F] mb-2">我的评价</h3>
+            {/* 星级 */}
+            <div className="flex justify-center gap-1 mb-4">
+              {[1, 2, 3, 4, 5].map(star => (
+                <svg key={star} width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  className={star <= viewRating.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}
+                >
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              ))}
+            </div>
+            {/* 评价内容 */}
+            {viewRating.content && (
+              <p className="text-gray-700 text-sm mb-4 text-center">{viewRating.content}</p>
+            )}
+            <p className="text-xs text-gray-400 text-center">
+              {viewRating.created_at ? formatRelativeTime(viewRating.created_at) : ''}
+            </p>
+            {/* 管理员回复 */}
+            {viewRating.admin_reply && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-xl">
+                <p className="text-xs font-medium text-blue-700 mb-1">管理员回复：</p>
+                <p className="text-sm text-blue-900">{viewRating.admin_reply}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
