@@ -117,9 +117,9 @@ export default function WorkDetailPage() {
   const [showRatingModal, setShowRatingModal] = useState(false);
 
   const taskType = work?.task_type?.toLowerCase() || '';
-  const toolInfo = taskType.includes('storybook') ? toolConfig.storybook :
-                   taskType.includes('ecommerce') ? toolConfig.ecommerce :
-                   taskType.includes('marketing') ? toolConfig.marketing :
+  const toolInfo = taskType === 'storybook-generator' ? toolConfig.storybook :
+                   taskType === 'ecommerce-detail' ? toolConfig.ecommerce :
+                   taskType === 'product-description' ? toolConfig.marketing :
                    toolConfig.default;
 
   const previewImages = files.filter(f => f.file_type === 'image' && f.file_url && f.file_url !== '#');

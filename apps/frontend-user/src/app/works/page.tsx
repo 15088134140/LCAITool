@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { WorkCard, EmptyWorksState } from '@/components/work/WorkCard';
 import { workApi } from '@/lib/api/modules/work';
-import { taskApi } from '@/lib/api/modules/task';
-import type { Work, Task } from '@/lib/api/types';
+import type { Work } from '@/lib/api/types';
 
 type FilterType = 'all' | 'storybook' | 'ecommerce' | 'marketing' | 'other';
 type StatusFilter = 'all' | 'draft' | 'published' | 'archived';
@@ -21,7 +20,6 @@ export default function WorksPage() {
     fileCount?: number;
     taskType?: string;
   })[]>([]);
-  const [pendingTasks, setPendingTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -49,10 +47,10 @@ export default function WorksPage() {
     let typeMatch = true;
     if (filterType !== 'all') {
       const taskType = work.task_type?.toLowerCase() || '';
-      if (filterType === 'storybook') typeMatch = taskType.includes('storybook');
-      else if (filterType === 'ecommerce') typeMatch = taskType.includes('ecommerce');
-      else if (filterType === 'marketing') typeMatch = taskType.includes('marketing');
-      else if (filterType === 'other') typeMatch = !['storybook', 'ecommerce', 'marketing'].some(t => taskType.includes(t));
+      if (filterType === 'storybook') typeMatch = taskType === 'storybook-generator';
+      else if (filterType === 'ecommerce') typeMatch = taskType === 'ecommerce-detail';
+      else if (filterType === 'marketing') typeMatch = taskType === 'product-description';
+      else if (filterType === 'other') typeMatch = !['storybook-generator', 'ecommerce-detail', 'product-description'].includes(taskType);
     }
 
     // 状态筛选
@@ -69,13 +67,9 @@ export default function WorksPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [worksData, tasksData] = await Promise.all([
-          workApi.getWorks({ page, page_size: 12 }),
-          taskApi.getTasks({ status: 'pending' }),
-        ]);
+        const worksData = await workApi.getWorks({ page, page_size: 12 });
         setWorks(worksData.items);
         setHasMore(worksData.total > worksData.items.length);
-        setPendingTasks(tasksData.items);
       } catch (err) {
         console.error('获取数据失败:', err);
       } finally {
@@ -142,35 +136,6 @@ export default function WorksPage() {
             创建新作品
           </Link>
         </div>
-
-        {/* Pending Tasks Banner */}
-        {pendingTasks.length > 0 && (
-          <div className="mb-8 bg-gradient-to-r from-brand-dark to-brand-light rounded-2xl p-6 text-white">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">有 {pendingTasks.length} 个任务正在处理中</h3>
-                <p className="text-white/80 text-sm">点击查看任务进度</p>
-              </div>
-              <div className="flex gap-2">
-                {pendingTasks.map(task => (
-                  <Link
-                    key={task.id}
-                    href={`/works/${task.id}/progress`}
-                    className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-colors"
-                  >
-                    查看 #{task.id.slice(-6)}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
