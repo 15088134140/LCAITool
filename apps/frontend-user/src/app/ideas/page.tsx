@@ -23,9 +23,7 @@ export default function IdeasPage() {
   const [totalTools, setTotalTools] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [page] = useState(1);
-  const [categories, setCategories] = useState<string[]>([
-    '全部', '内容创作', '设计工具', '视频音频', '办公效率',
-  ]);
+  const [categories, setCategories] = useState<string[]>(['全部']);
   const [implementedIdeas, setImplementedIdeas] = useState<IdeaSubmission[]>([]);
 
   // 从工具管理同步分类列表

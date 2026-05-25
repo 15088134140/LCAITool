@@ -10,6 +10,7 @@ interface IdeaCardProps {
   idea: IdeaSubmission;
   targetVotes?: number;
   onVoteSuccess?: (ideaId: string, newVoteCount: number) => void;
+  onCancelVoteSuccess?: (ideaId: string, newVoteCount: number) => void;
   variant?: 'default' | 'compact';
 }
 
@@ -21,16 +22,22 @@ const categoryColors: Record<string, { bg: string; text: string; fill: string }>
   '其他': { bg: 'bg-gray-100', text: 'text-gray-600', fill: 'progress-fill' },
 };
 
-export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'default', className = '' }: IdeaCardProps & { className?: string }) {
+export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, onCancelVoteSuccess, variant = 'default', className = '' }: IdeaCardProps & { className?: string }) {
   const { isAuthenticated } = useAuthStore();
   const [isVoting, setIsVoting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [hasVoted, setHasVoted] = useState(idea.has_voted || false);
   const [voteAnimation, setVoteAnimation] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
   const [localVoteCount, setLocalVoteCount] = useState(idea.vote_count);
   const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const isTouchDevice = useRef(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      isTouchDevice.current = window.matchMedia('(hover: none)').matches;
+    }
     return () => {
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
@@ -65,7 +72,6 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
       onVoteSuccess?.(idea.id, localVoteCount + 1);
     } catch (error: any) {
       const message = error?.response?.data?.message || error?.response?.data?.detail || error?.message || '投票失败，请稍后重试';
-      // 如果已投票过，同步本地状态
       if (message.includes('已经投过票') || message.includes('已投票')) {
         setHasVoted(true);
       }
@@ -75,6 +81,47 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
       errorTimerRef.current = setTimeout(() => setVoteError(null), 4000);
     } finally {
       setIsVoting(false);
+    }
+  };
+
+  const handleCancelClick = (e?: React.MouseEvent) => {
+    e?.stopPropagation?.();
+    if (!isAuthenticated || !hasVoted || isCancelling) return;
+    if (isTouchDevice.current) {
+      setShowCancelConfirm(true);
+    } else {
+      executeCancelVote();
+    }
+  };
+
+  const confirmCancelVote = () => {
+    setShowCancelConfirm(false);
+    executeCancelVote();
+  };
+
+  const executeCancelVote = async () => {
+    if (!isAuthenticated || !hasVoted || isCancelling) return;
+
+    setVoteError(null);
+    setIsCancelling(true);
+    try {
+      const result = await ideaApi.cancelVote(idea.id);
+
+      setHasVoted(false);
+      setLocalVoteCount(result.vote_count ?? localVoteCount - 1);
+
+      onCancelVoteSuccess?.(idea.id, result.vote_count ?? localVoteCount - 1);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.response?.data?.detail || error?.message || '取消投票失败';
+      if (message.includes('尚未对该创意投票')) {
+        setHasVoted(false);
+      }
+      setVoteError(message);
+      console.error('取消投票失败:', error);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => setVoteError(null), 4000);
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -96,28 +143,47 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
             <div className="text-xs text-[#64748B]">票</div>
           </div>
           {isAuthenticated ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleVote(); }}
-              disabled={hasVoted || isVoting}
-              className={`w-16 py-2 rounded-lg text-xs font-semibold transition-all text-center ${
-                hasVoted
-                  ? 'bg-[#059669] text-white cursor-default'
-                  : 'bg-[#1E3A5F] text-white hover:bg-[#2563EB]'
-              } ${voteAnimation ? 'vote-bounce' : ''}`}
-            >
-              {isVoting ? (
-                <span className="flex items-center gap-1">
-                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                </span>
-              ) : hasVoted ? (
-                '✓ 已投票'
+            <div className="flex flex-col items-stretch gap-1">
+              {hasVoted ? (
+                <button
+                  onClick={(e) => handleCancelClick(e)}
+                  disabled={isCancelling}
+                  className="group relative w-16 h-9 rounded-lg text-xs font-semibold text-center overflow-hidden focus-ring"
+                >
+                  {isCancelling ? (
+                    <span className="absolute inset-0 flex items-center justify-center gap-1 bg-red-500 text-white rounded-lg">
+                      <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      取消中
+                    </span>
+                  ) : (
+                    <>
+                      <span className="absolute inset-0 flex items-center justify-center bg-[#059669] text-white rounded-lg transition-all duration-200 group-hover:opacity-0">✓ 已投票</span>
+                      <span className="absolute inset-0 flex items-center justify-center bg-red-500 text-white rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100">取消</span>
+                    </>
+                  )}
+                </button>
               ) : (
-                '投票'
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleVote(); }}
+                  disabled={isVoting}
+                  className={`w-16 h-9 rounded-lg text-xs font-semibold bg-[#1E3A5F] text-white hover:bg-[#2563EB] transition-all text-center ${voteAnimation ? 'vote-bounce' : ''}`}
+                >
+                  {isVoting ? (
+                    <span className="flex items-center justify-center gap-1">
+                      <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    </span>
+                  ) : (
+                    '投票'
+                  )}
+                </button>
               )}
-            </button>
+            </div>
           ) : (
             <Link
               href="/login"
@@ -130,6 +196,28 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
         {voteError && (
           <div className="absolute bottom-0 left-0 right-0 translate-y-full mt-1 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 text-center z-10">
             {voteError}
+          </div>
+        )}
+        {showCancelConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCancelConfirm(false)}>
+            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl" onClick={e => e.stopPropagation()}>
+              <h3 className="font-bold text-lg text-[#1E3A5F] mb-2">确认取消投票</h3>
+              <p className="text-[#64748B] mb-6">确定要取消对该创意的投票吗？</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="flex-1 py-3 rounded-xl border border-[#E4E7EB] text-[#64748B] font-medium hover:bg-gray-50 transition-colors focus-ring"
+                >
+                  返回
+                </button>
+                <button
+                  onClick={confirmCancelVote}
+                  className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors focus-ring"
+                >
+                  确认取消
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -199,29 +287,48 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
       </div>
 
       {isAuthenticated ? (
-        <button
-          onClick={handleVote}
-          disabled={hasVoted || isVoting}
-          className={`w-full py-3 rounded-xl font-semibold transition-all focus-ring ${
-            hasVoted
-              ? 'bg-[#059669] text-white cursor-default'
-              : 'bg-[#1E3A5F] text-white hover:bg-[#2563EB] hover:shadow-lg hover:-translate-y-0.5'
-          } ${voteAnimation ? 'vote-bounce' : ''}`}
-        >
-          {isVoting ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              投票中...
-            </span>
-          ) : hasVoted ? (
-            '✓ 已投票'
+        <div className="flex flex-col items-stretch">
+          {hasVoted ? (
+            <button
+              onClick={() => handleCancelClick()}
+              disabled={isCancelling}
+              className="group relative w-full h-12 rounded-xl font-semibold overflow-hidden focus-ring"
+            >
+              {isCancelling ? (
+                <span className="absolute inset-0 flex items-center justify-center gap-2 bg-red-500 text-white rounded-xl">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  取消中
+                </span>
+              ) : (
+                <>
+                  <span className="absolute inset-0 flex items-center justify-center bg-[#059669] text-white rounded-xl transition-all duration-200 group-hover:opacity-0">✓ 已投票</span>
+                  <span className="absolute inset-0 flex items-center justify-center bg-red-500 text-white rounded-xl transition-all duration-200 opacity-0 group-hover:opacity-100">取消投票</span>
+                </>
+              )}
+            </button>
           ) : (
-            '为它投票'
+            <button
+              onClick={handleVote}
+              disabled={isVoting}
+              className={`w-full h-12 rounded-xl font-semibold bg-[#1E3A5F] text-white hover:bg-[#2563EB] hover:shadow-lg hover:-translate-y-0.5 transition-all focus-ring ${voteAnimation ? 'vote-bounce' : ''}`}
+            >
+              {isVoting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  投票中...
+                </span>
+              ) : (
+                '为它投票'
+              )}
+            </button>
           )}
-        </button>
+        </div>
       ) : (
         <Link href="/login" className="w-full py-3 bg-[#1E3A5F] text-white rounded-xl font-semibold hover:bg-[#2563EB] transition-colors focus-ring text-center block">
           登录后投票
@@ -231,6 +338,29 @@ export function IdeaCard({ idea, targetVotes = 500, onVoteSuccess, variant = 'de
       {voteError && (
         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 text-center">
           {voteError}
+        </div>
+      )}
+
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCancelConfirm(false)}>
+          <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg text-[#1E3A5F] mb-2">确认取消投票</h3>
+            <p className="text-[#64748B] mb-6">确定要取消对该创意的投票吗？</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="flex-1 py-3 rounded-xl border border-[#E4E7EB] text-[#64748B] font-medium hover:bg-gray-50 transition-colors focus-ring"
+              >
+                返回
+              </button>
+              <button
+                onClick={confirmCancelVote}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors focus-ring"
+              >
+                确认取消
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

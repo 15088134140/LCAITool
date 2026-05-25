@@ -44,6 +44,11 @@ export default function MyVotesPage() {
     ));
   }, []);
 
+  const handleCancelVoteSuccess = useCallback((ideaId: string, _newVoteCount: number) => {
+    setIdeas(prev => prev.filter(idea => idea.id !== ideaId));
+    setTotal(prev => Math.max(0, prev - 1));
+  }, []);
+
   const totalPages = Math.ceil(total / pageSize);
 
   if (!isAuthenticated) {
@@ -110,6 +115,7 @@ export default function MyVotesPage() {
                     idea={idea}
                     targetVotes={500}
                     onVoteSuccess={handleVoteSuccess}
+                    onCancelVoteSuccess={handleCancelVoteSuccess}
                   />
                 ))}
               </div>

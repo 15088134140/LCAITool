@@ -57,8 +57,8 @@ export const ideaApi = {
   /**
    * 取消投票
    */
-  cancelVote: async (ideaId: string): Promise<{ message: string; idea_id: string }> => {
-    return api.delete<{ message: string; idea_id: string }>(`/ideas/${ideaId}/vote`);
+  cancelVote: async (ideaId: string): Promise<{ message: string; idea_id: string; vote_count: number }> => {
+    return api.delete<{ message: string; idea_id: string; vote_count: number }>(`/ideas/${ideaId}/vote`);
   },
 };
 
