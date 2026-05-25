@@ -263,14 +263,54 @@ VIDEO_MODEL_MAP = {
 
 ### 4.3 文件服务
 
-响应中的图片/语音 URL 通过文件服务返回：
+两套文件存储路径，两套服务端点：
 
+**路径 A：成果文件（对内）**
+- 目录：`storage/works/{task_id}/`
+- 端点：`GET /api/v1/files/works/{work_file_id}`
+- 认证：JWT（已有，不变）
+- 用途：用户在前端查看/下载自己的成果
+
+**路径 B：外部 API 文件（对外）**
+- 目录：`storage/external/{user_id}/{file_id}.{ext}`
+- 端点：`GET /api/v1/external/files/{file_id}`
+- 认证：API Key
+- 用途：外部平台通过 API Key 获取生成的文件
+
+对外 API 响应中的 URL 格式：
+```json
+{
+  "data": [
+    {"url": "https://api.lcai.com/api/v1/external/files/{file_id}"}
+  ]
+}
+```
+
+文件服务逻辑（路径 B）：
 ```python
-GET /api/v1/files/{file_id}
-→ 查 work_files 表获取文件路径
+GET /api/v1/external/files/{file_id}
+→ 查 external_files 表获取记录（含 owner user_id 和路径）
+→ 验证 API Key 所有者 == file owner
 → 如果配置了 OSS，302 重定向到 OSS URL
 → 否则本地读取返回
 ```
+
+Oss 切换由 `SystemConfig` 中的 `storage_provider` 配置控制，默认 `local`。
+
+### 4.4 外部文件记录表
+
+新建 `external_files` 表，记录通过对外 API 生成的文件：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键，对外 URL 中暴露 |
+| user_id | UUID FK→users | 文件所有者（通过 API Key 关联） |
+| file_name | String(255) | 原文件名 |
+| file_path | String(500) | 存储路径 |
+| file_size | Integer | 文件大小 |
+| mime_type | String(100) | MIME 类型 |
+| api_endpoint | String(50) | 生成来源（images/audio/video）|
+| created_at | Integer | 创建时间 |
 
 ---
 
@@ -429,11 +469,14 @@ for i, page in enumerate(pages):
 | 路径 | 说明 |
 |------|------|
 | `apps/backend/app/models/api_key.py` | API Key 数据模型 |
+| `apps/backend/app/models/external_file.py` | 外部文件记录模型 |
 | `apps/backend/app/providers/ai/zhipu.py` | 智谱 Provider |
 | `apps/backend/app/providers/ai/deepseek.py` | DeepSeek Provider |
 | `apps/backend/app/api/v1/middleware/api_key_auth.py` | API Key 认证中间件 |
 | `apps/backend/app/api/v1/endpoints/external.py` | 对外 OpenAI 兼容 API |
+| `apps/backend/app/api/v1/endpoints/external_files.py` | 对外文件服务 |
 | `apps/backend/alembic/versions/xxx_add_api_keys.py` | API Key 表 migration |
+| `apps/backend/alembic/versions/xxx_add_external_files.py` | 外部文件表 migration |
 
 ### 修改文件
 | 路径 | 说明 |
