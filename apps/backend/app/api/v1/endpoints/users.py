@@ -1,8 +1,24 @@
+import hashlib
+import secrets
 from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.deps import get_db, get_current_active_user
+from app.models.api_key import ApiKey
 from app.models.user import User
+from app.schemas.api_key import (
+    ApiKeyCreate,
+    ApiKeyCreatedResponse,
+    ApiKeyResponse,
+    ApiKeyRevealResponse,
+    ApiKeyStatusUpdate,
+)
+from app.schemas.payment import PointTransaction as PointTransactionSchema
+from app.schemas.stats import UserStatsResponse
 from app.schemas.user import (
     User as UserSchema,
     UserUpdate,
@@ -17,11 +33,9 @@ from app.schemas.user import (
     InviteInfoResponse,
     InviteRecord,
 )
-from app.schemas.stats import UserStatsResponse
-from app.schemas.payment import PointTransaction as PointTransactionSchema
 from app.services.user_service import UserService
 from app.services.point_service import PointService
-from app.core.security import verify_password, get_password_hash, mask_id_card_encrypted
+from app.core.security import verify_password, get_password_hash, mask_id_card_encrypted, aes_encrypt, aes_decrypt
 
 router = APIRouter()
 
@@ -188,3 +202,140 @@ async def get_invite_list(
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
     return await UserService.get_invite_list(db, current_user)
+
+
+# ==================== API Key 管理 ====================
+
+
+@router.get("/api-keys", response_model=list[ApiKeyResponse], summary="获取API Key列表")
+async def list_api_keys(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """获取当前用户的所有 API Key，按创建时间倒序排列"""
+    result = await db.execute(
+        select(ApiKey)
+        .where(ApiKey.user_id == current_user.id)
+        .order_by(ApiKey.created_at.desc())
+    )
+    keys = result.scalars().all()
+    return [ApiKeyResponse.model_validate(k) for k in keys]
+
+
+@router.post(
+    "/api-keys",
+    response_model=ApiKeyCreatedResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="创建API Key",
+)
+async def create_api_key(
+    body: ApiKeyCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """创建新的 API Key，返回明文密钥（仅创建时返回一次）"""
+    raw_key = "lcai_" + secrets.token_hex(20)
+    prefix = raw_key[:10]
+    key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+    key_encrypted = aes_encrypt(raw_key)
+
+    api_key = ApiKey(
+        user_id=current_user.id,
+        name=body.name,
+        key_prefix=prefix,
+        key_hash=key_hash,
+        key_encrypted=key_encrypted,
+        status="active",
+    )
+    db.add(api_key)
+    await db.commit()
+    await db.refresh(api_key)
+
+    response = ApiKeyCreatedResponse(
+        id=api_key.id,
+        name=api_key.name,
+        key_prefix=api_key.key_prefix,
+        status=api_key.status,
+        last_used_at=api_key.last_used_at,
+        created_at=api_key.created_at,
+        key=raw_key,
+    )
+    return response
+
+
+@router.get(
+    "/api-keys/{key_id}/reveal",
+    response_model=ApiKeyRevealResponse,
+    summary="查看API Key明文",
+)
+async def reveal_api_key(
+    key_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """查看 API Key 明文（通过 AES 解密还原）"""
+    result = await db.execute(
+        select(ApiKey).where(
+            ApiKey.id == key_id,
+            ApiKey.user_id == current_user.id,
+        )
+    )
+    api_key = result.scalar_one_or_none()
+    if not api_key:
+        raise HTTPException(status_code=404, detail="API Key not found")
+
+    plain_key = aes_decrypt(api_key.key_encrypted)
+    return ApiKeyRevealResponse(id=api_key.id, key=plain_key)
+
+
+@router.put(
+    "/api-keys/{key_id}/status",
+    response_model=ApiKeyResponse,
+    summary="启用/禁用API Key",
+)
+async def update_api_key_status(
+    key_id: UUID,
+    body: ApiKeyStatusUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """启用或禁用指定的 API Key"""
+    result = await db.execute(
+        select(ApiKey).where(
+            ApiKey.id == key_id,
+            ApiKey.user_id == current_user.id,
+        )
+    )
+    api_key = result.scalar_one_or_none()
+    if not api_key:
+        raise HTTPException(status_code=404, detail="API Key not found")
+
+    api_key.status = body.status
+    await db.commit()
+    await db.refresh(api_key)
+    return ApiKeyResponse.model_validate(api_key)
+
+
+@router.delete(
+    "/api-keys/{key_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="删除API Key",
+)
+async def delete_api_key(
+    key_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> None:
+    """删除指定的 API Key"""
+    result = await db.execute(
+        select(ApiKey).where(
+            ApiKey.id == key_id,
+            ApiKey.user_id == current_user.id,
+        )
+    )
+    api_key = result.scalar_one_or_none()
+    if not api_key:
+        raise HTTPException(status_code=404, detail="API Key not found")
+
+    await db.delete(api_key)
+    await db.commit()
