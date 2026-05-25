@@ -53,11 +53,12 @@ class ToolBase(BaseModel):
     tags: Optional[str] = Field(None, description="标签列表，JSON格式")
     base_fee: int = Field(0, description="基础费（积分）")
     image_fee: int = Field(0, description="图片费（积分/张）")
-    audio_fee: int = Field(0, description="音频费（积分/分钟）")
+    audio_fee: int = Field(0, description="音频费（积分/段）")
     token_fee: int = Field(0, description="Token费（积分/千token）")
     config: Optional[Any] = Field(None, description="工具配置，JSON格式")
     status: int = Field(1, description="状态：0下线 1上线 2维护中")
     is_featured: bool = Field(False, description="是否推荐展示在首页精品工具")
+    is_mock_enabled: bool = Field(False, description="是否启用Mock执行模式")
     usage_modes: Optional[list[str]] = Field(default=None, description="使用模式，可选值 form/dialog")
 
 
@@ -66,7 +67,7 @@ class ToolCreate(ToolBase):
 
 
 class ToolUpdate(BaseModel):
-    slug: Optional[str] = Field(None, max_length=100, description="工具标识")
+    slug: str = Field(..., max_length=100, description="工具标识")
     name: Optional[str] = Field(None, max_length=100, description="工具名称")
     description: Optional[str] = Field(None, description="详细描述")
     short_desc: Optional[str] = Field(None, max_length=255, description="简短描述")
@@ -76,11 +77,12 @@ class ToolUpdate(BaseModel):
     tags: Optional[str] = Field(None, description="标签列表，JSON格式")
     base_fee: Optional[int] = Field(None, description="基础费（积分）")
     image_fee: Optional[int] = Field(None, description="图片费（积分/张）")
-    audio_fee: Optional[int] = Field(None, description="音频费（积分/分钟）")
+    audio_fee: Optional[int] = Field(None, description="音频费（积分/段）")
     token_fee: Optional[int] = Field(None, description="Token费（积分/千token）")
     config: Optional[Any] = Field(None, description="工具配置，JSON格式")
     status: Optional[int] = Field(None, description="状态：0下线 1上线 2维护中")
     is_featured: Optional[bool] = Field(None, description="是否推荐展示在首页精品工具")
+    is_mock_enabled: Optional[bool] = Field(None, description="是否启用Mock执行模式")
     usage_modes: Optional[list[str]] = Field(None, description="使用模式")
 
 

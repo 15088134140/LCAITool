@@ -46,12 +46,15 @@ class TaskInDBBase(TaskBase):
 
 class Task(TaskInDBBase):
     """任务信息（对外）"""
-    pass
+    tool_name: Optional[str] = Field(None, description="工具名称")
+    tool_cover: Optional[str] = Field(None, description="工具封面图")
 
 
 class TaskDetail(TaskInDBBase):
     """任务详情（包含快照数据）"""
     snapshot_data: Optional[Dict[str, Any]]
+    tool_name: Optional[str] = Field(None, description="工具名称")
+    tool_cover: Optional[str] = Field(None, description="工具封面图")
 
 
 # ============ TaskLog Schemas ============

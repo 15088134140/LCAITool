@@ -40,7 +40,5 @@ class Settings(BaseSettings):
 
     INTERNAL_API_TOKEN: str = ""
 
-    MOCK_AI_EXECUTION: bool = False
-
 
 settings = Settings()

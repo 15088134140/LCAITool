@@ -155,7 +155,7 @@ async def seed_tools(db: AsyncSession):
     tools = [
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000001"),
-            slug="ai-storybook", name="AI有声绘本生成专家",
+            slug="storybook-generator", name="AI有声绘本生成专家",
             description="输入主题，AI自动生成完整的有声绘本。包括故事创作、插画生成、语音合成、PDF排版打包，一站式完成从创意到可交付绘本的全流程。",
             short_desc="一键生成带插画和配音的精美有声绘本",
             category_id=cat_story, category="故事创作",

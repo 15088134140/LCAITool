@@ -15,7 +15,7 @@ from app.models.tool import Tool
 
 
 FEATURED_SLUGS = [
-    'ai-storybook',
+    'storybook-generator',
     'ecommerce-detail',
     'product-description',
 ]

@@ -1,5 +1,6 @@
 import uuid
 import time
+import logging
 from typing import Optional, List, Tuple, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
@@ -16,6 +17,8 @@ from app.core.exceptions import (
     BusinessException
 )
 from app.core.redis import get_redis_client
+
+logger = logging.getLogger(__name__)
 
 
 class TaskService:
@@ -290,6 +293,16 @@ class TaskService:
         user_id = task.user_id
         frozen_amount = task.estimated_cost or 0
         task_type = task.task_type
+        celery_task_id = task.celery_task_id
+
+        # 终止 Celery worker 任务（如果还在运行）
+        if celery_task_id:
+            try:
+                from app.workers.celery_app import celery_app
+                celery_app.control.revoke(celery_task_id, terminate=True)
+                logger.info(f"已终止 Celery 任务 {celery_task_id} (业务任务 {task_id})")
+            except Exception as e:
+                logger.warning(f"终止 Celery 任务失败: {e}")
 
         # 取消任务
         task.cancel()

@@ -44,7 +44,7 @@ class Tool(BaseModel):
     tags = Column(Text, nullable=True, comment="标签列表，JSON格式")
     base_fee = Column(Integer, default=0, nullable=False, comment="基础费（积分）")
     image_fee = Column(Integer, default=0, nullable=False, comment="图片费（积分/张）")
-    audio_fee = Column(Integer, default=0, nullable=False, comment="音频费（积分/分钟）")
+    audio_fee = Column(Integer, default=0, nullable=False, comment="音频费（积分/段）")
     token_fee = Column(Integer, default=0, nullable=False, comment="Token费（积分/千token）")
     config = Column(JSONType, nullable=True, comment="工具配置，JSON格式")
     status = Column(Integer, default=1, nullable=False, comment="状态：0下线 1上线 2维护中")
@@ -53,6 +53,7 @@ class Tool(BaseModel):
     favorite_count = Column(Integer, default=0, nullable=False, comment="收藏次数")
     rating_count = Column(Integer, default=0, nullable=False, comment="评价次数")
     rating_avg = Column(Numeric(2, 1), default=0.0, nullable=False, comment="平均评分")
+    is_mock_enabled = Column(Boolean, default=False, nullable=False, comment="是否启用Mock执行模式")
     usage_modes = Column(JSONType, nullable=True, comment="使用模式，JSON数组：[\"form\", \"dialog\"]")
 
     category_obj = relationship("ToolCategory", back_populates="tools")

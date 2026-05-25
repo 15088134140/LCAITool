@@ -23,6 +23,7 @@ class Task(BaseModel):
     error_message = Column(Text, nullable=True, comment="错误信息")
     estimated_cost = Column(Integer, nullable=True, comment="预估费用")
     actual_cost = Column(Integer, nullable=True, comment="实际费用")
+    celery_task_id = Column(String(255), nullable=True, index=True, comment="Celery任务ID，用于取消/终止")
     started_at = Column(Integer, nullable=True, comment="开始时间")
     completed_at = Column(Integer, nullable=True, comment="完成时间")
 

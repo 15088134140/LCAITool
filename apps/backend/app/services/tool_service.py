@@ -383,6 +383,19 @@ class ToolService:
         await db.refresh(rating)
         return rating
 
+    @staticmethod
+    async def get_rating_by_task(
+        db: AsyncSession,
+        task_id: uuid.UUID
+    ) -> Optional[ToolRating]:
+        """根据任务ID获取评价"""
+        result = await db.execute(
+            select(ToolRating)
+            .where(ToolRating.task_id == task_id)
+            .options(joinedload(ToolRating.user))
+        )
+        return result.scalar_one_or_none()
+
     # ============== Category Methods ==============
 
     @staticmethod

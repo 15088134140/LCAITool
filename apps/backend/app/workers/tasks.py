@@ -69,9 +69,9 @@ def _get_redis_client():
 
 # 执行器映射
 EXECUTOR_MAP: Dict[str, type[BaseToolExecutor]] = {
-    'storybook': StorybookExecutor,
-    'ecommerce': EcommerceExecutor,
-    'marketing': MarketingExecutor,
+    'storybook-generator': StorybookExecutor,
+    'ecommerce-detail': EcommerceExecutor,
+    'product-description': MarketingExecutor,
 }
 
 
@@ -246,6 +246,9 @@ def execute_tool_task(
             progress=0
         )
 
+        # 存储 Celery 任务 ID，以便取消时能终止 worker
+        _store_celery_task_id(task_uuid, self.request.id)
+
         # 获取执行器类
         executor_class = EXECUTOR_MAP.get(tool_type)
         if not executor_class:
@@ -345,6 +348,7 @@ async def _execute_with_async_session(
 
             # 从数据库读取工具定价配置
             tool_config = {}
+            tool = None
             if task and task.tool_id:
                 result = await db.execute(select(Tool).where(Tool.id == task.tool_id))
                 tool = result.scalar_one_or_none()
@@ -354,6 +358,7 @@ async def _execute_with_async_session(
                         'image_fee': tool.image_fee,
                         'audio_fee': tool.audio_fee,
                         'token_fee': tool.token_fee,
+                        'is_mock_enabled': tool.is_mock_enabled,
                     }
 
             # 创建异步进度回调
@@ -367,9 +372,9 @@ async def _execute_with_async_session(
                 progress_callback=progress_callback
             )
 
-            # 判断是否启用 Mock 执行模式
-            if settings.MOCK_AI_EXECUTION:
-                logger.info(f"[Mock Mode] 模拟执行 task {task_uuid}")
+            # 判断工具是否启用 Mock 执行模式（按工具独立控制，无需重启）
+            if tool and tool.is_mock_enabled:
+                logger.info(f"[Mock Mode] 模拟执行 task {task_uuid} (tool: {tool.name})")
                 result = await executor._mock_execute()
             else:
                 result = await executor.execute(input_params)
@@ -396,6 +401,23 @@ async def _execute_with_async_session(
             return result
     finally:
         await engine.dispose()
+
+
+def _store_celery_task_id(task_uuid: uuid.UUID, celery_task_id: str) -> None:
+    """将 Celery 任务 ID 存入数据库，用于后续取消/终止操作"""
+    session = _get_sync_session()
+    try:
+        from app.models.task import Task
+        task = session.query(Task).filter(Task.id == task_uuid).first()
+        if task:
+            task.celery_task_id = celery_task_id
+            session.commit()
+            logger.info(f"[Celery] 已存储 celery_task_id={celery_task_id} for task {task_uuid}")
+    except Exception as e:
+        logger.warning(f"[Celery] 存储 celery_task_id 失败: {e}")
+        session.rollback()
+    finally:
+        session.close()
 
 
 @celery_app.task(queue='fast')
