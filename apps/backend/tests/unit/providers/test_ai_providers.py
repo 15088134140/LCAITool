@@ -174,21 +174,147 @@ async def test_doubao_generate_text_http_error(httpx_mock):
 
 
 @pytest.mark.asyncio
-async def test_doubao_generate_image_not_implemented():
-    """测试豆包图片生成未实现"""
+async def test_doubao_generate_image_success(httpx_mock):
+    """测试豆包 Seedream 图片生成成功（b64_json 直接返回）"""
+    mock_b64 = base64.b64encode(b"fake_image_bytes").decode("utf-8")
+    httpx_mock.add_response(
+        json={"data": [{"b64_json": mock_b64, "revised_prompt": ""}]}
+    )
+
     provider = DoubaoProvider(api_key="test_key")
-    response = await provider.generate_image("一只猫")
-    assert response.success is False
-    assert "not implemented" in response.error.lower()
+    response = await provider.generate_image("一只可爱的猫")
+
+    assert response.success is True
+    assert response.content == mock_b64
+    assert response.usage["images"] == 1
 
 
 @pytest.mark.asyncio
-async def test_doubao_generate_video_not_implemented():
-    """测试豆包视频生成未实现"""
+async def test_doubao_generate_image_url_fallback(httpx_mock):
+    """测试豆包 Seedream 图片生成 URL 回退（下载后 base64 编码）"""
+    # 第一步：API 返回图片 URL
+    httpx_mock.add_response(
+        json={"data": [{"url": "https://example.com/img.png"}]}
+    )
+    # 第二步：下载图片
+    httpx_mock.add_response(content=b"fake_image_bytes")
+
     provider = DoubaoProvider(api_key="test_key")
-    response = await provider.generate_video("一只猫在跑步")
+    response = await provider.generate_image("一只可爱的猫")
+
+    assert response.success is True
+    assert len(response.content) > 0
+    decoded = base64.b64decode(response.content)
+    assert decoded == b"fake_image_bytes"
+    assert response.usage["images"] == 1
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_image_api_error(httpx_mock):
+    """测试豆包图片生成 API 错误"""
+    httpx_mock.add_response(status_code=400, text="Bad Request")
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_image("一只猫")
+
     assert response.success is False
-    assert "not implemented" in response.error.lower()
+    assert "400" in response.error
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_video_success(httpx_mock):
+    """测试豆包 Seedance 视频生成成功（提交 -> 轮询 -> 下载）"""
+    # 1. 提交任务
+    httpx_mock.add_response(json={"id": "task_123"})
+    # 2. 第一次轮询 - 运行中
+    httpx_mock.add_response(
+        json={"task": {"id": "task_123", "status": "running"}}
+    )
+    # 3. 第二次轮询 - 成功
+    httpx_mock.add_response(
+        json={
+            "task": {
+                "id": "task_123",
+                "status": "succeeded",
+                "output": {"video_url": "https://example.com/video.mp4"}
+            }
+        }
+    )
+    # 4. 下载视频
+    httpx_mock.add_response(content=b"fake_video_bytes")
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_video(
+        "一只猫在跑步",
+        duration=10,
+        poll_interval=0.001,
+        max_polls=10
+    )
+
+    assert response.success is True
+    assert len(response.content) > 0
+    decoded = base64.b64decode(response.content)
+    assert decoded == b"fake_video_bytes"
+    assert response.usage["video_duration"] == 10
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_video_failed(httpx_mock):
+    """测试豆包 Seedance 视频生成失败（提交 -> 轮询 -> 失败）"""
+    # 1. 提交任务
+    httpx_mock.add_response(json={"id": "task_123"})
+    # 2. 轮询 - 失败
+    httpx_mock.add_response(
+        json={
+            "task": {
+                "id": "task_123",
+                "status": "failed",
+                "error": "Model inference error"
+            }
+        }
+    )
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_video(
+        "一只猫在跑步",
+        poll_interval=0.001,
+        max_polls=10
+    )
+
+    assert response.success is False
+    assert "Model inference error" in response.error
+
+
+@pytest.mark.asyncio
+async def test_doubao_clone_voice_success(httpx_mock):
+    """测试豆包声音复刻成功"""
+    httpx_mock.add_response(
+        json={"voice_id": "voice_abc123", "message": "success"}
+    )
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.clone_voice(
+        audio_data=b"fake_audio_bytes",
+        voice_name="my_voice"
+    )
+
+    assert response.success is True
+    assert response.content == "voice_abc123"
+    assert response.usage["voice_name"] == "my_voice"
+
+
+@pytest.mark.asyncio
+async def test_doubao_clone_voice_failure(httpx_mock):
+    """测试豆包声音复刻失败（无 voice_id）"""
+    httpx_mock.add_response(json={"message": "ok"})
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.clone_voice(
+        audio_data=b"fake_audio_bytes"
+    )
+
+    assert response.success is False
+    assert "voice_id" in response.error.lower()
 
 
 @pytest.mark.asyncio
