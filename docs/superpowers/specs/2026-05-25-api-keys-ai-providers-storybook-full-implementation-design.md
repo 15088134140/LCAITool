@@ -271,19 +271,31 @@ VIDEO_MODEL_MAP = {
 - 认证：JWT（已有，不变）
 - 用途：用户在前端查看/下载自己的成果
 
+示例：
+```
+用户登录前端 → 查看成果详情页 → 点击"下载PDF"
+→ 前端调用 GET /api/v1/files/works/550e8400-e29b-41d4-a716-446655440001
+  Header: Authorization: Bearer <JWT>
+→ 返回 PDF 文件流（支持预览/下载）
+```
+
 **路径 B：外部 API 文件（对外）**
 - 目录：`storage/external/{user_id}/{file_id}.{ext}`
 - 端点：`GET /api/v1/external/files/{file_id}`
 - 认证：API Key
 - 用途：外部平台通过 API Key 获取生成的文件
 
-对外 API 响应中的 URL 格式：
-```json
-{
-  "data": [
-    {"url": "https://api.lcai.com/api/v1/external/files/{file_id}"}
-  ]
-}
+示例 1 — 完整调用链路：
+```
+外部平台 → POST /api/v1/images/generations
+  Header: Authorization: Bearer lcai_aB3x...
+  Body: {"model": "doubao-seedream-4.5", "prompt": "一只白兔", "n": 1}
+→ 后端处理，保存到 storage/external/{user_id}/{file_id}.png
+→ 响应：{"data": [{"url": "https://api.lcai.com/api/v1/external/files/550e8400-e29b-41d4-a716-446655440002"}]}
+
+外部平台 → GET https://api.lcai.com/api/v1/external/files/550e8400-e29b-41d4-a716-446655440002
+  Header: Authorization: Bearer lcai_aB3x...
+→ 返回图片二进制流
 ```
 
 文件服务逻辑（路径 B）：
