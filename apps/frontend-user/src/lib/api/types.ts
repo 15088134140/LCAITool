@@ -540,3 +540,24 @@ export interface ListTransactionsParams {
   page?: number;
   page_size?: number;
 }
+
+// ============== API Key 相关类型 ==============
+
+export interface ApiKey {
+  id: UUID;
+  name: string;
+  key_prefix: string;
+  status: string;
+  last_used_at: Timestamp | null;
+  created_at: Timestamp;
+}
+
+export interface ApiKeyCreated extends ApiKey {
+  key: string;
+  warning: string;
+}
+
+export interface ApiKeyReveal {
+  id: UUID;
+  key: string;
+}

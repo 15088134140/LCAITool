@@ -17,6 +17,9 @@ import type {
   RegisterRequest,
   RegisterResponse,
   UserStats,
+  ApiKey,
+  ApiKeyCreated,
+  ApiKeyReveal,
 } from '../types';
 
 // API基础URL
@@ -178,6 +181,38 @@ export const userApi = {
    */
   getInviteList: () =>
     api.get<Array<{ invited_user: string; registered_at: number; recharge_status: string; reward: number }>>('/users/invite/list'),
+
+  // ============== API Key 管理 ==============
+
+  /**
+   * 获取当前用户的 API Key 列表
+   */
+  getApiKeys: () =>
+    api.get<ApiKey[]>('/users/api-keys'),
+
+  /**
+   * 创建 API Key
+   */
+  createApiKey: (data: { name: string }) =>
+    api.post<ApiKeyCreated>('/users/api-keys', data),
+
+  /**
+   * 查看 API Key 明文（30秒后自动过期）
+   */
+  revealApiKey: (id: string) =>
+    api.get<ApiKeyReveal>(`/users/api-keys/${id}/reveal`),
+
+  /**
+   * 更新 API Key 状态（active / disabled）
+   */
+  updateApiKeyStatus: (id: string, data: { status: string }) =>
+    api.put<ApiKey>(`/users/api-keys/${id}/status`, data),
+
+  /**
+   * 删除 API Key
+   */
+  deleteApiKey: (id: string) =>
+    api.delete<{ message: string }>(`/users/api-keys/${id}`),
 };
 
 export default userApi;
