@@ -22,6 +22,7 @@ class SystemConfigResponse(BaseModel):
     """系统配置响应"""
     key: str
     value: str
+    default_value: Optional[str] = None
     group: str
     label: str
     description: Optional[str] = None

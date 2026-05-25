@@ -3,6 +3,7 @@ import request from '@/utils/request';
 export interface SystemConfig {
   key: string;
   value: string;
+  default_value?: string;
   group: string;
   label: string;
   description?: string;
@@ -40,22 +41,25 @@ export interface UpdateAiProviderParams {
 
 export const settingsApi = {
   /** 获取系统配置，可按分组筛选 */
-  getSettings: (group?: string) => {
+  getSettings: async (group?: string) => {
     const params: Record<string, string> = {};
     if (group) params.group = group;
-    return request.get<SystemConfig[]>('/admin/settings', { params });
+    const res = await request.get<{ items: SystemConfig[]; total: number }>('/admin/settings', { params });
+    return res.items || [];
   },
 
   /** 批量更新系统配置 */
-  updateSettings: (settings: Record<string, string>) => {
-    return request.put('/admin/settings', { settings });
+  updateSettings: async (settings: Record<string, string>) => {
+    const res = await request.put<{ items: SystemConfig[]; updated_count: number }>('/admin/settings', { settings });
+    return res;
   },
 
   /** 获取 AI 提供商列表 */
-  getAiProviders: (activeOnly?: boolean) => {
+  getAiProviders: async (activeOnly?: boolean) => {
     const params: Record<string, any> = {};
     if (activeOnly !== undefined) params.active_only = activeOnly;
-    return request.get<AiProvider[]>('/admin/ai-providers', { params });
+    const res = await request.get<{ items: AiProvider[]; total: number }>('/admin/ai-providers', { params });
+    return res.items || [];
   },
 
   /** 创建 AI 提供商 */

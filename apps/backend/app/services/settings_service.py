@@ -1,10 +1,30 @@
 import uuid
 import copy
-from typing import Optional, List, Tuple
+from typing import Any, Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.system import SystemConfig, AiProvider
 from app.core.security import aes_encrypt, aes_decrypt
+
+
+# 系统配置默认值（与 seed_p0_data.py 保持一致）
+DEFAULT_CONFIG_VALUES: dict[str, str] = {
+    "site_name": "灵创AI工具箱",
+    "site_slogan": "专业场景AI工具集合平台",
+    "site_icp": "沪ICP备xxxxxx号",
+    "contact_email": "support@lingchuang.ai",
+    "contact_phone": "",
+    "checkin_base_points": "1",
+    "checkin_streak_bonus": "5",
+    "invite_register_reward": "10",
+    "invite_recharge_reward": "20",
+    "invite_daily_limit": "50",
+    "register_bonus_points": "50",
+    "verify_bonus_points": "50",
+    "rating_text_reward": "2",
+    "rating_image_reward": "5",
+    "points_per_yuan": "10",
+}
 
 
 class SettingsService:
@@ -25,6 +45,37 @@ class SettingsService:
         result = await db.execute(query)
         configs = list(result.scalars().all())
         return configs, len(configs)
+
+    @staticmethod
+    async def get_config_value(
+        db: AsyncSession,
+        key: str,
+        default: Any = None,
+    ) -> Any:
+        """获取单个系统配置值，按 type 字段自动转换类型
+
+        Args:
+            key: 配置键名
+            default: 配置不存在时的默认值
+
+        Returns:
+            自动按 type 转换后的配置值（int/str/bool），或 default
+        """
+        result = await db.execute(
+            select(SystemConfig).where(SystemConfig.key == key)
+        )
+        config = result.scalar_one_or_none()
+        if not config:
+            return default
+
+        if config.type == "number":
+            try:
+                return int(config.value)
+            except (ValueError, TypeError):
+                return default
+        elif config.type == "boolean":
+            return config.value.lower() in ("true", "1", "yes")
+        return config.value
 
     @staticmethod
     async def update_configs(
@@ -54,9 +105,26 @@ class SettingsService:
                 config.value = value
                 config.updated_by = admin_id
             else:
-                # 如果配置不存在，创建一个默认配置（需要label和group）
-                # 这里只更新值，不创建新配置；跳过不存在的key
-                continue
+                # 配置不存在时自动创建
+                # 尝试从 key 推断分组和标签
+                group = "basic"
+                label = key
+                for prefix, g in [("site_", "basic"), ("checkin_", "business"),
+                                   ("invite_", "business"), ("register_", "business"),
+                                   ("verify_", "business"), ("rating_", "business"),
+                                   ("recharge_", "business")]:
+                    if key.startswith(prefix):
+                        group = g
+                        break
+                config = SystemConfig(
+                    key=key,
+                    value=value,
+                    group=group,
+                    label=label,
+                    type="number" if value and value.lstrip("-").isdigit() else "string",
+                    updated_by=admin_id,
+                )
+                db.add(config)
 
             updated_configs.append(config)
 

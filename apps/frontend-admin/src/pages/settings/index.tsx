@@ -45,14 +45,14 @@ const BASIC_FIELDS: ConfigField[] = [
 
 const BUSINESS_FIELDS: ConfigField[] = [
   { key: 'checkin_base_points', label: '签到基础积分', type: 'number', placeholder: '每日签到获得积分' },
-  { key: 'checkin_week_bonus', label: '满7天额外奖励', type: 'number', placeholder: '连续签到7天额外奖励' },
-  { key: 'invite_register_bonus', label: '邀请注册奖励', type: 'number', placeholder: '邀请新用户注册奖励' },
-  { key: 'invite_recharge_bonus', label: '邀请充值奖励', type: 'number', placeholder: '被邀请人充值奖励比例(%)' },
+  { key: 'checkin_streak_bonus', label: '满7天额外奖励', type: 'number', placeholder: '连续签到7天额外奖励' },
+  { key: 'invite_register_reward', label: '邀请注册奖励', type: 'number', placeholder: '邀请新用户注册奖励' },
+  { key: 'invite_recharge_reward', label: '邀请充值奖励', type: 'number', placeholder: '被邀请人充值奖励比例(%)' },
   { key: 'invite_daily_limit', label: '每日邀请奖励上限', type: 'number', placeholder: '每日邀请奖励积分上限' },
   { key: 'register_bonus_points', label: '注册赠送积分', type: 'number', placeholder: '新用户注册赠送积分' },
   { key: 'verify_bonus_points', label: '实名认证奖励积分', type: 'number', placeholder: '实名认证通过奖励积分' },
-  { key: 'review_text_bonus', label: '评价奖励（文字）', type: 'number', placeholder: '文字评价奖励积分' },
-  { key: 'review_image_bonus', label: '评价奖励（带图）', type: 'number', placeholder: '带图评价奖励积分' },
+  { key: 'rating_text_reward', label: '评价奖励（文字）', type: 'number', placeholder: '文字评价奖励积分' },
+  { key: 'rating_image_reward', label: '评价奖励（带图）', type: 'number', placeholder: '带图评价奖励积分' },
   { key: 'recharge_rate', label: '1元兑积分比例', type: 'number', placeholder: '充值1元兑换积分数' },
 ];
 
@@ -131,6 +131,7 @@ const SettingsPage = () => {
 
   // ---- Config State (Tab1 + Tab2) ----
   const [configMap, setConfigMap] = useState<Record<string, string>>({});
+  const [defaultMap, setDefaultMap] = useState<Record<string, string>>({});
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
 
@@ -169,10 +170,15 @@ const SettingsPage = () => {
     try {
       const list = await settingsApi.getSettings(group);
       const map: Record<string, string> = {};
+      const dMap: Record<string, string> = {};
       list.forEach((item) => {
         map[item.key] = item.value;
+        if (item.default_value) {
+          dMap[item.key] = item.default_value;
+        }
       });
       setConfigMap(map);
+      setDefaultMap(dMap);
     } catch (err) {
       console.error('加载配置失败:', err);
       toast.error('加载配置失败');
@@ -308,7 +314,14 @@ const SettingsPage = () => {
   // ========== Render Helpers ==========
   const renderConfigForm = (fields: ConfigField[]) => (
     <div className="space-y-6">
-      {fields.map((field) => (
+      {fields.map((field) => {
+        const hasValue = configMap[field.key] !== undefined && configMap[field.key] !== null && configMap[field.key] !== '';
+        const placeholderText = hasValue
+          ? field.placeholder
+          : (defaultMap[field.key]
+            ? `默认: ${defaultMap[field.key]}`
+            : field.placeholder);
+        return (
         <div key={field.key}>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             {field.label}
@@ -317,7 +330,7 @@ const SettingsPage = () => {
             <textarea
               value={configMap[field.key] || ''}
               onChange={(e) => handleConfigFieldChange(field.key, e.target.value)}
-              placeholder={field.placeholder}
+              placeholder={placeholderText}
               rows={5}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none resize-y text-sm"
             />
@@ -326,12 +339,13 @@ const SettingsPage = () => {
               type={field.type}
               value={configMap[field.key] || ''}
               onChange={(e) => handleConfigFieldChange(field.key, e.target.value)}
-              placeholder={field.placeholder}
+              placeholder={placeholderText}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none text-sm"
             />
           )}
         </div>
-      ))}
+        );
+      })}
 
       <div className="flex justify-end pt-4 border-t border-gray-100">
         <Button

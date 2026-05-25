@@ -13,9 +13,10 @@ from app.schemas.settings import (
     AiProviderUpdate,
     AiProviderResponse,
 )
-from app.services.settings_service import SettingsService
+from app.services.settings_service import SettingsService, DEFAULT_CONFIG_VALUES
 
 router = APIRouter()
+public_router = APIRouter()
 
 
 # ==================== 系统设置 ====================
@@ -28,12 +29,42 @@ async def get_settings(
     current_user: User = Depends(get_current_admin_user),
 ) -> Any:
     """获取系统配置列表，可选按分组筛选"""
+    from app.models.system import SystemConfig as SystemConfigModel
     configs, total = await SettingsService.get_configs(db, group=group)
-    # Convert to response schema
-    items = [SystemConfigResponse.model_validate(c) for c in configs]
+    # Build response with default values
+    config_map = {c.key: c for c in configs}
+    all_keys = set(DEFAULT_CONFIG_VALUES.keys())
+    # If group is specified, filter to keys matching known prefixes
+    if group == "basic":
+        all_keys = {k for k in all_keys if k.startswith(("site_", "contact_", "user_", "privacy_"))}
+    elif group == "business":
+        all_keys = {k for k in all_keys if k.startswith(("checkin_", "invite_", "register_", "verify_", "rating_", "recharge_", "points_"))}
+
+    items = []
+    for key in all_keys:
+        if key in config_map:
+            c = config_map[key]
+            item = SystemConfigResponse.model_validate(c)
+        else:
+            # Synthesize a response for configs not yet in DB
+            item = SystemConfigResponse(
+                key=key,
+                value="",
+                group="basic" if key.startswith(("site_", "contact_")) else "business",
+                label=key,
+                type="number" if DEFAULT_CONFIG_VALUES[key].lstrip("-").isdigit() else "string",
+                created_at=0,
+                updated_at=0,
+            )
+        item.default_value = DEFAULT_CONFIG_VALUES.get(key)
+        items.append(item)
+
+    # Sort items by key
+    items.sort(key=lambda x: x.key)
+
     return {
         "items": items,
-        "total": total,
+        "total": len(items),
     }
 
 
@@ -187,3 +218,20 @@ async def delete_ai_provider(
     await db.commit()
 
     return {"message": "删除成功"}
+
+
+# ==================== 公开配置（用户端使用） ====================
+
+
+@public_router.get("/public/config", summary="获取公开配置值")
+async def get_public_config(
+    keys: str = Query(..., description="逗号分隔的配置键列表，如: verify_bonus_points,register_bonus_points"),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """获取公开的系统配置值列表（无需登录）"""
+    key_list = [k.strip() for k in keys.split(",") if k.strip()]
+    result = {}
+    for key in key_list:
+        value = await SettingsService.get_config_value(db, key)
+        result[key] = value
+    return result
