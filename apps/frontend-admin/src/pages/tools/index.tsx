@@ -205,6 +205,7 @@ const ToolManagement = () => {
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">使用次数</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">评分</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">状态</th>
+                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Mock</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">创建时间</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">操作</th>
               </tr>
@@ -212,13 +213,13 @@ const ToolManagement = () => {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                     加载中...
                   </td>
                 </tr>
               ) : tools.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                     暂无数据
                   </td>
                 </tr>
@@ -274,6 +275,15 @@ const ToolManagement = () => {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(tool.status)}`}>
                         {getStatusText(tool.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        tool.is_mock_enabled
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-gray-100 text-gray-400'
+                      }`}>
+                        {tool.is_mock_enabled ? '开启' : '关闭'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{formatDate(tool.created_at)}</td>

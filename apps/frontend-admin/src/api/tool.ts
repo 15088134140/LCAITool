@@ -17,6 +17,7 @@ export interface Tool {
   config?: any;
   status: number; // 0下线 1上线 2维护中
   is_featured?: boolean;
+  is_mock_enabled?: boolean;
   usage_modes?: string[];
   use_count: number;
   favorite_count: number;
@@ -89,6 +90,7 @@ export interface CreateToolParams {
   config?: any;
   status?: number;
   is_featured?: boolean;
+  is_mock_enabled?: boolean;
   usage_modes?: string[];
 }
 
@@ -109,6 +111,7 @@ export interface UpdateToolParams {
   config?: any;
   status?: number;
   is_featured?: boolean;
+  is_mock_enabled?: boolean;
   usage_modes?: string[];
 }
 

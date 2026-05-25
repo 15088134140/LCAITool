@@ -27,6 +27,7 @@ const CreateTool = () => {
     audio_fee: 0,
     token_fee: 0,
     status: 0,
+    is_mock_enabled: false,
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -298,6 +299,19 @@ const CreateTool = () => {
                   推荐展示（显示在首页精品工具区域）
                 </label>
               </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <input
+                  type="checkbox"
+                  id="is_mock_enabled"
+                  checked={!!formData.is_mock_enabled}
+                  onChange={(e) => handleInputChange('is_mock_enabled', e.target.checked)}
+                  className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                />
+                <label htmlFor="is_mock_enabled" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Mock执行模式（开启后工具使用模拟数据执行，无需真实AI调用）
+                </label>
+              </div>
             </div>
           </div>
 
@@ -344,7 +358,7 @@ const CreateTool = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                音频费 (积分/分钟)
+                音频费 (积分/段)
               </label>
               <input
                 type="number"
