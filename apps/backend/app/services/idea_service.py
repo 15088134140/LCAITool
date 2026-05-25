@@ -157,6 +157,45 @@ class IdeaService:
         return vote_obj
 
     @staticmethod
+    async def cancel_vote(
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        idea_id: uuid.UUID,
+    ) -> IdeaSubmission:
+        """取消投票"""
+        # 1. 查询投票记录
+        vote_result = await db.execute(
+            select(IdeaVote).where(
+                IdeaVote.idea_id == idea_id,
+                IdeaVote.user_id == user_id
+            )
+        )
+        vote = vote_result.scalar_one_or_none()
+        if not vote:
+            from app.core.exceptions import BusinessException
+            raise BusinessException("您尚未对该创意投票")
+
+        # 2. 查询创意
+        idea_result = await db.execute(
+            select(IdeaSubmission).where(IdeaSubmission.id == idea_id)
+        )
+        idea = idea_result.scalar_one_or_none()
+        if not idea:
+            from app.core.exceptions import IdeaNotFoundException
+            raise IdeaNotFoundException()
+
+        # 3. 删除投票记录
+        await db.delete(vote)
+
+        # 4. 减少投票数
+        if vote.vote_type == "up":
+            idea.increment_vote(-1)
+
+        await db.commit()
+        await db.refresh(idea)
+        return idea
+
+    @staticmethod
     async def get_user_votes(
         db: AsyncSession,
         user_id: uuid.UUID,

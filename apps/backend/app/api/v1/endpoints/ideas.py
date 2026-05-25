@@ -269,25 +269,14 @@ async def cancel_vote(
     """
     取消用户对该创意的投票
     """
-    # TODO: 实现取消投票逻辑需要在 IdeaService 中添加方法
-    # 目前 IdeaService 没有实现取消投票的方法
-    # 这是一个占位实现，需要后续扩展 IdeaService
-    from app.core.exceptions import BusinessException
-
-    has_voted = await IdeaService.has_user_voted(
+    idea = await IdeaService.cancel_vote(
         db=db,
         user_id=current_user.id,
-        idea_id=idea_id
+        idea_id=idea_id,
     )
-
-    if not has_voted:
-        raise BusinessException("您尚未对该创意投票")
-
-    # TODO: 实现取消投票逻辑
-    # 这里需要在 IdeaService 中添加 cancel_vote 方法
-    # 以及在 Idea 模型中添加 decrement_vote 方法
 
     return {
         "message": "取消投票成功",
-        "idea_id": str(idea_id)
+        "idea_id": str(idea_id),
+        "vote_count": idea.vote_count,
     }
