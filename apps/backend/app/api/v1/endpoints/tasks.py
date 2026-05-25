@@ -4,6 +4,7 @@
 """
 from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, Header, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
@@ -11,17 +12,40 @@ from pydantic import BaseModel, Field
 
 from app.api.deps import get_db, get_current_active_user
 from app.models.user import User
+from app.models.tool import Tool
 from app.schemas.task import (
     Task as TaskSchema,
     TaskCreate,
     TaskDetail,
     TaskLog as TaskLogSchema
 )
+from app.schemas.tool import ToolRatingResponse
 from app.services.task_service import TaskService
+from app.services.tool_service import ToolService as ToolSvc
 from app.core.config import settings
 from app.workers.tasks import execute_tool_task, publish_task_message
 
 router = APIRouter()
+
+
+async def _enrich_task_with_tool(task: Any, db: AsyncSession) -> dict:
+    """将任务对象转为 dict 并补充工具名称和封面图"""
+    task_dict = TaskSchema.model_validate(task).model_dump()
+    if task.tool_id:
+        result = await db.execute(select(Tool).where(Tool.id == task.tool_id))
+        tool = result.scalar_one_or_none()
+        if tool:
+            task_dict['tool_name'] = tool.name
+            task_dict['tool_cover'] = tool.cover_image.split('|')[0].strip() if tool.cover_image else None
+    return task_dict
+
+
+async def _enrich_tasks_with_tool(tasks: list, db: AsyncSession) -> list:
+    """批量补充工具信息"""
+    result = []
+    for task in tasks:
+        result.append(await _enrich_task_with_tool(task, db))
+    return result
 
 
 @router.post("", response_model=TaskSchema, summary="创建任务（开始生成）")
@@ -51,7 +75,7 @@ async def create_task(
         input_params=task.input_params or {}
     )
 
-    return task
+    return await _enrich_task_with_tool(task, db)
 
 
 @router.get("/{task_id}", response_model=TaskDetail, summary="查询任务状态")
@@ -70,7 +94,7 @@ async def get_task(
         from app.core.exceptions import ResourceNotFoundException
         raise ResourceNotFoundException("任务不存在")
 
-    return task
+    return await _enrich_task_with_tool(task, db)
 
 
 @router.post("/{task_id}/cancel", response_model=TaskSchema, summary="取消任务")
@@ -93,7 +117,28 @@ async def cancel_task(
         from app.core.exceptions import ResourceNotFoundException
         raise ResourceNotFoundException("任务不存在")
 
-    return await TaskService.cancel_task(db=db, task_id=task_id, reason=reason)
+    task = await TaskService.cancel_task(db=db, task_id=task_id, reason=reason)
+    return await _enrich_task_with_tool(task, db)
+
+
+@router.get("/{task_id}/my-rating", summary="获取当前用户对任务的评价")
+async def get_my_task_rating(
+    task_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """获取当前用户对指定任务的评价（仅任务所有者可查看）"""
+    task = await TaskService.get_by_id(db=db, task_id=task_id)
+
+    if not task or task.user_id != current_user.id:
+        from app.core.exceptions import ResourceNotFoundException
+        raise ResourceNotFoundException("任务不存在")
+
+    rating = await ToolSvc.get_rating_by_task(db=db, task_id=task_id)
+    if not rating:
+        return None
+
+    return ToolRatingResponse.model_validate(rating)
 
 
 @router.get("/{task_id}/logs", summary="查询任务日志列表")
@@ -146,20 +191,18 @@ async def get_user_tasks(
     )
 
     # 按状态筛选（可选）
-    from app.schemas.task import Task as TaskSchema
-
     if status:
         filtered_tasks = [t for t in tasks if t.status == status]
         filtered_total = len(filtered_tasks)
         return {
-            "items": [TaskSchema.model_validate(t) for t in filtered_tasks],
+            "items": await _enrich_tasks_with_tool(filtered_tasks, db),
             "total": filtered_total,
             "page": page,
             "page_size": page_size,
         }
 
     return {
-        "items": [TaskSchema.model_validate(t) for t in tasks],
+        "items": await _enrich_tasks_with_tool(tasks, db),
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -207,7 +250,7 @@ async def retry_task(
         input_params=new_task.input_params or {}
     )
 
-    return new_task
+    return await _enrich_task_with_tool(new_task, db)
 
 
 @router.post("/{task_id}/progress", summary="更新任务进度（HTTP 回调）")

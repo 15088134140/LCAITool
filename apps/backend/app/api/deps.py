@@ -65,12 +65,9 @@ async def get_optional_current_user(
         if token_data.type != "access":
             return None
     except ExpiredSignatureError:
-        # token 过期 → 返回 401，触发前端自动刷新 token 后重试
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expired",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        # token 过期 → 等同于无 token，返回 None
+        # 不返回 401，避免可选的认证接口（如 ideas 列表）拒绝已登录但 token 过期的用户
+        return None
     except (jwt.JWTError, ValidationError):
         return None
 
