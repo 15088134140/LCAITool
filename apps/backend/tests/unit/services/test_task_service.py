@@ -39,7 +39,7 @@ async def test_create_task_with_points_freeze(db_session: AsyncSession):
     # 创建任务（预估费用50积分）
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50,
         input_params={"theme": "太空冒险"}
     )
@@ -48,7 +48,7 @@ async def test_create_task_with_points_freeze(db_session: AsyncSession):
     # 验证任务创建
     assert task.id is not None
     assert task.user_id == user.id
-    assert task.task_type == "storybook"
+    assert task.task_type == "storybook-generator"
     assert task.status == "pending"
     assert task.estimated_cost == 50
     assert task.progress == 0
@@ -77,7 +77,7 @@ async def test_create_task_insufficient_balance(db_session: AsyncSession):
     # 创建任务（预估费用超过余额）
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=200  # 超过初始余额100
     )
 
@@ -98,7 +98,7 @@ async def test_create_task_zero_cost(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=0
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -127,7 +127,7 @@ async def test_update_task_status_to_running(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -160,7 +160,7 @@ async def test_update_task_progress_only(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -207,7 +207,7 @@ async def test_complete_task_with_refund(db_session: AsyncSession):
     # 预估50，实际30，应该退还20
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -248,7 +248,7 @@ async def test_complete_task_with_extra_cost(db_session: AsyncSession):
     # 预估30，实际50，需要额外扣除20
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=30
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -286,7 +286,7 @@ async def test_complete_task_exact_cost(db_session: AsyncSession):
     # 预估50，实际50
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -320,7 +320,7 @@ async def test_complete_already_completed_task(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -352,7 +352,7 @@ async def test_cancel_task_with_full_refund(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -388,7 +388,7 @@ async def test_cancel_already_cancelled_task(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -416,7 +416,7 @@ async def test_fail_task_with_refund(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -454,7 +454,7 @@ async def test_add_task_log(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -489,7 +489,7 @@ async def test_get_task_logs(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -533,7 +533,7 @@ async def test_get_task_logs_pagination(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -573,7 +573,7 @@ async def test_save_and_get_snapshot(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -613,7 +613,7 @@ async def test_update_snapshot(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -654,7 +654,7 @@ async def test_get_user_tasks(db_session: AsyncSession):
     for i in range(5):
         task_in = TaskCreate(
             user_id=user.id,
-            task_type="storybook",
+            task_type="storybook-generator",
             estimated_cost=10
         )
         await TaskService.create_task(db_session, task_in)
@@ -685,7 +685,7 @@ async def test_create_work(db_session: AsyncSession):
 
     task_in = TaskCreate(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     task = await TaskService.create_task(db_session, task_in)
@@ -723,7 +723,7 @@ async def test_create_work_versioning(db_session: AsyncSession):
     user = await UserService.create(db_session, user_in)
 
     # 第一个版本
-    task1_in = TaskCreate(user_id=user.id, task_type="storybook", estimated_cost=50)
+    task1_in = TaskCreate(user_id=user.id, task_type="storybook-generator", estimated_cost=50)
     task1 = await TaskService.create_task(db_session, task1_in)
 
     work1_in = WorkCreate(
@@ -734,7 +734,7 @@ async def test_create_work_versioning(db_session: AsyncSession):
     work1_id = work1.id
 
     # 第二个版本（基于第一个版本）
-    task2_in = TaskCreate(user_id=user.id, task_type="storybook", estimated_cost=30)
+    task2_in = TaskCreate(user_id=user.id, task_type="storybook-generator", estimated_cost=30)
     task2 = await TaskService.create_task(db_session, task2_in)
 
     work2_in = WorkCreate(
@@ -763,7 +763,7 @@ async def test_get_user_works(db_session: AsyncSession):
 
     # 创建多个成果
     for i in range(3):
-        task_in = TaskCreate(user_id=user.id, task_type="storybook", estimated_cost=10)
+        task_in = TaskCreate(user_id=user.id, task_type="storybook-generator", estimated_cost=10)
         task = await TaskService.create_task(db_session, task_in)
 
         work_in = WorkCreate(
@@ -789,7 +789,7 @@ async def test_create_work_file(db_session: AsyncSession):
     )
     user = await UserService.create(db_session, user_in)
 
-    task_in = TaskCreate(user_id=user.id, task_type="storybook", estimated_cost=50)
+    task_in = TaskCreate(user_id=user.id, task_type="storybook-generator", estimated_cost=50)
     task = await TaskService.create_task(db_session, task_in)
 
     work_in = WorkCreate(user_id=user.id, task_id=task.id, title="测试绘本", version=1)
@@ -825,7 +825,7 @@ async def test_get_work_files(db_session: AsyncSession):
     )
     user = await UserService.create(db_session, user_in)
 
-    task_in = TaskCreate(user_id=user.id, task_type="storybook", estimated_cost=50)
+    task_in = TaskCreate(user_id=user.id, task_type="storybook-generator", estimated_cost=50)
     task = await TaskService.create_task(db_session, task_in)
 
     work_in = WorkCreate(user_id=user.id, task_id=task.id, title="测试绘本", version=1)
@@ -866,7 +866,7 @@ async def test_progress_boundaries(db_session: AsyncSession):
     )
     user = await UserService.create(db_session, user_in)
 
-    task_in = TaskCreate(user_id=user.id, task_type="storybook", estimated_cost=50)
+    task_in = TaskCreate(user_id=user.id, task_type="storybook-generator", estimated_cost=50)
     task = await TaskService.create_task(db_session, task_in)
 
     # 测试超过100的进度

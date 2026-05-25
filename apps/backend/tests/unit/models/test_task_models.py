@@ -25,7 +25,7 @@ async def test_create_task(db_session: AsyncSession):
     task = Task(
         user_id=user.id,
         tool_id=tool_id,
-        task_type="storybook",
+        task_type="storybook-generator",
         status="pending",
         estimated_cost=50,
         input_params={"theme": "太空冒险", "pages": 10}
@@ -37,7 +37,7 @@ async def test_create_task(db_session: AsyncSession):
     assert task.id is not None
     assert task.user_id == user.id
     assert task.tool_id == tool_id
-    assert task.task_type == "storybook"
+    assert task.task_type == "storybook-generator"
     assert task.status == "pending"
     assert task.progress == 0
     assert task.estimated_cost == 50
@@ -58,7 +58,7 @@ async def test_task_status_transitions(db_session: AsyncSession):
 
     task = Task(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         estimated_cost=50
     )
     db_session.add(task)
@@ -109,7 +109,7 @@ async def test_task_failure_and_cancellation(db_session: AsyncSession):
     await db_session.commit()
 
     # 测试失败
-    task1 = Task(user_id=user.id, task_type="storybook")
+    task1 = Task(user_id=user.id, task_type="storybook-generator")
     db_session.add(task1)
     await db_session.commit()
 
@@ -122,7 +122,7 @@ async def test_task_failure_and_cancellation(db_session: AsyncSession):
     assert task1.completed_at is not None
 
     # 测试取消
-    task2 = Task(user_id=user.id, task_type="storybook")
+    task2 = Task(user_id=user.id, task_type="storybook-generator")
     db_session.add(task2)
     await db_session.commit()
 
@@ -134,7 +134,7 @@ async def test_task_failure_and_cancellation(db_session: AsyncSession):
     assert task2.completed_at is not None
 
     # 测试超时
-    task3 = Task(user_id=user.id, task_type="storybook")
+    task3 = Task(user_id=user.id, task_type="storybook-generator")
     db_session.add(task3)
     await db_session.commit()
 
@@ -158,7 +158,7 @@ async def test_task_log_creation(db_session: AsyncSession):
     db_session.add(user)
     await db_session.commit()
 
-    task = Task(user_id=user.id, task_type="storybook")
+    task = Task(user_id=user.id, task_type="storybook-generator")
     db_session.add(task)
     await db_session.commit()
 
@@ -205,7 +205,7 @@ async def test_create_work(db_session: AsyncSession):
     task = Task(
         user_id=user.id,
         tool_id=tool_id,
-        task_type="storybook"
+        task_type="storybook-generator"
     )
     db_session.add(task)
     await db_session.commit()
@@ -251,7 +251,7 @@ async def test_work_versioning(db_session: AsyncSession):
     tool_id = uuid.uuid4()
 
     # 创建第一个版本
-    task1 = Task(user_id=user.id, tool_id=tool_id, task_type="storybook")
+    task1 = Task(user_id=user.id, tool_id=tool_id, task_type="storybook-generator")
     db_session.add(task1)
     await db_session.commit()
 
@@ -267,7 +267,7 @@ async def test_work_versioning(db_session: AsyncSession):
     await db_session.refresh(work1)
 
     # 创建第二个版本（基于第一个版本）
-    task2 = Task(user_id=user.id, tool_id=tool_id, task_type="storybook")
+    task2 = Task(user_id=user.id, tool_id=tool_id, task_type="storybook-generator")
     db_session.add(task2)
     await db_session.commit()
 
@@ -305,7 +305,7 @@ async def test_work_count_increment(db_session: AsyncSession):
     db_session.add(user)
     await db_session.commit()
 
-    task = Task(user_id=user.id, task_type="storybook")
+    task = Task(user_id=user.id, task_type="storybook-generator")
     db_session.add(task)
     await db_session.commit()
 
@@ -343,7 +343,7 @@ async def test_work_file_creation(db_session: AsyncSession):
     db_session.add(user)
     await db_session.commit()
 
-    task = Task(user_id=user.id, task_type="storybook")
+    task = Task(user_id=user.id, task_type="storybook-generator")
     db_session.add(task)
     await db_session.commit()
 
@@ -409,7 +409,7 @@ async def test_work_share_creation_and_review(db_session: AsyncSession):
     db_session.add(user)
     await db_session.commit()
 
-    task = Task(user_id=user.id, task_type="storybook")
+    task = Task(user_id=user.id, task_type="storybook-generator")
     db_session.add(task)
     await db_session.commit()
 
@@ -485,7 +485,7 @@ async def test_task_work_relationship(db_session: AsyncSession):
     await db_session.commit()
 
     # 创建任务和成果
-    task = Task(user_id=user.id, task_type="storybook")
+    task = Task(user_id=user.id, task_type="storybook-generator")
     db_session.add(task)
     await db_session.commit()
 
@@ -522,7 +522,7 @@ async def test_snapshot_data(db_session: AsyncSession):
 
     task = Task(
         user_id=user.id,
-        task_type="storybook",
+        task_type="storybook-generator",
         snapshot_data={
             "current_step": 3,
             "generated_pages": [1, 2, 3],

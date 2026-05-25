@@ -8,10 +8,11 @@
 4. 存在下载按钮/下载全部按钮
 
 运行方式（有头模式）：
-  MOCK_AI_EXECUTION=true E2E_HEADLESS=false \\
+  前置条件：确保 storybook 工具在数据库中 is_mock_enabled=true
+  E2E_HEADLESS=false \\
   pytest tests/e2e/test_file_download.py -v --headed --slowmo 300
 
-⚠️ 需要：后端以 MOCK_AI_EXECUTION=true 启动
+⚠️ 需要：后端正常启动，storybook 工具已开启 Mock 模式（通过管理端 API 设置 is_mock_enabled=true）
 """
 import sys
 import os

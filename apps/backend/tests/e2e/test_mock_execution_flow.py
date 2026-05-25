@@ -9,10 +9,11 @@ Mock AI 完整执行链路 E2E 测试
 5. 成果详情页显示生成的 Work 和 WorkFile 信息
 
 运行方式（有头模式，关键！可观察进度动画）：
-  MOCK_AI_EXECUTION=true E2E_HEADLESS=false \\
+  前置条件：确保 storybook 工具在数据库中 is_mock_enabled=true
+  E2E_HEADLESS=false \\
   pytest tests/e2e/test_mock_execution_flow.py -v --headed --slowmo 500
 
-⚠️ 需要：后端以 MOCK_AI_EXECUTION=true 启动
+⚠️ 需要：后端正常启动，storybook 工具已开启 Mock 模式（通过管理端 API 设置 is_mock_enabled=true）
 """
 import sys
 import os

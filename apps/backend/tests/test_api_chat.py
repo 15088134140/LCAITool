@@ -40,11 +40,11 @@ class TestChatSessionCreation:
 
     @pytest.mark.asyncio
     async def test_create_chat_session(self, client: AsyncClient, db_session: AsyncSession):
-        """POST /api/v1/chat/sessions?tool_id=ai-storybook 创建对话会话"""
+        """POST /api/v1/chat/sessions?tool_id=storybook-generator 创建对话会话"""
         headers = await _get_auth_headers(db_session)
 
         response = await client.post(
-            "/api/v1/chat/sessions?tool_id=ai-storybook",
+            "/api/v1/chat/sessions?tool_id=storybook-generator",
             headers=headers,
         )
 
@@ -60,7 +60,7 @@ class TestChatSessionCreation:
     async def test_create_chat_session_unauthorized(self, client: AsyncClient):
         """POST /api/v1/chat/sessions 无认证"""
         response = await client.post(
-            "/api/v1/chat/sessions?tool_id=ai-storybook",
+            "/api/v1/chat/sessions?tool_id=storybook-generator",
         )
 
         assert response.status_code == 401
@@ -79,7 +79,7 @@ class TestSendMessage:
 
         # 先创建会话
         create_resp = await client.post(
-            "/api/v1/chat/sessions?tool_id=ai-storybook",
+            "/api/v1/chat/sessions?tool_id=storybook-generator",
             headers=headers,
         )
         session_id = create_resp.json()["session_id"]
@@ -126,7 +126,7 @@ class TestSendMessage:
         # 创建会话（带认证）
         headers = await _get_auth_headers(db_session)
         create_resp = await client.post(
-            "/api/v1/chat/sessions?tool_id=ai-storybook",
+            "/api/v1/chat/sessions?tool_id=storybook-generator",
             headers=headers,
         )
         session_id = create_resp.json()["session_id"]
@@ -145,7 +145,7 @@ class TestSendMessage:
         user_a = await _create_user(db_session)
         headers_a = await _get_auth_headers(db_session, user_a.id)
         create_resp = await client.post(
-            "/api/v1/chat/sessions?tool_id=ai-storybook",
+            "/api/v1/chat/sessions?tool_id=storybook-generator",
             headers=headers_a,
         )
         session_id = create_resp.json()["session_id"]
@@ -171,7 +171,7 @@ class TestGetMessages:
 
         # 创建会话并发送消息
         create_resp = await client.post(
-            "/api/v1/chat/sessions?tool_id=ai-storybook",
+            "/api/v1/chat/sessions?tool_id=storybook-generator",
             headers=headers,
         )
         session_id = create_resp.json()["session_id"]
@@ -218,7 +218,7 @@ class TestGetMessages:
         # 创建会话
         headers = await _get_auth_headers(db_session)
         create_resp = await client.post(
-            "/api/v1/chat/sessions?tool_id=ai-storybook",
+            "/api/v1/chat/sessions?tool_id=storybook-generator",
             headers=headers,
         )
         session_id = create_resp.json()["session_id"]
