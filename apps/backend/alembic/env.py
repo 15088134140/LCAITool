@@ -25,7 +25,8 @@ from app.models import (
     Tool, ToolCategory, ToolFavorite, ToolRating, ToolDemo,
     Task, TaskLog, Work, WorkFile, WorkShare,
     RealNameVerification, IdeaSubmission, IdeaVote, AdminAuditLog,
-    Feedback, SystemConfig, AiProvider
+    Feedback, SystemConfig, AiProvider,
+    ApiKey, ExternalFile
 )
 
 target_metadata = Base.metadata

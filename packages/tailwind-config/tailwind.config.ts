@@ -3,8 +3,10 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   darkMode: ["class"],
   content: [
+    // Paths are relative to the consuming app's project root (e.g., apps/frontend-user/)
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "../../packages/ui/**/*.{js,ts,jsx,tsx}",
+    // Include UI package components (resolved from the monorepo root by Tailwind/Next.js)
+    "../../packages/ui/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
