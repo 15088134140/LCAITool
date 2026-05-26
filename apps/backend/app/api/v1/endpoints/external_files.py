@@ -1,6 +1,6 @@
 """
 外部文件服务
-通过 API Key 认证，提供对外生成的文件下载服务。
+通过 API Key 认证（支持 Header 或 ?api_key= 查询参数），提供对外生成的文件下载服务。
 """
 import os
 import uuid
@@ -12,11 +12,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
-from app.api.v1.middleware.api_key_auth import verify_api_key
+from app.api.v1.middleware.api_key_auth import verify_api_key_any
 from app.models.api_key import ApiKey
 from app.models.external_file import ExternalFile
 
-router = APIRouter(dependencies=[Depends(verify_api_key)])
+router = APIRouter()
 
 
 @router.get(
@@ -26,12 +26,16 @@ router = APIRouter(dependencies=[Depends(verify_api_key)])
 )
 async def get_external_file(
     file_id: str,
-    api_key: ApiKey = Depends(verify_api_key),
+    api_key: ApiKey = Depends(verify_api_key_any),
     db: AsyncSession = Depends(get_db),
 ):
     """通过文件 ID 下载外部生成的文件。
 
-    需要 API Key 认证，且仅能访问属于该 API Key 所属用户的文件。
+    支持两种认证方式：
+    - Authorization: Bearer <api_key> header
+    - ?api_key=<api_key> 查询参数（适用于 <img> 等嵌入场景）
+
+    仅能访问属于该 API Key 所属用户的文件。
     """
     # 验证 UUID 格式
     try:

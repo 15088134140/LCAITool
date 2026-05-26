@@ -1,4 +1,4 @@
-"""外部 OpenAI 兼容 API + 文件服务 集成测试"""
+"""外部 API + 文件服务 集成测试"""
 import hashlib
 import secrets
 import uuid
@@ -59,7 +59,7 @@ async def test_external_api_no_auth(client: AsyncClient):
     """无认证头请求应返回 401。"""
     response = await client.post(
         "/api/v1/external/images/generations",
-        json={"model": "doubao-seedream-4.5", "prompt": "test"},
+        json={"provider": "volcano", "prompt": "test"},
     )
     assert response.status_code == 401
 
@@ -69,7 +69,7 @@ async def test_external_api_invalid_key(client: AsyncClient):
     """无效 API Key 请求应返回 401。"""
     response = await client.post(
         "/api/v1/external/images/generations",
-        json={"model": "doubao-seedream-4.5", "prompt": "test"},
+        json={"provider": "volcano", "prompt": "test"},
         headers={"Authorization": "Bearer lcai_invalidkey1234567890"},
     )
     assert response.status_code == 401
@@ -86,7 +86,7 @@ async def test_external_images_generations(
     """图片生成请求，无 Provider 配置 → 502。"""
     response = await client.post(
         "/api/v1/external/images/generations",
-        json={"model": "doubao-seedream-4.5", "prompt": "一只可爱的小猫"},
+        json={"provider": "volcano", "prompt": "一只可爱的小猫"},
         headers=external_auth_headers,
     )
     assert response.status_code == 502
@@ -97,20 +97,19 @@ async def test_external_images_generations(
 
 
 @pytest.mark.asyncio
-async def test_external_images_unsupported_model(
+async def test_external_images_unsupported_provider(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """不支持的图片模型 → 400。"""
+    """不存在的 provider slug → 502（DB 查询不到）。"""
     response = await client.post(
         "/api/v1/external/images/generations",
-        json={"model": "nonexistent-model-v9", "prompt": "test"},
+        json={"provider": "nonexistent-provider", "prompt": "test"},
         headers=external_auth_headers,
     )
-    assert response.status_code == 400
+    assert response.status_code == 502
     data = response.json()
     assert "message" in data
-    assert "Unsupported" in data["message"]
 
 
 # ==================== 对话补全 ====================
@@ -125,7 +124,7 @@ async def test_external_chat_completions(
     response = await client.post(
         "/api/v1/external/chat/completions",
         json={
-            "model": "deepseek-v4-flash",
+            "provider": "deepseek",
             "messages": [
                 {"role": "system", "content": "你是一个助手"},
                 {"role": "user", "content": "你好"},
@@ -141,22 +140,22 @@ async def test_external_chat_completions(
 
 
 @pytest.mark.asyncio
-async def test_external_chat_unsupported_model(
+async def test_external_chat_unsupported_provider(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """不支持的对话模型 → 400。"""
+    """不存在的 provider slug → 502（DB 查询不到）。"""
     response = await client.post(
         "/api/v1/external/chat/completions",
         json={
-            "model": "gpt-5",
+            "provider": "gpt",
             "messages": [{"role": "user", "content": "Hello"}],
         },
         headers=external_auth_headers,
     )
-    assert response.status_code == 400
+    assert response.status_code == 502
     data = response.json()
-    assert "Unsupported" in data["message"]
+    assert "message" in data
 
 
 # ==================== 语音合成 ====================
@@ -171,7 +170,7 @@ async def test_external_audio_speech(
     response = await client.post(
         "/api/v1/external/audio/speech",
         json={
-            "model": "glm-tts",
+            "provider": "zhipu",
             "input": "你好，欢迎使用语音合成服务",
             "voice": "zh_female_warm",
             "response_format": "mp3",
@@ -184,23 +183,23 @@ async def test_external_audio_speech(
 
 
 @pytest.mark.asyncio
-async def test_external_audio_unsupported_model(
+async def test_external_audio_unsupported_provider(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """不支持的语音模型 → 400。"""
+    """不存在的 provider slug → 502（DB 查询不到）。"""
     response = await client.post(
         "/api/v1/external/audio/speech",
         json={
-            "model": "unknown-tts",
+            "provider": "unknown-tts",
             "input": "test",
             "voice": "default",
         },
         headers=external_auth_headers,
     )
-    assert response.status_code == 400
+    assert response.status_code == 502
     data = response.json()
-    assert "Unsupported" in data["message"]
+    assert "message" in data
 
 
 # ==================== 视频生成 ====================
@@ -215,7 +214,7 @@ async def test_external_video_generations(
     response = await client.post(
         "/api/v1/external/video/generations",
         json={
-            "model": "doubao-seedance-2.0",
+            "provider": "volcano",
             "prompt": "一只奔跑的马",
             "duration": 5,
         },
@@ -227,22 +226,22 @@ async def test_external_video_generations(
 
 
 @pytest.mark.asyncio
-async def test_external_video_unsupported_model(
+async def test_external_video_unsupported_provider(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """不支持的视频模型 → 400。"""
+    """不存在的 provider slug → 502（DB 查询不到）。"""
     response = await client.post(
         "/api/v1/external/video/generations",
         json={
-            "model": "unknown-video-model",
+            "provider": "unknown-video-provider",
             "prompt": "test",
         },
         headers=external_auth_headers,
     )
-    assert response.status_code == 400
+    assert response.status_code == 502
     data = response.json()
-    assert "Unsupported" in data["message"]
+    assert "message" in data
 
 
 # ==================== 文件服务 ====================
