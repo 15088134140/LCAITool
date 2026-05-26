@@ -29,7 +29,9 @@ class BaseAIProvider(ABC):
         self.api_key = config.get("api_key", "")
         self.api_base = config.get("api_base", "")
         self.model = config.get("model", "")
-        self.timeout = config.get("timeout", 60)
+        self.timeout = config.get("timeout", 120)                # 文本/音频/克隆
+        self.image_timeout = config.get("image_timeout", 300)    # 图片生成
+        self.video_timeout = config.get("video_timeout", 600)    # 视频生成
 
     @abstractmethod
     async def generate_text(
@@ -94,3 +96,23 @@ class BaseAIProvider(ABC):
         :return: AIResponse
         """
         pass
+
+    async def clone_voice(
+        self,
+        audio_data: bytes,
+        voice_name: str = "cloned_voice",
+        **kwargs
+    ) -> AIResponse:
+        """
+        声音复刻（默认不支持）
+        :param audio_data: 音频二进制数据
+        :param voice_name: 声音名称
+        :param kwargs: 其他参数
+        :return: AIResponse
+        """
+        return AIResponse(
+            success=False,
+            content="",
+            raw_response={},
+            error=f"Voice cloning not implemented for {self.__class__.__name__} provider"
+        )

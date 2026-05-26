@@ -12,6 +12,14 @@ from .base import BaseAIProvider, AIResponse
 class ZhipuProvider(BaseAIProvider):
     """智谱 AI 提供商"""
 
+    SUPPORTED_VOICES = [
+        "tongtong", "chuichui", "xiaochen",
+        "jam", "kazi", "douji", "luodo",
+    ]
+    SUPPORTED_RESPONSE_FORMATS = ["wav", "pcm"]
+    # 智谱图片总像素上限: 2^21 = 2,097,152
+    MAX_IMAGE_PIXELS = 2 ** 21
+
     def __init__(self, **config):
         super().__init__(**config)
         self.api_base = self.api_base or "https://open.bigmodel.cn/api/paas/v4"
@@ -99,14 +107,39 @@ class ZhipuProvider(BaseAIProvider):
         **kwargs
     ) -> AIResponse:
         """
-        调用智谱 CogView-3 生成图片
-        调用 CogView API 获取图片 URL，然后下载并 base64 编码
+        调用智谱 CogView 生成图片（OpenAI 兼容接口）
+        端点: POST /v4/images/generations
+        注意：图片总像素上限为 2^21 (2,097,152)，超出将返回错误
         """
-        url = f"{self.api_base}/cogview/v3"
+        # 校验图片尺寸（像素上限 2^21）
+        if size is not None:
+            parts = size.split("x")
+            if len(parts) != 2:
+                return AIResponse(
+                    success=False, content="", raw_response={},
+                    error=f"图片尺寸格式错误 '{size}'，请使用 WxH 格式（如 1024x1024）"
+                )
+            try:
+                w, h = int(parts[0]), int(parts[1])
+                if w * h > self.MAX_IMAGE_PIXELS:
+                    return AIResponse(
+                        success=False, content="", raw_response={},
+                        error=f"图片尺寸 '{size}' 总像素 {w*h} 超出上限 {self.MAX_IMAGE_PIXELS}，"
+                              f"智谱支持最大 2048x1024 或 1024x2048"
+                    )
+            except ValueError:
+                return AIResponse(
+                    success=False, content="", raw_response={},
+                    error=f"图片尺寸格式错误 '{size}'，宽高必须为数字"
+                )
+
+        url = f"{self.api_base}/images/generations"
 
         payload = {
-            "model": kwargs.get("model", "cogview-3"),
-            "prompt": prompt
+            "model": kwargs.get("model", "glm-image"),
+            "prompt": prompt,
+            "size": size or "1024x1024",
+            "n": kwargs.get("n", 1)
         }
 
         headers = {
@@ -115,8 +148,8 @@ class ZhipuProvider(BaseAIProvider):
         }
 
         try:
-            # 第一步：调用 CogView API 获取图片 URL
-            async with httpx.AsyncClient(timeout=120) as client:
+            # 调用智谱 CogView API
+            async with httpx.AsyncClient(timeout=self.image_timeout) as client:
                 response = await client.post(url, json=payload, headers=headers)
                 response.raise_for_status()
                 result = response.json()
@@ -129,17 +162,28 @@ class ZhipuProvider(BaseAIProvider):
                     error="No image data in CogView response"
                 )
 
-            image_url = result["data"][0].get("url", "")
+            image_data = result["data"][0]
+
+            # 优先使用 b64_json 直接返回
+            if "b64_json" in image_data:
+                return AIResponse(
+                    success=True,
+                    content=image_data["b64_json"],
+                    raw_response=result,
+                    usage={"images": 1}
+                )
+
+            # 否则通过 URL 下载后 base64 编码
+            image_url = image_data.get("url", "")
             if not image_url:
                 return AIResponse(
                     success=False,
                     content="",
                     raw_response=result,
-                    error="No image URL in CogView response"
+                    error="No image URL or b64_json in CogView response"
                 )
 
-            # 第二步：下载图片并 base64 编码
-            async with httpx.AsyncClient(timeout=120) as client:
+            async with httpx.AsyncClient(timeout=self.image_timeout) as client:
                 img_response = await client.get(image_url)
                 img_response.raise_for_status()
                 img_bytes = img_response.content
@@ -188,14 +232,35 @@ class ZhipuProvider(BaseAIProvider):
     ) -> AIResponse:
         """
         调用智谱 GLM-TTS 生成语音
+        支持音色: tongtong(彤彤), chuichui(锤锤), xiaochen(小陈), jam/kazi/douji/luodo
+        支持格式: wav, pcm
         """
+        # 校验音色
+        if voice is not None and voice not in self.SUPPORTED_VOICES:
+            return AIResponse(
+                success=False,
+                content="",
+                raw_response={},
+                error=f"不支持的音色 '{voice}'，智谱支持: {', '.join(self.SUPPORTED_VOICES)}"
+            )
+
+        # 校验响应格式
+        response_format = kwargs.get("response_format")
+        if response_format is not None and response_format not in self.SUPPORTED_RESPONSE_FORMATS:
+            return AIResponse(
+                success=False,
+                content="",
+                raw_response={},
+                error=f"不支持的音频格式 '{response_format}'，智谱支持: {', '.join(self.SUPPORTED_RESPONSE_FORMATS)}"
+            )
+
         url = f"{self.api_base}/audio/speech"
 
         payload = {
             "model": kwargs.get("model", "glm-tts"),
             "input": text,
-            "voice": voice or "zh_female_warm",
-            "response_format": kwargs.get("response_format", "mp3")
+            "voice": voice or "tongtong",
+            "response_format": response_format or "wav"
         }
 
         headers = {
@@ -243,6 +308,22 @@ class ZhipuProvider(BaseAIProvider):
                 raw_response={},
                 error=f"Unexpected error: {str(e)}"
             )
+
+    async def clone_voice(
+        self,
+        audio_data: bytes,
+        voice_name: str = "cloned_voice",
+        **kwargs
+    ) -> AIResponse:
+        """
+        智谱暂不支持声音复刻
+        """
+        return AIResponse(
+            success=False,
+            content="",
+            raw_response={},
+            error="Voice cloning not implemented for Zhipu provider"
+        )
 
     async def generate_video(
         self,

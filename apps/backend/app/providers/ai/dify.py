@@ -78,6 +78,22 @@ class DifyProvider(BaseAIProvider):
 
         return await self.run_workflow(inputs, **kwargs)
 
+    async def clone_voice(
+        self,
+        audio_data: bytes,
+        voice_name: str = "cloned_voice",
+        **kwargs
+    ) -> AIResponse:
+        """
+        Dify 暂不支持声音复刻
+        """
+        return AIResponse(
+            success=False,
+            content="",
+            raw_response={},
+            error="Voice cloning not implemented for Dify provider"
+        )
+
     async def run_workflow(
         self,
         inputs: Dict[str, Any],

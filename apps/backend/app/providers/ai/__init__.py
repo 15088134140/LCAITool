@@ -16,7 +16,7 @@ class AIProviderFactory:
     """AI 提供商工厂类"""
 
     _providers: Dict[str, Type[BaseAIProvider]] = {
-        "doubao": DoubaoProvider,
+        "volcano": DoubaoProvider,
         "dify": DifyProvider,
         "deepseek": DeepSeekProvider,
         "zhipu": ZhipuProvider,
@@ -26,7 +26,7 @@ class AIProviderFactory:
     def get_provider(cls, provider_name: str, **config) -> BaseAIProvider:
         """
         根据提供商名称获取实例
-        :param provider_name: 提供商名称（doubao, dify, deepseek, zhipu）
+        :param provider_name: 提供商名称（volcano, dify, deepseek, zhipu）
         :param config: 配置参数，会与环境变量中的配置合并
         :return: BaseAIProvider 实例
         :raises ValueError: 如果提供商不支持

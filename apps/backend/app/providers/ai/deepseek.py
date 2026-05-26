@@ -151,3 +151,19 @@ class DeepSeekProvider(BaseAIProvider):
             raw_response={},
             error="Video generation not implemented for DeepSeek provider"
         )
+
+    async def clone_voice(
+        self,
+        audio_data: bytes,
+        voice_name: str = "cloned_voice",
+        **kwargs
+    ) -> AIResponse:
+        """
+        DeepSeek 暂不支持声音复刻
+        """
+        return AIResponse(
+            success=False,
+            content="",
+            raw_response={},
+            error="Voice cloning not implemented for DeepSeek provider"
+        )

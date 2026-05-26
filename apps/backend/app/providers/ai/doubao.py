@@ -17,8 +17,10 @@ class DoubaoProvider(BaseAIProvider):
     def __init__(self, **config):
         super().__init__(**config)
         self.api_base = self.api_base or "https://ark.cn-beijing.volces.com/api/v3"
-        self.model = self.model or "doubao-pro-32k"
+        self.model = self.model or "doubao-seed-2-0-lite-260428"
         self.audio_model = config.get("audio_model", "doubao-tts")
+
+    SUPPORTED_IMAGE_SIZES = ["1024x1024", "1920x1920", "1440x2560", "2560x1440"]
 
     async def generate_text(
         self,
@@ -104,14 +106,25 @@ class DoubaoProvider(BaseAIProvider):
         """
         调用豆包 Seedream 4.5 生成图片
         支持 b64_json 直接返回或 URL 下载后 base64 编码
+        支持尺寸: 1024x1024, 1920x1920, 1440x2560, 2560x1440
         """
+        # 校验图片尺寸
+        if size is not None and size not in self.SUPPORTED_IMAGE_SIZES:
+            return AIResponse(
+                success=False,
+                content="",
+                raw_response={},
+                error=f"不支持的图片尺寸 '{size}'，豆包支持: {', '.join(self.SUPPORTED_IMAGE_SIZES)}"
+            )
+
         url = f"{self.api_base}/images/generations"
 
         payload = {
-            "model": kwargs.get("model", "doubao-seedream-4.5"),
+            "model": kwargs.get("model", "doubao-seedream-4-5-251128"),
             "prompt": prompt,
-            "size": size or kwargs.get("size", "1024x1024"),
-            "n": kwargs.get("n", 1)
+            "size": size or "1920x1920",
+            "n": kwargs.get("n", 1),
+            "watermark": kwargs.get("watermark", False)
         }
 
         headers = {
@@ -120,7 +133,7 @@ class DoubaoProvider(BaseAIProvider):
         }
 
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
+            async with httpx.AsyncClient(timeout=self.image_timeout) as client:
                 response = await client.post(url, json=payload, headers=headers)
                 response.raise_for_status()
                 result = response.json()
@@ -154,7 +167,7 @@ class DoubaoProvider(BaseAIProvider):
                     error="No image URL or b64_json in Seedream response"
                 )
 
-            async with httpx.AsyncClient(timeout=120) as client:
+            async with httpx.AsyncClient(timeout=self.image_timeout) as client:
                 img_response = await client.get(image_url)
                 img_response.raise_for_status()
                 img_bytes = img_response.content
@@ -202,64 +215,14 @@ class DoubaoProvider(BaseAIProvider):
         **kwargs
     ) -> AIResponse:
         """
-        调用豆包语音合成接口
+        Doubao 暂不支持语音合成（火山方舟 Ark API 无 TTS 端点）
         """
-        url = f"{self.api_base}/audio/speech"
-
-        payload = {
-            "model": kwargs.get("audio_model", self.audio_model),
-            "input": text,
-            "voice": voice or "zh_female_qingxin",
-            "response_format": kwargs.get("response_format", "mp3"),
-            "speed": kwargs.get("speed", 1.0)
-        }
-
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-
-        try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(url, json=payload, headers=headers)
-                response.raise_for_status()
-
-                # 返回音频二进制数据的base64或URL
-                audio_data = response.content
-                audio_base64 = base64.b64encode(audio_data).decode('utf-8')
-
-                return AIResponse(
-                    success=True,
-                    content=audio_base64,
-                    raw_response={
-                        "content_type": response.headers.get("content-type", ""),
-                        "size": len(audio_data)
-                    },
-                    usage={"characters": len(text)}
-                )
-
-        except httpx.TimeoutException:
-            return AIResponse(
-                success=False,
-                content="",
-                raw_response={},
-                error="API request timeout"
-            )
-        except httpx.HTTPStatusError as e:
-            error_msg = f"HTTP Error {e.response.status_code}: {e.response.text}"
-            return AIResponse(
-                success=False,
-                content="",
-                raw_response={"status_code": e.response.status_code, "text": e.response.text},
-                error=error_msg
-            )
-        except Exception as e:
-            return AIResponse(
-                success=False,
-                content="",
-                raw_response={},
-                error=f"Unexpected error: {str(e)}"
-            )
+        return AIResponse(
+            success=False,
+            content="",
+            raw_response={},
+            error="Audio generation not implemented for Doubao provider"
+        )
 
     async def generate_video(
         self,
@@ -268,17 +231,23 @@ class DoubaoProvider(BaseAIProvider):
         **kwargs
     ) -> AIResponse:
         """
-        调用豆包 Seedance 2.0 生成视频（异步任务轮询模式）
+        调用豆包 Seedance 生成视频（异步任务轮询模式）
+        API 文档: POST /api/v3/contents/generations/tasks
         提交任务后轮询状态，成功则下载视频并 base64 编码
         """
-        url = f"{self.api_base}/video/generations"
+        create_url = f"{self.api_base}/contents/generations/tasks"
+
+        # 构建文本内容（duration 通过 --dur 参数传入）
+        text = prompt
+        if duration:
+            text += f" --dur {duration}"
 
         payload = {
-            "model": kwargs.get("model", "doubao-seedance-2.0"),
-            "prompt": prompt,
+            "model": kwargs.get("model", "doubao-seedance-1-5-pro-251215"),
+            "content": [
+                {"type": "text", "text": text}
+            ],
         }
-        if duration:
-            payload["duration"] = duration
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -287,8 +256,8 @@ class DoubaoProvider(BaseAIProvider):
 
         try:
             # 第一步：提交视频生成任务
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(url, json=payload, headers=headers)
+            async with httpx.AsyncClient(timeout=self.video_timeout) as client:
+                response = await client.post(create_url, json=payload, headers=headers)
                 response.raise_for_status()
                 result = response.json()
 
@@ -302,23 +271,22 @@ class DoubaoProvider(BaseAIProvider):
                 )
 
             # 第二步：轮询任务状态
-            poll_url = f"{url}/{task_id}"
+            poll_url = f"{self.api_base}/contents/generations/tasks/{task_id}"
             max_polls = kwargs.get("max_polls", 60)
             poll_interval = kwargs.get("poll_interval", 5)
 
             for _ in range(max_polls):
                 await asyncio.sleep(poll_interval)
 
-                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                async with httpx.AsyncClient(timeout=self.video_timeout) as client:
                     poll_response = await client.get(poll_url, headers=headers)
                     poll_response.raise_for_status()
                     poll_result = poll_response.json()
 
-                task_info = poll_result.get("task", {})
-                status = task_info.get("status", "")
+                status = poll_result.get("status", "")
 
                 if status == "succeeded":
-                    video_url = task_info.get("output", {}).get("video_url", "")
+                    video_url = poll_result.get("content", {}).get("video_url", "")
                     if not video_url:
                         return AIResponse(
                             success=False,
@@ -327,7 +295,7 @@ class DoubaoProvider(BaseAIProvider):
                             error="No video URL in succeeded task"
                         )
 
-                    async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    async with httpx.AsyncClient(timeout=self.video_timeout) as client:
                         video_response = await client.get(video_url)
                         video_response.raise_for_status()
                         video_bytes = video_response.content
@@ -342,11 +310,11 @@ class DoubaoProvider(BaseAIProvider):
                             "content_type": video_response.headers.get("content-type", ""),
                             "size": len(video_bytes)
                         },
-                        usage={"video_duration": duration}
+                        usage=poll_result.get("usage", {})
                     )
 
                 elif status == "failed":
-                    error_msg = task_info.get("error", "Video generation failed")
+                    error_msg = poll_result.get("error", "Video generation failed")
                     return AIResponse(
                         success=False,
                         content="",

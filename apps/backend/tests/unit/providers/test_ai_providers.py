@@ -51,7 +51,7 @@ def test_ai_response_error():
 
 def test_factory_get_doubao_provider():
     """测试工厂获取豆包提供商"""
-    provider = AIProviderFactory.get_provider("doubao", api_key="test_key")
+    provider = AIProviderFactory.get_provider("volcano", api_key="test_key")
     assert isinstance(provider, DoubaoProvider)
     assert provider.api_key == "test_key"
 
@@ -526,18 +526,18 @@ def test_provider_config_merge():
     import os
 
     # 设置环境变量
-    os.environ["DOUBAO_API_KEY"] = "env_key"
-    os.environ["DOUBAO_API_BASE"] = "https://env.api.com"
-    os.environ["DOUBAO_MODEL"] = "env_model"
+    os.environ["VOLCANO_API_KEY"] = "env_key"
+    os.environ["VOLCANO_API_BASE"] = "https://env.api.com"
+    os.environ["VOLCANO_MODEL"] = "env_model"
 
     # 不传配置，使用环境变量
-    provider1 = AIProviderFactory.get_provider("doubao")
+    provider1 = AIProviderFactory.get_provider("volcano")
     assert provider1.api_key == "env_key"
     assert provider1.api_base == "https://env.api.com"
     assert provider1.model == "env_model"
 
     # 传入配置覆盖环境变量
-    provider2 = AIProviderFactory.get_provider("doubao", api_key="custom_key")
+    provider2 = AIProviderFactory.get_provider("volcano", api_key="custom_key")
     assert provider2.api_key == "custom_key"  # 传入的优先级更高
     assert provider2.api_base == "https://env.api.com"  # 环境变量的值
 
