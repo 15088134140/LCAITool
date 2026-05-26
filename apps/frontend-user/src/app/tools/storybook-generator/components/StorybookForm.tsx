@@ -35,10 +35,12 @@ export function StorybookForm({ tool }: StorybookFormProps) {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [formState, setFormState] = useState<StorybookFormState>({
     inputMode: 'theme',
-    page_count: 10,
+    theme: '小蝌蚪找妈妈',
+    page_count: 1,
     art_style: 'cartoon',
-    voiceType: 'warm',
+    voiceType: 'tongtong',
     smart_page_count: false,
+    target_age: '3-6',
   });
 
   const [totalCost, setTotalCost] = useState(0);
@@ -103,7 +105,7 @@ export function StorybookForm({ tool }: StorybookFormProps) {
         art_style: resolvedArtStyle,
         page_count: formState.smart_page_count ? null : formState.page_count,
         smart_page_count: formState.smart_page_count,
-        voiceType: formState.voiceType,
+        voice_type: formState.voiceType,
         include_audio: formState.voiceType && formState.voiceType !== 'none',
         target_age: formState.target_age || '3-6',
         hasBackgroundMusic: formState.hasBackgroundMusic,
@@ -289,10 +291,10 @@ export function StorybookForm({ tool }: StorybookFormProps) {
                     <label className="block text-base font-medium text-gray-600 mb-4">配音音色</label>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                       {[
-                        { value: 'warm', label: '温柔女声', icon: '👩' },
-                        { value: 'deep', label: '磁性男声', icon: '👨' },
-                        { value: 'child', label: '可爱童声', icon: '👧' },
-                        { value: 'story', label: '故事主播', icon: '🧙' },
+                        { value: 'tongtong', label: '温柔女声', icon: '👩' },
+                        { value: 'xiaochen', label: '磁性男声', icon: '👨' },
+                        { value: 'chuichui', label: '可爱童声', icon: '👧' },
+                        { value: 'luodo', label: '故事主播', icon: '🧙' },
                         { value: 'none', label: '不需要', icon: '🚫' },
                       ].map((voice) => (
                         <label key={voice.value} className="cursor-pointer">
@@ -373,7 +375,7 @@ export function StorybookForm({ tool }: StorybookFormProps) {
                     </label>
                     <input
                       type="range"
-                      min={5}
+                      min={1}
                       max={30}
                       value={formState.page_count}
                       disabled={formState.smart_page_count}
