@@ -215,11 +215,63 @@ class TestStorybookExecutor:
         )
 
         with patch.object(executor, 'update_progress', new_callable=AsyncMock):
-            result = await executor._generate_audio_serial(pages, str(tmp_path), 'warm')
+            result = await executor._generate_audio_serial(pages, str(tmp_path), 'luodo')
 
         assert len(result) == 2
         assert result[0]['audio_generated'] is True
         assert executor.zhipu_provider.generate_audio.call_count == 2
+        executor.zhipu_provider.generate_audio.assert_any_call(text='片段1', voice='luodo')
+
+    @pytest.mark.asyncio
+    async def test_generate_audio_serial_defaults_to_tongtong(self, executor, tmp_path):
+        pages = [{'text_snippet': '片段1'}]
+        mock_b64 = base64.b64encode(b"fake_audio_data").decode("utf-8")
+        executor.zhipu_provider.generate_audio.return_value = AIResponse(
+            success=True, content=mock_b64, raw_response={},
+        )
+
+        with patch.object(executor, 'update_progress', new_callable=AsyncMock):
+            await executor._generate_audio_serial(pages, str(tmp_path))
+
+        executor.zhipu_provider.generate_audio.assert_called_once_with(text='片段1', voice='tongtong')
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_does_not_create_package_zip(self, executor, tmp_path):
+        result_data = {
+            'outline': {'title': '测试绘本'},
+            'pages': [
+                {'page_number': 1, 'image_url': '', 'audio_url': ''},
+            ],
+        }
+
+        files = await executor._generate_pdf_and_zip(result_data, str(tmp_path))
+
+        assert files['pdf_path'].endswith('storybook.pdf')
+        assert (tmp_path / 'storybook.pdf').exists()
+        assert 'zip_path' not in files
+        assert not (tmp_path / 'package.zip').exists()
+
+    @pytest.mark.asyncio
+    async def test_create_work_record_uses_work_service(self, executor, mock_db):
+        task = MagicMock(user_id=uuid.uuid4(), tool_id=uuid.uuid4())
+        work = MagicMock(id=uuid.uuid4(), title="测试绘本")
+        result_data = {
+            'outline': {'title': '测试绘本', 'story': '故事内容'},
+            'pages': [{'page_number': 1, 'image_url': '/tmp/page_1.png', 'audio_url': '/tmp/page_1.mp3'}],
+            'files': {'pdf_path': '/tmp/storybook.pdf', 'pdf_size': 123},
+        }
+
+        with patch('app.executors.storybook.TaskService.get_by_id', new_callable=AsyncMock) as mock_get_task:
+            mock_get_task.return_value = task
+            with patch('app.executors.storybook.WorkService.create_work', new_callable=AsyncMock) as mock_create_work:
+                mock_create_work.return_value = work
+
+                created_work = await executor._create_work_record({}, result_data)
+
+        assert created_work is work
+        mock_create_work.assert_called_once()
+        assert mock_db.add.call_count == 3
+        mock_db.commit.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_execute_full_flow(self, executor, mock_db):
@@ -257,9 +309,7 @@ class TestStorybookExecutor:
                             with patch.object(executor, '_generate_pdf_and_zip', new_callable=AsyncMock) as mock_pdf:
                                 mock_pdf.return_value = {
                                     'pdf_path': '/tmp/test.pdf',
-                                    'zip_path': '/tmp/test.zip',
                                     'pdf_size': 100,
-                                    'zip_size': 200,
                                 }
 
                                 with patch.object(executor, '_create_work_record', new_callable=AsyncMock) as mock_work:

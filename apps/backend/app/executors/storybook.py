@@ -11,7 +11,7 @@
 2. 插画提示词生成 (20-35%)
 3. 批量图片生成 (35-60%)
 4. 语音合成 (60-80%)
-5. PDF排版与打包 (80-95%)
+5. PDF排版 (80-95%)
 6. 完成结算 (100%)
 """
 import asyncio
@@ -22,7 +22,6 @@ import os
 import re
 import struct
 import uuid
-import zipfile
 import wave
 import zlib
 from typing import Dict, Any, List, Optional
@@ -34,6 +33,7 @@ from .base import BaseToolExecutor
 from app.providers.ai import AIProviderFactory
 from app.models.task import WorkFile
 from app.services.task_service import TaskService
+from app.services.work_service import WorkService
 from app.schemas.task import WorkCreate, WorkFileCreate
 from app.utils.pdf_generator import PDFGenerator
 
@@ -54,23 +54,18 @@ class StorybookExecutor(BaseToolExecutor):
         self.zhipu_provider = None
         self.pdf_generator = PDFGenerator()
         self._tool_config = tool or {}
-        self._provider_slugs = {
-            "deepseek": "deepseek",
-            "doubao": "volcano",
-            "zhipu": "zhipu",
-        }
 
     async def _init_providers(self):
         """延迟初始化三个 AI Provider（从数据库获取配置）"""
         if self.deepseek_provider is None:
             self.deepseek_provider = await AIProviderFactory.get_provider_from_db(
-                self.db, self._provider_slugs["deepseek"]
+                self.db, "deepseek"
             )
             self.doubao_provider = await AIProviderFactory.get_provider_from_db(
-                self.db, self._provider_slugs["doubao"]
+                self.db, "volcano"
             )
             self.zhipu_provider = await AIProviderFactory.get_provider_from_db(
-                self.db, self._provider_slugs["zhipu"]
+                self.db, "zhipu"
             )
 
     def estimate_cost(self, params: Dict[str, Any]) -> int:
@@ -117,7 +112,7 @@ class StorybookExecutor(BaseToolExecutor):
         art_style = params.get('art_style', 'watercolor')
         custom_style = params.get('custom_style', '')
         include_audio = params.get('include_audio', True)
-        voice_type = params.get('voice_type', 'warm')
+        voice_type = params.get('voice_type', 'tongtong')
         smart_page_count = params.get('smart_page_count', False)
 
         # 如果自定义风格不为空，覆盖 art_style
@@ -187,16 +182,16 @@ class StorybookExecutor(BaseToolExecutor):
                 await self.save_snapshot({'step': 5, 'data': result_data})
                 await self.add_log('info', '语音合成完成')
 
-            # Step 5: PDF排版与打包 (80-95%)
+            # Step 5: PDF排版 (80-95%)
             if start_step <= 5:
                 await self.update_progress(
-                    percent=80, message="正在生成PDF并打包...",
+                    percent=80, message="正在生成PDF...",
                     step_index=4, total_steps=total_steps, step_status='running',
                 )
                 files = await self._generate_pdf_and_zip(result_data, works_dir)
                 result_data['files'] = files
                 await self.save_snapshot({'step': 6, 'data': result_data})
-                await self.add_log('info', 'PDF生成与打包完成')
+                await self.add_log('info', 'PDF生成完成')
 
             # Step 6: 创建成果记录 (95-100%)
             await self.update_progress(
@@ -295,13 +290,13 @@ class StorybookExecutor(BaseToolExecutor):
 
         system_prompt = (
             "你是一个专业的儿童绘本插画师和AI绘画提示词专家。\n"
-            "请根据用户提供的绘本故事，为每一页生成一个英文绘图提示词。\n"
+            "请根据用户提供的绘本故事，为每一页生成一个中文绘图提示词。\n"
             "你必须严格输出 JSON 数组格式，不要添加任何其他文字说明。\n"
             "输出格式示例：\n"
             '[\n'
             '  {\n'
             '    "description": "场景描述文字",\n'
-            '    "prompt": "English illustration prompt for AI",\n'
+            f'    "prompt": "Character:\\n[角色具体特征描述]\\n\\nScene:\\n[场景描述]\\n\\nLighting:\\n[光影描述]\\n\\nComposition:\\n[构图描述]\\n\\nStyle:\\n{art_style}\\n\\nAdditional:\\n[补充细节]",\n'
             '    "text_snippet": "对应的故事文本",\n'
             '    "importance": 5\n'
             '  }\n'
@@ -310,7 +305,7 @@ class StorybookExecutor(BaseToolExecutor):
 
         user_prompt = (
             f"绘本故事内容：\n{story}\n\n"
-            f"请为这个故事生成 {page_count} 个不同场景的英文绘图提示词，"
+            f"请为这个故事生成 {page_count} 个不同场景的中文绘图提示词，"
             f"绘画风格：{art_style}"
         )
 
@@ -405,22 +400,16 @@ class StorybookExecutor(BaseToolExecutor):
         return results
 
     async def _generate_audio_serial(
-        self, pages: List[Dict[str, Any]], works_dir: str, voice_type: str = 'warm'
+        self, pages: List[Dict[str, Any]], works_dir: str, voice_type: str = 'tongtong'
     ) -> List[Dict[str, Any]]:
         """
         串行生成语音（带限流），使用智谱 GLM-TTS
         :param pages: 页面列表（需包含 text_snippet 字段）
         :param works_dir: 工作目录
-        :param voice_type: 声音类型 (warm/deep/child/story)
+        :param voice_type: 智谱音色名称
         :return: 更新后的页面列表
         """
-        voice_map = {
-            'warm': 'zh_female_warm',
-            'deep': 'zh_male_deep',
-            'child': 'zh_female_childish',
-            'story': 'zh_male_story',
-        }
-        voice = voice_map.get(voice_type, 'zh_female_warm')
+        voice = voice_type or 'tongtong'
 
         semaphore = asyncio.Semaphore(3)
         total_pages = len(pages)
@@ -529,7 +518,7 @@ class StorybookExecutor(BaseToolExecutor):
         return path
 
     async def _generate_pdf_and_zip(self, result_data: Dict[str, Any], works_dir: str) -> Dict[str, str]:
-        """生成PDF并打包所有文件"""
+        """生成PDF文件"""
         outline = result_data.get('outline', {})
         pages = result_data.get('pages', [])
 
@@ -541,36 +530,9 @@ class StorybookExecutor(BaseToolExecutor):
             output_path=pdf_path
         )
 
-        zip_path = os.path.join(works_dir, 'package.zip')
-
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-            zf.write(pdf_path, 'storybook.pdf')
-
-            for page in pages:
-                page_num = page.get('page_number', 0) or (pages.index(page) + 1)
-
-                image_url = page.get('image_url')
-                if image_url and os.path.exists(image_url):
-                    zf.write(image_url, f'images/page_{page_num}.png')
-
-                audio_url = page.get('audio_url')
-                if audio_url and os.path.exists(audio_url):
-                    # 支持 .mp3 和 .wav 两种扩展名
-                    ext = '.mp3' if audio_url.endswith('.mp3') else '.wav'
-                    zf.write(audio_url, f'audio/page_{page_num}{ext}')
-
-            metadata = {
-                'title': title,
-                'page_count': len(pages),
-                'created_at': uuid.uuid1().time
-            }
-            zf.writestr('metadata.json', json.dumps(metadata, ensure_ascii=False, indent=2))
-
         return {
             'pdf_path': pdf_path,
-            'zip_path': zip_path,
-            'pdf_size': os.path.getsize(pdf_path),
-            'zip_size': os.path.getsize(zip_path)
+            'pdf_size': os.path.getsize(pdf_path)
         }
 
     async def _create_work_record(self, params: Dict[str, Any], result_data: Dict[str, Any]) -> Any:
@@ -591,7 +553,7 @@ class StorybookExecutor(BaseToolExecutor):
             is_public=False,
             version=1
         )
-        work = await TaskService.create_work(self.db, work_in)
+        work = await WorkService.create_work(self.db, work_in)
 
         pdf_path = files.get('pdf_path')
         if pdf_path:
@@ -604,18 +566,6 @@ class StorybookExecutor(BaseToolExecutor):
                 mime_type="application/pdf"
             )
             self.db.add(WorkFile(**pdf_file_in.model_dump()))
-
-        zip_path = files.get('zip_path')
-        if zip_path:
-            zip_file_in = WorkFileCreate(
-                work_id=work.id,
-                file_type="other",
-                file_name=f"{work.title}_package.zip",
-                file_url="package.zip",
-                file_size=files.get('zip_size', 0),
-                mime_type="application/zip"
-            )
-            self.db.add(WorkFile(**zip_file_in.model_dump()))
 
         for page in pages:
             page_num = page.get('page_number', 0) or (pages.index(page) + 1)

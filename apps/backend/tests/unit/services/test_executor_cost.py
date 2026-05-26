@@ -2,9 +2,11 @@
 执行器费用预估单元测试
 覆盖：StorybookExecutor、EcommerceExecutor、MarketingExecutor 的 estimate_cost 方法
 """
+import inspect
 import pytest
+from app.executors.base import BaseToolExecutor
 from app.executors.storybook import StorybookExecutor
-from app.executors.ecommerce import EcommerceExecutor
+from app.executors.ecommerce import DIFY_STEP_MAP, EcommerceExecutor
 from app.executors.marketing import MarketingExecutor
 
 
@@ -139,6 +141,25 @@ class TestMarketingCostEstimate:
         cost = executor.estimate_cost(params)
         # base_fee(8)
         assert cost == 8
+
+
+class TestExecutorDeliveryWording:
+    def test_mock_executor_pdf_step_does_not_mention_packaging(self):
+        source = inspect.getsource(BaseToolExecutor._mock_execute)
+
+        assert "正在生成PDF..." in source
+        assert "正在生成PDF并打包" not in source
+        assert "PDF排版与打包" not in source
+
+    def test_marketing_executor_delivery_step_does_not_mention_packaging(self):
+        source = inspect.getsource(MarketingExecutor.execute)
+
+        assert "正在保存成果..." in source
+        assert "正在打包成果" not in source
+        assert "打包交付" not in source
+
+    def test_ecommerce_package_step_uses_save_delivery_wording(self):
+        assert DIFY_STEP_MAP["package"]["name"] == "保存交付"
 
 
 class TestCostEdgeCases:

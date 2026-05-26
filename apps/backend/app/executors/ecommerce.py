@@ -25,7 +25,7 @@ DIFY_STEP_MAP = {
     "generate_main_image":   {"step": 1, "name": "商品主图", "weight": 25},
     "generate_detail_image": {"step": 2, "name": "详情分段图", "weight": 25},
     "generate_psd":          {"step": 3, "name": "PSD 源文件", "weight": 20},
-    "package":               {"step": 4, "name": "打包交付", "weight": 10},
+    "package":               {"step": 4, "name": "保存交付", "weight": 10},
 }
 
 DIFY_WORKFLOW_URL = os.getenv("DIFY_WORKFLOW_URL", "https://api.dify.ai/v1/workflows/run")

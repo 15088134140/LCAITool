@@ -28,6 +28,14 @@ from app.workers.tasks import execute_tool_task, publish_task_message
 router = APIRouter()
 
 
+class ProgressUpdateRequest(BaseModel):
+    progress: int = Field(..., ge=0, le=100, description="进度 0-100")
+    message: str = Field("", description="进度消息")
+    data: Optional[Dict[str, Any]] = Field(None, description="附加数据")
+    completed: bool = Field(False, description="是否标记完成")
+    actual_cost: Optional[int] = Field(None, description="实际费用")
+
+
 async def _enrich_task_with_tool(task: Any, db: AsyncSession) -> dict:
     """将任务对象转为 dict 并补充工具名称和封面图"""
     task_dict = TaskSchema.model_validate(task).model_dump()
@@ -310,11 +318,3 @@ async def update_task_progress(
         )
 
     return {"success": True, "task_id": str(task_id), "progress": req.progress, "completed": req.completed}
-
-
-class ProgressUpdateRequest(BaseModel):
-    progress: int = Field(..., ge=0, le=100, description="进度 0-100")
-    message: str = Field("", description="进度消息")
-    data: Optional[Dict[str, Any]] = Field(None, description="附加数据")
-    completed: bool = Field(False, description="是否标记完成")
-    actual_cost: Optional[int] = Field(None, description="实际费用")

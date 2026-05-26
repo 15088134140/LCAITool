@@ -211,9 +211,9 @@ class BaseToolExecutor(ABC):
             )
             await asyncio.sleep(0.2)
 
-        # ── Step 5: PDF排版与打包 ──
+        # ── Step 5: PDF排版 ──
         await self.update_progress(
-            percent=85, message="正在生成PDF并打包...",
+            percent=85, message="正在生成PDF...",
             step_index=5, total_steps=TOTAL_STEPS, step_status='running',
         )
         await asyncio.sleep(0.5)

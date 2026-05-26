@@ -36,12 +36,12 @@ class MarketingExecutor(BaseToolExecutor):
         模拟外部平台处理流程：
         1. 阶段 0-30%: 需求分析
         2. 阶段 30-80%: 文案生成（多平台）
-        3. 阶段 80-100%: 打包交付
+        3. 阶段 80-100%: 保存交付
 
         真实场景下，外部平台通过 POST /tasks/{id}/progress 驱动进度。
         """
         platform_count = params.get('platform_count', 3)
-        total_steps = 3  # 需求分析 → 文案生成 → 打包
+        total_steps = 3  # 需求分析 → 文案生成 → 保存
 
         # Step 1: 需求分析 (0-30%)
         await self.update_progress(
@@ -73,9 +73,9 @@ class MarketingExecutor(BaseToolExecutor):
             data={"step_index": 1, "total_steps": total_steps, "step_status": "completed"}
         )
 
-        # Step 3: 打包交付 (80-100%)
+        # Step 3: 保存交付 (80-100%)
         await self.update_progress(
-            percent=85, message="正在打包成果...",
+            percent=85, message="正在保存成果...",
             data={"step_index": 2, "total_steps": total_steps, "step_status": "running"}
         )
         await asyncio.sleep(1)
