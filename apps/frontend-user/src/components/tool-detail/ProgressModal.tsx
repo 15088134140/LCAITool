@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSSE } from '@/hooks/useSSE';
 import { cn } from '@/lib/utils';
 import { workApi } from '@/lib/api/modules/work';
@@ -307,7 +308,7 @@ export function ProgressModal({
 
   if (!isOpen) return null;
 
-  return (
+  const modal = (
     <div className="fixed inset-0 bg-black/50 z-[60] overflow-y-auto">
       <div className="min-h-full flex items-center justify-center p-4 sm:p-6 pt-16 sm:pt-20">
       <style jsx>{`
@@ -526,6 +527,8 @@ export function ProgressModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
 
 export default ProgressModal;
