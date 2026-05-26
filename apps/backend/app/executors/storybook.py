@@ -128,9 +128,13 @@ class StorybookExecutor(BaseToolExecutor):
         result_data = snapshot.get('data', {}) if snapshot else {}
 
         try:
+            total_steps = 6
             # Step 1: 故事大纲 + 智能分页 (0-20%)
             if start_step <= 1:
-                await self.update_progress(5, "正在生成故事大纲...")
+                await self.update_progress(
+                    percent=5, message="正在生成故事大纲...",
+                    step_index=0, total_steps=total_steps, step_status='running',
+                )
                 outline = await self._generate_story_outline(
                     theme, target_age, story_content=story_content, smart_page_count=smart_page_count
                 )
@@ -146,7 +150,10 @@ class StorybookExecutor(BaseToolExecutor):
 
             # Step 2: 插画提示词生成 (20-35%)
             if start_step <= 2:
-                await self.update_progress(20, "正在生成插画提示词...")
+                await self.update_progress(
+                    percent=20, message="正在生成插画提示词...",
+                    step_index=1, total_steps=total_steps, step_status='running',
+                )
                 pages = await self._generate_illustration_prompts(
                     result_data['outline'], page_count, art_style
                 )
@@ -156,7 +163,10 @@ class StorybookExecutor(BaseToolExecutor):
 
             # Step 3: 批量图片生成 - 豆包 Seedream 4.5 (35-60%)
             if start_step <= 3:
-                await self.update_progress(35, "正在生成插画...")
+                await self.update_progress(
+                    percent=35, message="正在生成插画...",
+                    step_index=2, total_steps=total_steps, step_status='running',
+                )
                 pages_with_images = await self._generate_images_serial(
                     result_data['pages'], works_dir
                 )
@@ -166,7 +176,10 @@ class StorybookExecutor(BaseToolExecutor):
 
             # Step 4: 语音合成 - 智谱 GLM-TTS (60-80%)
             if include_audio and start_step <= 4:
-                await self.update_progress(60, "正在生成语音 narration...")
+                await self.update_progress(
+                    percent=60, message="正在生成语音 narration...",
+                    step_index=3, total_steps=total_steps, step_status='running',
+                )
                 pages_with_audio = await self._generate_audio_serial(
                     result_data['pages'], works_dir, voice_type
                 )
@@ -176,18 +189,27 @@ class StorybookExecutor(BaseToolExecutor):
 
             # Step 5: PDF排版与打包 (80-95%)
             if start_step <= 5:
-                await self.update_progress(80, "正在生成PDF并打包...")
+                await self.update_progress(
+                    percent=80, message="正在生成PDF并打包...",
+                    step_index=4, total_steps=total_steps, step_status='running',
+                )
                 files = await self._generate_pdf_and_zip(result_data, works_dir)
                 result_data['files'] = files
                 await self.save_snapshot({'step': 6, 'data': result_data})
                 await self.add_log('info', 'PDF生成与打包完成')
 
             # Step 6: 创建成果记录 (95-100%)
-            await self.update_progress(95, "正在保存成果...")
+            await self.update_progress(
+                percent=95, message="正在保存成果...",
+                step_index=5, total_steps=total_steps, step_status='running',
+            )
             work = await self._create_work_record(params, result_data)
             result_data['work_id'] = str(work.id)
 
-            await self.update_progress(100, "生成完成！")
+            await self.update_progress(
+                percent=100, message="生成完成！",
+                step_index=5, total_steps=total_steps, step_status='completed',
+            )
             await self.add_log('info', '有声绘本任务执行完成')
 
             return {
@@ -272,15 +294,29 @@ class StorybookExecutor(BaseToolExecutor):
         story = outline.get('story', outline.get('synopsis', ''))
 
         system_prompt = (
-            f"你是一个专业的儿童绘本插画师和AI绘画提示词专家。\n"
-            f"请为这段文字生成 {page_count} 个不同场景的绘图提示词。\n"
-            f"绘画风格：{art_style}\n"
-            f"输出JSON数组，每项包含：description(场景描述), prompt(英文绘图提示词), "
-            f"text_snippet(对应故事文本片段), importance(1-5的重要性评分)。"
+            "你是一个专业的儿童绘本插画师和AI绘画提示词专家。\n"
+            "请根据用户提供的绘本故事，为每一页生成一个英文绘图提示词。\n"
+            "你必须严格输出 JSON 数组格式，不要添加任何其他文字说明。\n"
+            "输出格式示例：\n"
+            '[\n'
+            '  {\n'
+            '    "description": "场景描述文字",\n'
+            '    "prompt": "English illustration prompt for AI",\n'
+            '    "text_snippet": "对应的故事文本",\n'
+            '    "importance": 5\n'
+            '  }\n'
+            "]"
+        )
+
+        user_prompt = (
+            f"绘本故事内容：\n{story}\n\n"
+            f"请为这个故事生成 {page_count} 个不同场景的英文绘图提示词，"
+            f"绘画风格：{art_style}"
         )
 
         response = await self.deepseek_provider.generate_text(
-            prompt=system_prompt,
+            prompt=user_prompt,
+            system_prompt=system_prompt,
             thinking=False
         )
 
@@ -288,13 +324,19 @@ class StorybookExecutor(BaseToolExecutor):
             raise RuntimeError(f"插画提示词生成失败: {response.error}")
 
         try:
-            json_match = re.search(r'\[[\s\S]*\]', response.content)
+            content = response.content.strip()
+            # 去掉可能的 markdown 代码块包裹
+            if content.startswith("```"):
+                content = re.sub(r'^```(?:json)?\s*', '', content)
+                content = re.sub(r'\s*```$', '', content)
+            json_match = re.search(r'\[[\s\S]*\]', content)
             if json_match:
                 result = json.loads(json_match.group())
                 if isinstance(result, list):
                     return result
         except (json.JSONDecodeError, ValueError):
-            pass
+            # 解析失败时记录响应内容，便于调试
+            await self.add_log('error', f'插画提示词JSON解析失败, AI响应前200字符: {content[:200]}')
 
         raise RuntimeError("插画提示词JSON解析失败")
 
@@ -321,7 +363,7 @@ class StorybookExecutor(BaseToolExecutor):
 
                     response = await self.doubao_provider.generate_image(
                         prompt=prompt,
-                        size="1024x1024"
+                        size="1920x1920"
                     )
 
                     if response.success and response.content:
@@ -341,9 +383,11 @@ class StorybookExecutor(BaseToolExecutor):
                         page['image_generated'] = False
 
                     # 更新进度: 35% -> 60%
-                    progress = 35 + int((index + 1) / total_pages * 25)
+                    pct = 35 + int((index + 1) / total_pages * 25)
                     await self.update_progress(
-                        progress, f"正在生成插画... ({index + 1}/{total_pages})"
+                        percent=pct, message=f"正在生成插画 ({index + 1}/{total_pages})...",
+                        step_index=2, total_steps=6, step_status='running',
+                        sub_progress=f"{index + 1}/{total_pages}",
                     )
 
                 except Exception as e:
@@ -412,9 +456,11 @@ class StorybookExecutor(BaseToolExecutor):
                         page['audio_generated'] = False
 
                     # 更新进度: 60% -> 80%
-                    progress = 60 + int((index + 1) / total_pages * 20)
+                    pct = 60 + int((index + 1) / total_pages * 20)
                     await self.update_progress(
-                        progress, f"正在生成语音... ({index + 1}/{total_pages})"
+                        percent=pct, message=f"正在生成语音 ({index + 1}/{total_pages})...",
+                        step_index=3, total_steps=6, step_status='running',
+                        sub_progress=f"{index + 1}/{total_pages}",
                     )
 
                 except Exception as e:
