@@ -134,13 +134,13 @@ export const useUserStore = create<UserStoreState>()(
           const verification = await userApi.submitRealNameVerification({
             real_name: data.real_name,
             id_card_number: data.id_card_number,
-            front_image: data.front_image,
-            back_image: data.back_image,
-            hold_image: data.hold_image,
+            ...(data.front_image ? { front_image: data.front_image } : {}),
+            ...(data.back_image ? { back_image: data.back_image } : {}),
+            ...(data.hold_image ? { hold_image: data.hold_image } : {}),
           });
           // 更新用户的认证状态
           set((state) => ({
-            user: state.user ? { ...state.user, id_card_verified: verification.verification_status === 'approved' } : null,
+            user: state.user ? { ...state.user, id_card_verified: verification.id_card_verified } : null,
             isLoading: false,
           }));
         } catch (error) {

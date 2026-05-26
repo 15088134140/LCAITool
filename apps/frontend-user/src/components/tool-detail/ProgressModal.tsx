@@ -308,8 +308,8 @@ export function ProgressModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
-      <div className="min-h-full flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 bg-black/50 z-[60] overflow-y-auto">
+      <div className="min-h-full flex items-center justify-center p-4 sm:p-6 pt-16 sm:pt-20">
       <style jsx>{`
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(8px); }

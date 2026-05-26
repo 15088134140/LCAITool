@@ -114,6 +114,7 @@ export default function ApiKeysPage() {
     try {
       await navigator.clipboard.writeText(key);
       setCopied(true);
+      toast.success('已复制到剪贴板');
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // 降级方案
@@ -124,6 +125,7 @@ export default function ApiKeysPage() {
       document.execCommand('copy');
       document.body.removeChild(textarea);
       setCopied(true);
+      toast.success('已复制到剪贴板');
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -272,10 +274,10 @@ export default function ApiKeysPage() {
           {/* 表头 */}
           <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase tracking-wider text-gray-500">
             <div className="col-span-3">名称</div>
-            <div className="col-span-3">密钥</div>
+            <div className="col-span-4">密钥</div>
             <div className="col-span-2">状态</div>
             <div className="col-span-2">最后使用</div>
-            <div className="col-span-2 text-right">操作</div>
+            <div className="col-span-1 text-right">操作</div>
           </div>
 
           {apiKeys.length === 0 ? (
@@ -316,12 +318,21 @@ export default function ApiKeysPage() {
                   </div>
 
                   {/* 密钥 */}
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-4">
                     {revealedKeys[key.id] ? (
-                      <div className="flex items-center gap-2">
-                        <code className="inline-block px-3 py-1.5 bg-gray-100 rounded-lg text-sm font-mono text-gray-800 truncate max-w-[200px]">
+                      <div className="flex items-center gap-1.5">
+                        <code className="flex-1 px-3 py-1.5 bg-gray-100 rounded-lg text-sm font-mono text-gray-800 break-all text-[11px] leading-relaxed">
                           {revealedKeys[key.id]}
                         </code>
+                        <button
+                          onClick={() => handleCopyKey(revealedKeys[key.id]!)}
+                          className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-200 transition-colors text-gray-400 hover:text-gray-600"
+                          title="复制密钥"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
                         <button
                           onClick={() => handleRevealKey(key.id)}
                           className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-200 transition-colors text-gray-400 hover:text-gray-600"
@@ -377,7 +388,7 @@ export default function ApiKeysPage() {
                   </div>
 
                   {/* 操作按钮 */}
-                  <div className="md:col-span-2 flex items-center justify-end gap-2">
+                  <div className="md:col-span-1 flex items-center justify-end gap-2">
                     {deleteConfirmId === key.id ? (
                       <div className="flex items-center gap-2">
                         <button

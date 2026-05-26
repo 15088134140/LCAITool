@@ -33,7 +33,7 @@ export default function SubmitIdeaPage() {
       const names = res.items.map((cat: ToolCategory) => cat.name);
       if (names.length > 0) {
         setCategories(names);
-        setFormData(prev => ({ ...prev, category: names[0] }));
+        setFormData(prev => ({ ...prev, category: names[0] as string }));
       }
     }).catch(() => {});
   }, []);

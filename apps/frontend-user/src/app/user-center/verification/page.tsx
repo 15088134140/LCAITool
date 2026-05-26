@@ -71,7 +71,7 @@ export default function VerificationPage() {
         real_name: formData.real_name,
         id_card_number: formData.id_card,
       });
-      updateUser({ id_card_verified: true, real_name: formData.real_name, id_card_number: res.id_card_number });
+      updateUser({ id_card_verified: true, real_name: formData.real_name, ...(res.id_card_number ? { id_card_number: res.id_card_number } : {}) });
       setSuccessMessage('实名认证提交成功！');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error: any) {
