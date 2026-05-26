@@ -5,7 +5,8 @@
       "Bash(lsof -ti:8000)",
       "Bash(xargs kill:*)",
       "Bash(.venv/bin/python -c \"import ast; ast.parse\\(open\\(''app/api/v1/endpoints/external.py''\\).read\\(\\)\\); print\\(''Syntax OK''\\)\")",
-      "Bash(.venv/bin/python -c \"import ast; ast.parse\\(open\\('app/api/v1/middleware/api_key_auth.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")"
+      "Bash(.venv/bin/python -c \"import ast; ast.parse\\(open\\('app/api/v1/middleware/api_key_auth.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "Bash(ls /Users/mark/Desktop/LCAITool/apps/*/package.json)"
     ]
   }
 }
