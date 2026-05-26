@@ -111,6 +111,7 @@ class StorybookExecutor(BaseToolExecutor):
 
         # 提取参数
         theme = params.get('theme', '勇敢的小兔子')
+        story_content = params.get('storyContent', '')
         target_age = params.get('target_age', '3-6')
         page_count = params.get('page_count', 5)
         art_style = params.get('art_style', 'watercolor')
@@ -131,7 +132,7 @@ class StorybookExecutor(BaseToolExecutor):
             if start_step <= 1:
                 await self.update_progress(5, "正在生成故事大纲...")
                 outline = await self._generate_story_outline(
-                    theme, target_age, smart_page_count=smart_page_count
+                    theme, target_age, story_content=story_content, smart_page_count=smart_page_count
                 )
                 result_data['outline'] = outline
                 # 如果 AI 建议了页数，覆盖用户设置的页数
@@ -202,12 +203,13 @@ class StorybookExecutor(BaseToolExecutor):
             raise
 
     async def _generate_story_outline(
-        self, theme: str, target_age: str, smart_page_count: bool = False
+        self, theme: str, target_age: str, story_content: str = "", smart_page_count: bool = False
     ) -> Dict[str, Any]:
         """
         使用 DeepSeek (thinking 模式) 生成故事梗概
-        :param theme: 故事主题
+        :param theme: 故事主题（当有 story_content 时作为标题参考）
         :param target_age: 目标年龄段
+        :param story_content: 用户提供的故事文案（非空时优先使用，提炼为大纲）
         :param smart_page_count: 是否让 AI 建议页数
         :return: 包含 title/story/suggested_page_count 的字典
         """
@@ -230,7 +232,13 @@ class StorybookExecutor(BaseToolExecutor):
         else:
             system_prompt += '\n输出JSON格式：{"title": "...", "story": "..."}'
 
-        user_prompt = f"请根据主题「{theme}」为{target_age}岁的儿童写一个短故事。"
+        if story_content:
+            user_prompt = (
+                f"以下是一段故事文案，请为{target_age}岁的儿童将其提炼为绘本故事大纲，"
+                f"保持核心情节完整，语言更适合儿童阅读：\n\n{story_content}"
+            )
+        else:
+            user_prompt = f"请根据主题「{theme}」为{target_age}岁的儿童写一个短故事。"
 
         response = await self.deepseek_provider.generate_text(
             prompt=user_prompt,

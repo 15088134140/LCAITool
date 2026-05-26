@@ -13,7 +13,10 @@ interface StorybookFormProps {
   tool: Tool;
 }
 
+type InputMode = 'theme' | 'storyContent';
+
 interface StorybookFormState {
+  inputMode: InputMode;
   theme?: string;
   storyContent?: string;
   art_style?: string;
@@ -31,6 +34,7 @@ export function StorybookForm({ tool }: StorybookFormProps) {
   const [progressTaskId, setProgressTaskId] = useState<string | null>(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [formState, setFormState] = useState<StorybookFormState>({
+    inputMode: 'theme',
     page_count: 10,
     art_style: 'cartoon',
     voiceType: 'warm',
@@ -67,18 +71,35 @@ export function StorybookForm({ tool }: StorybookFormProps) {
     setTotalCost(cost);
   };
 
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+
+  const validate = (): boolean => {
+    const errors: string[] = [];
+    if (formState.inputMode === 'theme' && !formState.theme?.trim()) {
+      errors.push('theme');
+    }
+    if (formState.inputMode === 'storyContent' && !formState.storyContent?.trim()) {
+      errors.push('storyContent');
+    }
+    if (formState.art_style === 'custom' && !formState.custom_style?.trim()) {
+      errors.push('custom_style');
+    }
+    setFormErrors(errors);
+    return errors.length === 0;
+  };
+
   const handleStartGeneration = async () => {
+    if (!validate()) return;
+
     try {
       // Use tool slug directly as task type
       const taskType = tool.slug || '';
 
-      // Collect form inputs
+      // Collect form inputs — only send active field
       const resolvedArtStyle = formState.art_style === 'custom' && formState.custom_style
         ? formState.custom_style
         : formState.art_style;
       const inputParams: Record<string, any> = {
-        theme: formState.theme,
-        storyContent: formState.storyContent,
         art_style: resolvedArtStyle,
         page_count: formState.smart_page_count ? null : formState.page_count,
         smart_page_count: formState.smart_page_count,
@@ -88,6 +109,11 @@ export function StorybookForm({ tool }: StorybookFormProps) {
         hasBackgroundMusic: formState.hasBackgroundMusic,
         hasSoundEffects: formState.hasSoundEffects,
       };
+      if (formState.inputMode === 'theme') {
+        inputParams['theme'] = formState.theme;
+      } else {
+        inputParams['storyContent'] = formState.storyContent;
+      }
 
       const task = await taskApi.createTask({
         tool_id: tool.id,
@@ -123,6 +149,10 @@ export function StorybookForm({ tool }: StorybookFormProps) {
 
   const updateFormState = (key: keyof StorybookFormState, value: any) => {
     setFormState((prev) => ({ ...prev, [key]: value }));
+    // 清除对应字段的错误提示
+    if (formErrors.includes(key)) {
+      setFormErrors((prev) => prev.filter((e) => e !== key));
+    }
   };
 
   return (
@@ -144,27 +174,69 @@ export function StorybookForm({ tool }: StorybookFormProps) {
                   <span className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">1</span>
                   基础信息
                 </h3>
+
+                {/* 创作方式切换 */}
+                <div className="flex gap-3 mb-6">
+                  <button
+                    type="button"
+                    className={`flex-1 py-4 px-5 rounded-2xl text-center font-semibold text-lg transition-all border-2 ${
+                      formState.inputMode === 'theme'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                    }`}
+                    onClick={() => { updateFormState('inputMode', 'theme'); setFormErrors([]); }}
+                  >
+                    📝 主题创作
+                    <p className="text-sm font-normal mt-1 text-gray-400">输入关键词，AI 自动创作故事</p>
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 py-4 px-5 rounded-2xl text-center font-semibold text-lg transition-all border-2 ${
+                      formState.inputMode === 'storyContent'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                    }`}
+                    onClick={() => { updateFormState('inputMode', 'storyContent'); setFormErrors([]); }}
+                  >
+                    📖 文案改编
+                    <p className="text-sm font-normal mt-1 text-gray-400">粘贴已有文案，AI 提炼为绘本</p>
+                  </button>
+                </div>
+
                 <div className="space-y-5">
-                  <div>
-                    <label className="block text-base font-medium text-gray-600 mb-2">绘本主题 *</label>
-                    <input
-                      type="text"
-                      className="w-full px-5 py-4 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-lg"
-                      placeholder="例如：小兔子的森林冒险"
-                      value={formState.theme || ''}
-                      onChange={(e) => updateFormState('theme', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-base font-medium text-gray-600 mb-2">故事主题或文案 *</label>
-                    <textarea
-                      rows={5}
-                      className="w-full px-5 py-4 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none text-lg"
-                      placeholder="描述您想要的故事，或者粘贴完整的故事文案..."
-                      value={formState.storyContent || ''}
-                      onChange={(e) => updateFormState('storyContent', e.target.value)}
-                    />
-                  </div>
+                  {formState.inputMode === 'theme' ? (
+                    <div>
+                      <label className="block text-base font-medium text-gray-600 mb-2">绘本主题 *</label>
+                      <input
+                        type="text"
+                        className={`w-full px-5 py-4 border rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-lg ${
+                          formErrors.includes('theme') ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-200'
+                        }`}
+                        placeholder="例如：小兔子的森林冒险"
+                        value={formState.theme || ''}
+                        onChange={(e) => updateFormState('theme', e.target.value)}
+                      />
+                      {formErrors.includes('theme') && (
+                        <p className="text-red-500 text-sm mt-1">请输入绘本主题</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-base font-medium text-gray-600 mb-2">故事文案 *</label>
+                      <textarea
+                        rows={5}
+                        className={`w-full px-5 py-4 border rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none text-lg ${
+                          formErrors.includes('storyContent') ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-200'
+                        }`}
+                        placeholder="粘贴您已有的故事文案，AI 将提炼为绘本故事大纲..."
+                        value={formState.storyContent || ''}
+                        onChange={(e) => updateFormState('storyContent', e.target.value)}
+                      />
+                      {formErrors.includes('storyContent') && (
+                        <p className="text-red-500 text-sm mt-1">请输入故事文案</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
