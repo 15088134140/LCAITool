@@ -296,10 +296,27 @@
 
 ### 5.6 生成参数展示
 
-位于预览 Tab 底部，浅黄色背景区块，展示：
-- 用户输入的关键参数（主题、风格、页数、目标年龄等）
-- 提示词（可复制）
-- 仅在有参数时展示
+位于预览 Tab 底部，浅黄色背景区块，展示用户输入的关键参数，仅在有参数时展示。
+
+#### 5.6.1 字段映射方案（Tool.param_schema）
+
+`input_params` 的 key 为英文，通过 Tool 模型的 `param_schema` JSON 字段映射为中文 label：
+
+```json
+// Tool.param_schema
+[
+  {"key": "theme", "label": "主题", "type": "text", "order": 1},
+  {"key": "style", "label": "风格", "type": "text", "order": 2},
+  {"key": "page_count", "label": "页数", "type": "number", "order": 3},
+  {"key": "target_age", "label": "目标年龄", "type": "text", "order": 4},
+  {"key": "language", "label": "语言", "type": "text", "order": 5},
+  {"key": "prompt", "label": "提示词", "type": "textarea", "order": 6}
+]
+```
+
+- 详情接口返回 `work.input_params` + `tool.param_schema`，前端遍历 schema 按 order 排序渲染
+- 提示词类型（`textarea`）特殊样式：等宽字体 + 深黄背景 + 复制按钮
+- **兼容未配置**：`param_schema` 为空/null 时，直接使用 `input_params` 的原始 key 作为 label
 
 ### 5.7 分享弹窗
 
@@ -363,6 +380,18 @@ GET /works?category_id={id}
   → 筛选 tools.category_id = {id} 的成果
 ```
 
+### 6.4 生成参数字段映射（Tool.param_schema）
+
+Tool 模型新增 JSON 字段 `param_schema`，定义 input_params 的展示规则：
+
+```python
+param_schema = Column(JSONType, nullable=True, comment="参数字段映射，[{key, label, type, order}]")
+```
+
+- 详情接口 `GET /works/{id}` 响应中增加 `tool_param_schema` 字段
+- 前端遍历 schema 按 order 排序，从 input_params 取 value 渲染
+- 兼容空值：param_schema 为 null/[] 时直接用 input_params 的 key 作为 label
+
 ---
 
 ## 7. 前端变更清单
@@ -388,7 +417,7 @@ GET /works?category_id={id}
 |------|------|
 | 继续优化条件展示 | 根据 `usage_modes` 判断 |
 | 增加"前往工具页重新生成" | 纯 form 工具的替代入口 |
-| 增加生成参数展示区 | 从 `work.input_params` 读取 |
+| 增加生成参数展示区 | 从 `work.input_params` 读取，按 `tool.param_schema` 映射显示，未配置则显示英文 key |
 | 删除按钮 | 从详情页移除以避免混淆，仅在列表页操作 |
 | 分享、评价 | 完善现有实现 |
 

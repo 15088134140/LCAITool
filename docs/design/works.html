@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>创作成果列表 - 灵创AI工具箱</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <style>
     /* ===== Reset & Base ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -245,6 +247,30 @@
     }
     .work-card.draft:hover {
       opacity: 1;
+    }
+
+    /* ===== Breadcrumb ===== */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #64748B;
+      margin-bottom: 12px;
+    }
+    .breadcrumb a {
+      color: #64748B;
+      transition: color 0.2s;
+    }
+    .breadcrumb a:hover { color: #1E3A5F; }
+    .breadcrumb .current {
+      color: #1E3A5F;
+      font-weight: 500;
+    }
+    .breadcrumb svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
     }
 
     .card-cover {
@@ -682,10 +708,10 @@
     <!-- ===== Header ===== -->
     <div class="page-header">
       <!-- Breadcrumb -->
-      <div class="flex items-center gap-2 text-sm text-[#64748B] mb-3">
-        <a href="user-center-v2.html" class="hover:text-[#1E3A5F] transition-colors">个人中心</a>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-        <span class="text-[#1E3A5F] font-medium">我的创作成果</span>
+      <div class="breadcrumb">
+        <a href="user-center-v2.html">个人中心</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="current">我的创作成果</span>
       </div>
       <div class="page-header-top">
         <div>
