@@ -681,6 +681,12 @@
 
     <!-- ===== Header ===== -->
     <div class="page-header">
+      <!-- Breadcrumb -->
+      <div class="flex items-center gap-2 text-sm text-[#64748B] mb-3">
+        <a href="user-center-v2.html" class="hover:text-[#1E3A5F] transition-colors">个人中心</a>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="text-[#1E3A5F] font-medium">我的创作成果</span>
+      </div>
       <div class="page-header-top">
         <div>
           <h1>我的创作成果</h1>
@@ -743,7 +749,7 @@
     <!-- ===== Works Grid ===== -->
     <div class="works-grid" id="worksGrid">
       <!-- Card 1: Storybook - Published -->
-      <div class="work-card" data-tool="storybook" data-status="published">
+      <div class="work-card" data-tool="storybook" data-status="published" onclick="location.href='works-detail.html'" style="cursor:pointer">
         <div class="card-cover">
           <img src="https://picsum.photos/seed/story1/640/400" alt="封面" loading="lazy">
           <div class="card-badges">
@@ -764,7 +770,6 @@
             有声绘本生成器
           </span>
           <h3 class="card-title">小兔子的大冒险</h3>
-          <p class="card-desc">一只勇敢的小兔子在森林中探险，遇到了各种有趣的动物朋友，最终找到了传说中的彩虹花园。</p>
           <div class="card-meta">
             <span class="time">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -790,7 +795,7 @@
       </div>
 
       <!-- Card 2: Ecommerce - Draft -->
-      <div class="work-card draft" data-tool="ecommerce" data-status="draft">
+      <div class="work-card draft" data-tool="ecommerce" data-status="draft" onclick="location.href='works-detail.html'" style="cursor:pointer">
         <div class="card-cover">
           <img src="https://picsum.photos/seed/ecom1/640/400" alt="封面" loading="lazy">
           <div class="card-badges">
@@ -811,7 +816,6 @@
             电商详情页生成器
           </span>
           <h3 class="card-title">有机绿茶礼盒装</h3>
-          <p class="card-desc">高山有机绿茶，精美礼盒装，适合送礼和自用。</p>
           <div class="card-meta">
             <span class="time">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -833,7 +837,7 @@
       </div>
 
       <!-- Card 3: Marketing - Published -->
-      <div class="work-card" data-tool="marketing" data-status="published">
+      <div class="work-card" data-tool="marketing" data-status="published" onclick="location.href='works-detail.html'" style="cursor:pointer">
         <div class="card-cover">
           <div style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
             <svg class="placeholder-icon" style="width:64px;height:64px;color:#D97706;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -856,7 +860,6 @@
             营销文案大师
           </span>
           <h3 class="card-title">夏季防晒霜全渠道营销方案</h3>
-          <p class="card-desc">针对夏季防晒霜产品的全渠道营销文案，包含小红书、抖音、公众号等多平台适配版本。</p>
           <div class="card-meta">
             <span class="time">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -882,7 +885,7 @@
       </div>
 
       <!-- Card 4: AI Chat - Published (has 继续优化) -->
-      <div class="work-card" data-tool="ai-chat" data-status="published">
+      <div class="work-card" data-tool="ai-chat" data-status="published" onclick="location.href='works-detail.html'" style="cursor:pointer">
         <div class="card-cover">
           <img src="https://picsum.photos/seed/chat1/640/400" alt="封面" loading="lazy">
           <div class="card-badges">
@@ -903,7 +906,6 @@
             AI对话助手
           </span>
           <h3 class="card-title">品牌定位咨询报告</h3>
-          <p class="card-desc">通过AI对话生成的新锐茶饮品牌定位分析报告，包含目标客群、竞品分析、差异化策略。</p>
           <div class="card-meta">
             <span class="time">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -929,7 +931,7 @@
       </div>
 
       <!-- Card 5: Storybook - Published, no 继续优化 (纯form工具) -->
-      <div class="work-card" data-tool="storybook" data-status="published">
+      <div class="work-card" data-tool="storybook" data-status="published" onclick="location.href='works-detail.html'" style="cursor:pointer">
         <div class="card-cover">
           <img src="https://picsum.photos/seed/story2/640/400" alt="封面" loading="lazy">
           <div class="card-badges">
@@ -950,7 +952,6 @@
             有声绘本生成器
           </span>
           <h3 class="card-title">星空下的约定</h3>
-          <p class="card-desc">两个小朋友在星空下许下友谊的约定，温暖治愈的成长故事。</p>
           <div class="card-meta">
             <span class="time">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -973,7 +974,7 @@
       </div>
 
       <!-- Card 6: Marketing - Draft -->
-      <div class="work-card draft" data-tool="marketing" data-status="draft">
+      <div class="work-card draft" data-tool="marketing" data-status="draft" onclick="location.href='works-detail.html'" style="cursor:pointer">
         <div class="card-cover">
           <img src="https://picsum.photos/seed/mkt1/640/400" alt="封面" loading="lazy">
           <div class="card-badges">
@@ -994,7 +995,6 @@
             营销文案大师
           </span>
           <h3 class="card-title">新锐咖啡品牌上市推广</h3>
-          <p class="card-desc">针对Z世代的新锐即溶咖啡品牌推广文案（未完成）</p>
           <div class="card-meta">
             <span class="time">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
