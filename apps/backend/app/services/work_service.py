@@ -114,6 +114,7 @@ class WorkService:
 
         # 获取 Task 的 input_params
         input_params = None
+        actual_cost = None
         tool_param_schema = None
         usage_modes = []
         if work.task_id:
@@ -123,6 +124,7 @@ class WorkService:
             task = task_result.scalar_one_or_none()
             if task:
                 input_params = task.input_params
+                actual_cost = task.actual_cost
 
         # 获取 Tool 的 param_schema 和 usage_modes
         if work.tool_id:
@@ -133,7 +135,14 @@ class WorkService:
             tool = tool_result.scalar_one_or_none()
             if tool:
                 if tool.param_schema:
-                    tool_param_schema = sorted(tool.param_schema, key=lambda x: x.get("order", 999))
+                    # param_schema 可能包含字符串列表（遗留格式）或字典列表
+                    normalized_schema = []
+                    for item in tool.param_schema:
+                        if isinstance(item, dict):
+                            normalized_schema.append(item)
+                        elif isinstance(item, str):
+                            normalized_schema.append({"key": item, "label": item, "type": "text", "order": 0})
+                    tool_param_schema = sorted(normalized_schema, key=lambda x: x.get("order", 999))
                 usage_modes = tool.usage_modes or []
 
         # 获取文件列表
@@ -164,6 +173,7 @@ class WorkService:
             input_params=input_params,
             tool_param_schema=tool_param_schema,
             usage_modes=usage_modes,
+            actual_cost=actual_cost,
         )
 
         return work_detail
@@ -420,7 +430,7 @@ class WorkService:
         """获取用户的成果统计信息"""
         from app.schemas.work import WorkStats
         from app.models.tool import Tool
-        from sqlalchemy import func as sa_func
+        from sqlalchemy import func as sa_func, case
 
         conditions = [Work.user_id == user_id, Work.is_deleted == False]
 
@@ -440,14 +450,14 @@ class WorkService:
         if category_id is not None:
             stats_query = select(
                 sa_func.count().label("total"),
-                sa_func.sum(sa_func.cast(Work.status == "published", sa_func.Integer)).label("published_count"),
+                sa_func.coalesce(sa_func.sum(case((Work.status == "published", 1), else_=0)), 0).label("published_count"),
                 sa_func.coalesce(sa_func.sum(Work.view_count), 0).label("total_views"),
                 sa_func.coalesce(sa_func.avg(Work.version), 0.0).label("avg_version"),
             ).select_from(Work).join(Tool, Work.tool_id == Tool.id).where(and_(*conditions))
         else:
             stats_query = select(
                 sa_func.count().label("total"),
-                sa_func.sum(sa_func.cast(Work.status == "published", sa_func.Integer)).label("published_count"),
+                sa_func.coalesce(sa_func.sum(case((Work.status == "published", 1), else_=0)), 0).label("published_count"),
                 sa_func.coalesce(sa_func.sum(Work.view_count), 0).label("total_views"),
                 sa_func.coalesce(sa_func.avg(Work.version), 0.0).label("avg_version"),
             ).where(and_(*conditions))

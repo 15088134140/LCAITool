@@ -305,13 +305,13 @@ export default function WorkDetailPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-10">
-        <div className="bg-white rounded-2xl border border-[#E4E7EB] overflow-hidden shadow-xl">
+        <div className="bg-white rounded-2xl border border-[#E4E7EB] shadow-xl">
           {/* Header */}
           <div className="p-8 border-b border-[#E4E7EB]">
             <div className="flex flex-col lg:flex-row lg:items-start gap-6">
               {/* Thumbnail */}
-              <div className="flex-shrink-0 -mt-20 lg:-mt-24">
-                <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-brand-dark to-brand-light">
+              <div className="flex-shrink-0 -mt-20 lg:-mt-[76px]">
+                <div className="w-32 h-32 lg:w-34 lg:h-34 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-brand-dark to-brand-light">
                   {coverUrl ? (
                     <img src={coverUrl} alt={work.title} className="w-full h-full object-cover" />
                   ) : (
@@ -323,128 +323,116 @@ export default function WorkDetailPage() {
               </div>
 
               {/* Info */}
-              <div className="flex-1">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className={cn(
-                        'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium text-white bg-gradient-to-r',
-                        toolInfo.color
-                      )}>
-                        {toolInfo.icon} {toolInfo.name}
-                      </span>
-                      <span className="text-sm text-[#64748B]">v{work.version}</span>
-                      {work.status === 'published' && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-green-50 text-success-dark">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          已发布
-                        </span>
-                      )}
-                    </div>
-                    <h1 className="text-2xl lg:text-3xl font-bold text-[#1E3A5F] mb-2">{work.title}</h1>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={handleLike}
-                      className={cn(
-                        'inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all',
-                        isLiked
-                          ? 'bg-red-50 text-red-600'
-                          : 'bg-white text-[#64748B] border border-[#E4E7EB] hover:border-red-300 hover:text-red-600'
-                      )}
-                    >
-                      <svg className={cn('w-5 h-5', isLiked && 'fill-current')} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                      {isLiked ? work.like_count + 1 : work.like_count}
-                    </button>
-                    <button
-                      onClick={handleShare}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium bg-white text-[#64748B] border border-[#E4E7EB] hover:border-brand-light hover:text-brand-light transition-all"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                      </svg>
-                      分享
-                    </button>
-                    <button
-                      onClick={handleDownloadAll}
-                      disabled={downloading}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium bg-white text-[#1E3A5F] border border-[#E4E7EB] hover:border-brand-dark hover:text-brand-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <svg className={`w-5 h-5 ${downloading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      {downloading ? '下载中...' : '下载全部'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Main Actions */}
-                <div className="flex flex-wrap gap-3 pt-4">
-                  {usageModes.includes('dialog') && (
-                    <button
-                      onClick={handleIterate}
-                      className="btn-primary px-6 py-3 text-white font-semibold rounded-xl inline-flex items-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      继续优化
-                    </button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-3 flex-wrap">
+                  <span className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium text-white bg-gradient-to-r',
+                    toolInfo.color
+                  )}>
+                    {toolInfo.icon} {toolInfo.name}
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#F8FAFC] text-[#64748B] border border-[#E4E7EB]">
+                    v{work.version}
+                  </span>
+                  {work.status === 'published' ? (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-green-50 text-success-dark">
+                      已发布
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-red-50 text-red-600 border border-red-200">
+                      草稿
+                    </span>
                   )}
-                  <Link
-                    href="/tools"
-                    className="btn-secondary px-6 py-3 font-semibold rounded-xl inline-flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    创建新作品
-                  </Link>
-                  <button
-                    onClick={() => setShowRatingModal(true)}
-                    className="inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-xl border border-[#E4E7EB] text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#1E3A5F] transition-all"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
-                    评价
-                  </button>
                 </div>
-
-                {/* Meta */}
-                <div className="flex flex-wrap gap-6 mt-6 pt-6 border-t border-[#E4E7EB]">
-                  <div className="flex items-center gap-2 text-sm text-[#64748B]">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    创建于 {formatDate(work.created_at)}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-[#64748B]">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    {work.view_count} 次浏览
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-[#64748B]">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    {files.length} 个文件
-                  </div>
-                </div>
+                <h1 className="text-2xl lg:text-3xl font-bold text-[#1E3A5F]">{work.title}</h1>
               </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="flex flex-wrap gap-2 pt-6 pb-5 border-b border-[#E4E7EB]">
+              {usageModes.includes('dialog') && (
+                <button
+                  onClick={handleIterate}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-success-dark to-success-light hover:shadow-lg transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  继续优化
+                </button>
+              )}
+              <Link
+                href="/tools"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-white text-[#64748B] border border-[#E4E7EB] hover:text-brand-light hover:border-brand-light transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                创建新作品
+              </Link>
+              <button
+                onClick={() => setShowRatingModal(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-white text-[#64748B] border border-[#E4E7EB] hover:text-brand-light hover:border-brand-light transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                评价
+              </button>
+              <button
+                onClick={handleShare}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-white text-[#64748B] border border-[#E4E7EB] hover:text-brand-light hover:border-brand-light transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                分享
+              </button>
+              <button
+                onClick={handleDownloadAll}
+                disabled={downloading}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-white text-[#64748B] border border-[#E4E7EB] hover:text-brand-light hover:border-brand-light transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className={`w-4 h-4 ${downloading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                {downloading ? '下载中...' : '下载全部'}
+              </button>
+            </div>
+
+            {/* Meta */}
+            <div className="flex flex-wrap gap-6 pt-5">
+              <div className="flex items-center gap-2 text-sm text-[#64748B]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                创建于 {formatDate(work.created_at)}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[#64748B]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                {work.view_count} 次浏览
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[#64748B]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                {files.length} 个文件
+              </div>
+              {(work as any).actual_cost != null && (
+                <div className="flex items-center gap-2 text-sm text-[#64748B]">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  {(work as any).actual_cost} 积分
+                </div>
+              )}
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-[#E4E7EB]">
+          <div className="bg-[#FAFBFC] border-b border-[#E4E7EB]">
             <div className="flex items-center gap-1 px-8">
               <button
                 onClick={() => setActiveTab('preview')}
@@ -460,24 +448,30 @@ export default function WorkDetailPage() {
               <button
                 onClick={() => setActiveTab('files')}
                 className={cn(
-                  'px-6 py-4 text-sm font-semibold border-b-2 transition-colors',
+                  'px-6 py-4 text-sm font-semibold border-b-2 transition-colors inline-flex items-center gap-1.5',
                   activeTab === 'files'
                     ? 'border-brand-light text-brand-light'
                     : 'border-transparent text-[#64748B] hover:text-[#1E3A5F]'
                 )}
               >
-                文件 ({files.length})
+                文件
+                <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#EFF6FF] text-brand-light text-xs font-semibold">
+                  {files.length}
+                </span>
               </button>
               <button
                 onClick={() => setActiveTab('versions')}
                 className={cn(
-                  'px-6 py-4 text-sm font-semibold border-b-2 transition-colors',
+                  'px-6 py-4 text-sm font-semibold border-b-2 transition-colors inline-flex items-center gap-1.5',
                   activeTab === 'versions'
                     ? 'border-brand-light text-brand-light'
                     : 'border-transparent text-[#64748B] hover:text-[#1E3A5F]'
                 )}
               >
-                版本历史 ({versions.length})
+                版本历史
+                <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#EFF6FF] text-brand-light text-xs font-semibold">
+                  {versions.length}
+                </span>
               </button>
               <div className="ml-auto">
                 <Link
@@ -485,7 +479,7 @@ export default function WorkDetailPage() {
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#059669] hover:text-[#047857] transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
                   </svg>
                   前往工具页重新生成
                 </Link>
@@ -514,7 +508,7 @@ export default function WorkDetailPage() {
 
                     {/* Thumbnail Grid */}
                     {previewImages.length > 1 && (
-                      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2.5">
                         {previewImages.map((file) => (
                           <button
                             key={file.id}
@@ -535,20 +529,37 @@ export default function WorkDetailPage() {
 
                     {/* Audio Preview */}
                     {files.some(f => f.file_type === 'audio') && (
-                      <div className="mt-8 p-6 bg-[#F8FAFC] rounded-xl">
-                        <h3 className="font-semibold text-[#1E3A5F] mb-4">🎧 音频</h3>
-                        {files.filter(f => f.file_type === 'audio').map(file => (
-                          <div key={file.id} className="flex items-center gap-4 p-4 bg-white rounded-lg">
-                            {getFileIcon('audio')}
-                            <div className="flex-1">
-                              <p className="font-medium text-[#1E3A5F]">{file.file_name}</p>
-                              <p className="text-sm text-[#64748B]">{formatFileSize(file.file_size)}{file.duration && ` · ${formatDuration(file.duration)}`}</p>
+                      <div className="mt-8 p-5 lg:p-6 bg-[#F8FAFC] rounded-xl">
+                        <h3 className="text-sm font-semibold text-[#1E3A5F] mb-3">🎧 音频</h3>
+                        {files.filter(f => f.file_type === 'audio').map(file => {
+                          const audioRef = `audio-${file.id}`;
+                          return (
+                            <div key={file.id} className="flex items-center gap-3 lg:gap-4 p-3 lg:p-4 bg-white rounded-lg mb-2 last:mb-0">
+                              <div className="w-10 h-10 rounded-lg bg-green-50 text-success-dark flex items-center justify-center flex-shrink-0">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 18V5l12-2v13M9 18c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-[#1F2937] truncate">{file.file_name}</p>
+                                <p className="text-xs text-[#94A3B8]">{formatFileSize(file.file_size)}{file.duration && ` · ${formatDuration(file.duration)}`}</p>
+                              </div>
+                              <div className="hidden lg:block w-32 h-8 rounded bg-gradient-to-r from-success-dark to-success-light opacity-20 relative overflow-hidden" />
+                              <audio id={audioRef} preload="none">
+                                <source src={getFileUrl(file)} type={file.mime_type || 'audio/wav'} />
+                              </audio>
+                              <button
+                                onClick={() => {
+                                  const el = document.getElementById(audioRef) as HTMLAudioElement;
+                                  if (el) el.play();
+                                }}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-success-dark to-success-light hover:shadow-md transition-all"
+                              >
+                                ▶ 播放
+                              </button>
                             </div>
-                            <div className="text-[#64748B]">
-                              音频播放器占位
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
