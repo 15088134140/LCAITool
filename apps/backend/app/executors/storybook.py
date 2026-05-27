@@ -53,7 +53,6 @@ class StorybookExecutor(BaseToolExecutor):
         self.doubao_provider = None
         self.zhipu_provider = None
         self.pdf_generator = PDFGenerator()
-        self._tool_config = tool or {}
 
     async def _init_providers(self):
         """延迟初始化三个 AI Provider（从数据库获取配置）"""
