@@ -544,9 +544,11 @@ async def test_delete_work(db_session: AsyncSession):
         current_user_id=user.id
     )
 
-    # 验证已删除
+    # 验证已软删除
     deleted_work = await WorkService.get_by_id(db_session, work.id)
-    assert deleted_work is None
+    assert deleted_work is not None
+    assert deleted_work.is_deleted is True
+    assert deleted_work.deleted_at is not None
 
 
 @pytest.mark.asyncio
