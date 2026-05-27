@@ -273,7 +273,7 @@ class StorybookExecutor(BaseToolExecutor):
             response=response,
             response_type="text",
             duration=_t1 - _t0,
-            usage={"input": response.usage.input_tokens, "output": response.usage.output_tokens}
+            usage={"input": response.usage.get("prompt_tokens", 0), "output": response.usage.get("completion_tokens", 0)}
                 if response.usage else None,
         )
 
@@ -339,7 +339,7 @@ class StorybookExecutor(BaseToolExecutor):
             response=response,
             response_type="text",
             duration=_t1 - _t0,
-            usage={"input": response.usage.input_tokens, "output": response.usage.output_tokens}
+            usage={"input": response.usage.get("prompt_tokens", 0), "output": response.usage.get("completion_tokens", 0)}
                 if response.usage else None,
         )
 
