@@ -14,6 +14,7 @@ const EditTool = () => {
   const [categories, setCategories] = useState<ToolCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [previousPromptLogging, setPreviousPromptLogging] = useState<boolean | undefined>(undefined);
 
   const [formData, setFormData] = useState<UpdateToolParams>({
     id: '',
@@ -32,6 +33,7 @@ const EditTool = () => {
     status: 0,
     is_featured: false,
     is_mock_enabled: false,
+    is_prompt_logging_enabled: false,
     usage_modes: ['form'],
   });
 
@@ -95,8 +97,10 @@ const EditTool = () => {
         status: data.status,
         is_featured: data.is_featured,
         is_mock_enabled: data.is_mock_enabled,
+        is_prompt_logging_enabled: data.is_prompt_logging_enabled !== false,
         usage_modes: data.usage_modes || ['form'],
       });
+      setPreviousPromptLogging(data.is_prompt_logging_enabled !== false);
     } catch (err) {
       console.error('加载工具详情失败:', err);
       alert('加载工具详情失败');
@@ -151,6 +155,15 @@ const EditTool = () => {
     if (!formData.name || !formData.slug) {
       alert('请填写工具名称和标识');
       return;
+    }
+
+    // 如果从开启改为关闭 -> 确认
+    if (previousPromptLogging === true && formData.is_prompt_logging_enabled === false) {
+      const confirmed = window.confirm(
+        '关闭提示词记录后，后续任务的 AI 调用将不再生成 prompts.md 文件。\n' +
+        '已有任务的记录不会被删除。确定要关闭吗？'
+      );
+      if (!confirmed) return;
     }
 
     setSubmitting(true);
@@ -379,6 +392,33 @@ const EditTool = () => {
                 <label htmlFor="is_mock_enabled" className="text-sm font-medium text-gray-700 cursor-pointer">
                   Mock执行模式（开启后工具使用模拟数据执行，无需真实AI调用）
                 </label>
+              </div>
+
+              {/* ===== 数据与调试 分组 ===== */}
+              <div className="col-span-2 border-t border-gray-200 pt-6 mt-4">
+                <h3 className="text-md font-semibold text-gray-800 mb-3">数据与调试</h3>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="is_prompt_logging_enabled"
+                    checked={formData.is_prompt_logging_enabled !== false}
+                    onChange={(e) => handleInputChange('is_prompt_logging_enabled', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="is_prompt_logging_enabled" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    启用提示词记录
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1 ml-7">
+                  开启后，每次 AI 调用的输入输出将记录到成果 ZIP 中，便于调试和审计
+                </p>
+
+                {formData.is_mock_enabled && formData.is_prompt_logging_enabled && (
+                  <p className="text-xs text-amber-600 mt-2 ml-7">
+                    提示：Mock 模式下记录的是模拟数据，非真实 AI 调用结果
+                  </p>
+                )}
               </div>
             </div>
           </div>
