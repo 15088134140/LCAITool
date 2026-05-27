@@ -4,12 +4,14 @@
 Celery Worker 接收到任务后，直接转交给外部平台（或模拟外部平台），
 外部平台通过 POST /tasks/{id}/progress 驱动进度和完成。
 """
+import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .base import BaseToolExecutor
+from .base import BaseToolExecutor, RecordedResponse
 
 
 class MarketingExecutor(BaseToolExecutor):
@@ -82,6 +84,14 @@ class MarketingExecutor(BaseToolExecutor):
         await self.update_progress(
             percent=100, message="生成完成！",
             data={"step_index": 2, "total_steps": total_steps, "step_status": "completed"}
+        )
+
+        await self._record_llm_interaction(
+            step_name="营销文案生成",
+            model="external-callback",
+            prompt=json.dumps(params, ensure_ascii=False, indent=2),
+            response_type="text",
+            response=RecordedResponse(content=f"营销文案生成完成，覆盖 {platform_count} 个平台"),
         )
 
         return {

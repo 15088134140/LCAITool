@@ -4,6 +4,7 @@
 """
 import json
 import os
+import time
 import uuid
 import logging
 from typing import Dict, Any, List, Optional
@@ -11,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import httpx
 
-from .base import BaseToolExecutor
+from .base import BaseToolExecutor, RecordedResponse
 from app.services.task_service import TaskService
 from app.services.work_service import WorkService
 from app.schemas.task import WorkCreate, WorkFileCreate
@@ -62,6 +63,13 @@ class EcommerceExecutor(BaseToolExecutor):
 
     async def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
         works_dir = self.get_works_dir()
+        _t0 = time.time()
+        dify_inputs = {
+            "product_name": params.get("product_name", ""),
+            "product_description": params.get("product_description", ""),
+            "main_image_count": params.get("main_image_count", 3),
+            "detail_image_count": params.get("detail_image_count", 3),
+        }
 
         # 调用 Dify Workflow Run API (streaming)
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -120,6 +128,18 @@ class EcommerceExecutor(BaseToolExecutor):
 
                     elif event_type == "workflow_finished":
                         outputs = event.get("data", {}).get("outputs", {})
+                        _t1 = time.time()
+                        copywriting = outputs.get("copywriting", {})
+                        text_output = json.dumps(copywriting, ensure_ascii=False, indent=2) if copywriting else "（无文本输出）"
+
+                        await self._record_llm_interaction(
+                            step_name="Dify 工作流",
+                            model="dify-workflow",
+                            prompt=json.dumps(dify_inputs, ensure_ascii=False, indent=2),
+                            response_type="text",
+                            response=RecordedResponse(content=text_output),
+                            duration=_t1 - _t0,
+                        )
                         break
 
                 # 保存 Dify outputs 到持久化目录

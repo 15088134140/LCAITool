@@ -27,6 +27,13 @@ class ProgressEvent:
     sub_progress: Optional[str] = None  # 如 "3/10"
 
 
+@dataclass
+class RecordedResponse:
+    """用于记录 LLM 交互的轻量响应包装"""
+    content: str
+    usage: Optional[Dict[str, Any]] = None
+
+
 class BaseToolExecutor(ABC):
     """工具执行器抽象基类"""
 
