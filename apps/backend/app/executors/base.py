@@ -4,7 +4,6 @@
 """
 import asyncio
 import os
-import time
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -177,7 +176,7 @@ class BaseToolExecutor(ABC):
         system_prompt: Optional[str] = None,
         duration: Optional[float] = None,
         usage: Optional[Dict[str, Any]] = None,
-        extra_info: Optional[Dict[str, Any]] = None,
+        extra_info: Optional[str] = None,
     ) -> str:
         """构建单次 LLM 交互的 Markdown section"""
         lines = [f"\n## {step_name}\n"]
@@ -238,7 +237,7 @@ class BaseToolExecutor(ABC):
         extra_info: Optional[str] = None,
     ) -> None:
         """
-        记录一次 LLM 交互到 prompts.md（线程安全，使用 asyncio.Lock）
+        记录一次 LLM 交互到 prompts.md（协程安全，使用 asyncio.Lock）
 
         :param step_name: 步骤名称，如 "故事大纲生成"
         :param model: 模型名称，如 "deepseek-v4-pro"
@@ -253,28 +252,32 @@ class BaseToolExecutor(ABC):
         if not self._tool_config.get('is_prompt_logging_enabled', False):
             return
 
-        async with self._prompts_lock:
-            works_dir = self.get_works_dir()
-            filepath = os.path.join(works_dir, 'prompts.md')
+        try:
+            async with self._prompts_lock:
+                works_dir = self.get_works_dir()
+                filepath = os.path.join(works_dir, 'prompts.md')
 
-            if not os.path.exists(filepath):
-                header = self._build_prompts_header()
-                async with aiofiles.open(filepath, 'w', encoding='utf-8') as f:
-                    await f.write(header)
+                if not os.path.exists(filepath):
+                    header = self._build_prompts_header()
+                    async with aiofiles.open(filepath, 'w', encoding='utf-8') as f:
+                        await f.write(header)
 
-            section = self._build_llm_section(
-                step_name=step_name,
-                model=model,
-                prompt=prompt,
-                response=response,
-                response_type=response_type,
-                system_prompt=system_prompt,
-                duration=duration,
-                usage=usage,
-                extra_info=extra_info,
-            )
-            async with aiofiles.open(filepath, 'a', encoding='utf-8') as f:
-                await f.write(section)
+                section = self._build_llm_section(
+                    step_name=step_name,
+                    model=model,
+                    prompt=prompt,
+                    response=response,
+                    response_type=response_type,
+                    system_prompt=system_prompt,
+                    duration=duration,
+                    usage=usage,
+                    extra_info=extra_info,
+                )
+                async with aiofiles.open(filepath, 'a', encoding='utf-8') as f:
+                    await f.write(section)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("记录 LLM 交互到 prompts.md 失败")
 
     async def _mock_execute(self) -> Dict[str, Any]:
         """Mock 执行模式：模拟完整的多步执行流程，不调用外部 AI API"""
