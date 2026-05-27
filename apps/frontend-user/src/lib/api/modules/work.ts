@@ -7,6 +7,7 @@ import type {
   Work,
   WorkShare,
   WorkFile,
+  WorkStatus,
   ListWorksParams,
   PaginatedResponse,
 } from '../types';
@@ -70,6 +71,20 @@ export const workApi = {
    */
   getWorkVersions: async (id: string): Promise<Work[]> => {
     return api.get<Work[]>(`/works/${id}/versions`);
+  },
+
+  /**
+   * 软删除成果
+   */
+  deleteWork: async (id: string): Promise<void> => {
+    return api.delete(`/works/${id}`);
+  },
+
+  /**
+   * 切换成果状态（published/draft）
+   */
+  updateWorkStatus: async (id: string, status: WorkStatus): Promise<Work> => {
+    return api.put<Work>(`/works/${id}/status`, null, { params: { status } });
   },
 };
 

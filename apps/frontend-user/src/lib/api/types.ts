@@ -13,6 +13,12 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   page_size: number;
+  stats?: {
+    total: number;
+    published_count: number;
+    total_views: number;
+    avg_version: number;
+  };
 }
 
 // 通用API响应
@@ -251,7 +257,7 @@ export interface EstimateCostResponse {
 
 // ============== 成果相关类型 ==============
 
-export type WorkStatus = 'draft' | 'published' | 'archived';
+export type WorkStatus = 'draft' | 'published';
 
 export interface Work {
   id: UUID;
@@ -268,6 +274,15 @@ export interface Work {
   view_count: number;
   like_count: number;
   share_count: number;
+  input_params?: Record<string, any>;
+  actual_cost?: number;
+  usage_modes?: string[];
+  tool_param_schema?: Array<{
+    key: string;
+    label: string;
+    type: string;
+    order: number;
+  }>;
   created_at: Timestamp;
   updated_at: Timestamp;
   // 前端扩展字段
@@ -509,8 +524,10 @@ export interface ListTasksParams {
 
 export interface ListWorksParams {
   status?: WorkStatus;
-  tool_id?: UUID;
-  is_public?: boolean;
+  category_id?: UUID;
+  search?: string;
+  date_from?: Timestamp;
+  date_to?: Timestamp;
   page?: number;
   page_size?: number;
 }
