@@ -31,8 +31,6 @@ class JSONType(TypeDecorator):
     def process_result_value(self, value, dialect):
         if value is None:
             return None
-        if dialect.name == 'postgresql':
-            return value
         if isinstance(value, str):
             try:
                 return json.loads(value)
