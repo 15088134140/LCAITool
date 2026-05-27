@@ -4,10 +4,14 @@
 """
 import asyncio
 import os
+import time
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, Callable, Awaitable
+
+import aiofiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.services.task_service import TaskService
@@ -152,6 +156,125 @@ class BaseToolExecutor(ABC):
         os.makedirs(os.path.join(works_dir, 'images'), exist_ok=True)
         os.makedirs(os.path.join(works_dir, 'audio'), exist_ok=True)
         return works_dir
+
+    def _build_prompts_header(self) -> str:
+        """构建 prompts.md 文件头"""
+        now = datetime.now(timezone.utc).astimezone().strftime('%Y-%m-%d %H:%M:%S')
+        return (
+            "# 提示词记录\n\n"
+            f"任务：{str(self.task_id)}\n"
+            f"执行时间：{now}\n\n"
+            "---\n"
+        )
+
+    def _build_llm_section(
+        self,
+        step_name: str,
+        model: str,
+        prompt: str,
+        response: Any,
+        response_type: str = "text",
+        system_prompt: Optional[str] = None,
+        duration: Optional[float] = None,
+        usage: Optional[Dict[str, Any]] = None,
+        extra_info: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """构建单次 LLM 交互的 Markdown section"""
+        lines = [f"\n## {step_name}\n"]
+        lines.append(f"- **模型**: {model}")
+        if duration is not None:
+            lines.append(f"- **耗时**: {duration:.1f}s")
+        if usage and 'input' in usage:
+            input_tokens = usage.get('input', '?')
+            output_tokens = usage.get('output', '?')
+            lines.append(f"- **Token数**: 输入 {input_tokens} / 输出 {output_tokens}")
+        if response_type != "text":
+            lines.append(f"- **类型**: {'图片' if response_type == 'image' else '音频'}")
+        if extra_info:
+            lines.append(f"- **{extra_info}**")
+        lines.append("")
+
+        if system_prompt:
+            lines.append("### System Prompt\n")
+            lines.append(system_prompt)
+            lines.append("")
+
+        if response_type == "text":
+            if system_prompt:
+                lines.append("### User Prompt\n")
+            else:
+                lines.append("### Prompt\n")
+            lines.append(prompt)
+            lines.append("")
+            lines.append("### Response\n")
+            response_text = response.content if hasattr(response, 'content') else str(response)
+            lines.append(response_text)
+        elif response_type == "image":
+            lines.append("### Prompt\n")
+            lines.append(prompt)
+            lines.append("")
+            lines.append("### Response\n")
+            lines.append("（响应内容为图片数据，不记录）")
+        elif response_type == "audio":
+            lines.append("### Text\n")
+            lines.append(prompt)
+            lines.append("")
+            lines.append("### Response\n")
+            lines.append("（响应内容为音频数据，不记录）")
+
+        lines.append("\n---")
+        return "\n".join(lines)
+
+    async def _record_llm_interaction(
+        self,
+        step_name: str,
+        model: str,
+        prompt: str,
+        response: Any,
+        response_type: str = "text",
+        system_prompt: Optional[str] = None,
+        duration: Optional[float] = None,
+        usage: Optional[Dict[str, Any]] = None,
+        extra_info: Optional[str] = None,
+    ) -> None:
+        """
+        记录一次 LLM 交互到 prompts.md（线程安全，使用 asyncio.Lock）
+
+        :param step_name: 步骤名称，如 "故事大纲生成"
+        :param model: 模型名称，如 "deepseek-v4-pro"
+        :param prompt: 发送给模型的提示词文本
+        :param response: 模型响应
+        :param response_type: "text" | "image" | "audio"
+        :param system_prompt: 可选的 system prompt
+        :param duration: 调用耗时（秒）
+        :param usage: Token 用量 {"input": N, "output": N}
+        :param extra_info: 额外信息字符串，如 "第 3/5 张图片"
+        """
+        if not self._tool_config.get('is_prompt_logging_enabled', False):
+            return
+
+        async with self._prompts_lock:
+            works_dir = self.get_works_dir()
+            filepath = os.path.join(works_dir, 'prompts.md')
+
+            if not os.path.exists(filepath):
+                header = self._build_prompts_header()
+                async with aiofiles.open(filepath, 'w', encoding='utf-8') as f:
+                    await f.write(header)
+
+            section = self._build_llm_section(
+                step_name=step_name,
+                model=model,
+                prompt=prompt,
+                response=response,
+                response_type=response_type,
+                system_prompt=system_prompt,
+                duration=duration,
+                usage=usage,
+                extra_info=extra_info,
+            )
+            async with aiofiles.open(filepath, 'a', encoding='utf-8') as f:
+                await f.write(section)
 
     async def _mock_execute(self) -> Dict[str, Any]:
         """Mock 执行模式：模拟完整的多步执行流程，不调用外部 AI API"""
