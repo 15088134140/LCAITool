@@ -7,7 +7,6 @@ Celery Worker 接收到任务后，直接转交给外部平台（或模拟外部
 import json
 import uuid
 import asyncio
-import time
 from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
