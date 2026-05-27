@@ -659,6 +659,9 @@ class StorybookExecutor(BaseToolExecutor):
         if first_image_file:
             work.cover_image = f"/api/v1/files/works/{first_image_file.id}"
 
+        # 注册 prompts.md 为 WorkFile（如果存在）
+        await self._register_prompts_md_workfile(work.id)
+
         await self.db.commit()
 
         return work

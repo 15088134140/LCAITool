@@ -217,5 +217,8 @@ class EcommerceExecutor(BaseToolExecutor):
             )
             self.db.add(WorkFile(**img_file_in.model_dump()))
 
+        # 注册 prompts.md 为 WorkFile（如果存在）
+        await self._register_prompts_md_workfile(work.id)
+
         await self.db.commit()
         return work

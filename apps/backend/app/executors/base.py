@@ -163,6 +163,24 @@ class BaseToolExecutor(ABC):
         os.makedirs(os.path.join(works_dir, 'audio'), exist_ok=True)
         return works_dir
 
+    async def _register_prompts_md_workfile(self, work_id: uuid.UUID) -> None:
+        """如果 prompts.md 存在，将其注册为 WorkFile，使成果详情可见"""
+        prompts_path = os.path.join(self.get_works_dir(), 'prompts.md')
+        if not os.path.exists(prompts_path):
+            return
+        file_size = os.path.getsize(prompts_path)
+        from app.models.task import WorkFile
+        from app.schemas.task import WorkFileCreate
+        wf = WorkFile(**WorkFileCreate(
+            work_id=work_id,
+            file_name="prompts.md",
+            file_url="prompts.md",
+            file_type="other",
+            file_size=file_size,
+            mime_type="text/markdown",
+        ).model_dump())
+        self.db.add(wf)
+
     def _build_prompts_header(self) -> str:
         """构建 prompts.md 文件头"""
         now = datetime.now(timezone.utc).astimezone().strftime('%Y-%m-%d %H:%M:%S')
@@ -463,6 +481,9 @@ class BaseToolExecutor(ABC):
             file_type="pdf",
             mime_type="application/pdf",
         ).model_dump()))
+
+        # 注册 prompts.md 为 WorkFile（如果存在）
+        await self._register_prompts_md_workfile(work.id)
 
         await self.db.commit()
 

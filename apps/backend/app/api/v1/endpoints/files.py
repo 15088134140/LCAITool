@@ -64,6 +64,10 @@ async def get_work_file(
     }
     media_type = media_type_map.get(work_file.file_type, "application/octet-stream")
 
+    # .md 文件返回 text/markdown 以便浏览器正确渲染
+    if work_file.file_name and work_file.file_name.endswith('.md'):
+        media_type = "text/markdown; charset=utf-8"
+
     # ZIP 文件设置下载头
     headers = {}
     if work_file.file_type == "other" and work_file.file_name.endswith(".zip"):
