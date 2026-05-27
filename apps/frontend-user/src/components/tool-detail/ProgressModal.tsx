@@ -270,6 +270,8 @@ export function ProgressModal({
 
   // Handle download all (dynamic zip from server)
   const handleDownloadAll = async () => {
+    if (downloading) return;
+    setDownloading(true);
     try {
       // 优先使用服务端动态打包接口
       const token = tokenStorage.getToken();
@@ -300,6 +302,8 @@ export function ProgressModal({
           await handleDownload(firstFile);
         }
       }
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -442,7 +446,7 @@ export function ProgressModal({
                   {step.name}
                 </span>
                 {step.subProgress && (
-                  <span className="text-xs text-[#475569] font-medium">{step.subProgress}</span>
+                  <span className="text-[#475569] font-medium">{step.subProgress}</span>
                 )}
               </div>
             </div>

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/lib/toast';
 import { workApi } from '@/lib/api/modules/work';
 import { tokenStorage } from '@/lib/api/client';
-import { getFirstImage } from '@/lib/utils/image';
+import { getFirstImage, getFileUrl, isRelativePath } from '@/lib/utils/image';
 import type { Work, WorkFile, Work as WorkVersion } from '@/lib/api/types';
 import RatingModal from '@/components/rating/RatingModal';
 
@@ -115,6 +115,7 @@ export default function WorkDetailPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const taskType = work?.task_type?.toLowerCase() || '';
   const toolInfo = taskType === 'storybook-generator' ? toolConfig.storybook :
@@ -123,6 +124,14 @@ export default function WorkDetailPage() {
                    toolConfig.default;
 
   const previewImages = files.filter(f => f.file_type === 'image' && f.file_url && f.file_url !== '#');
+
+  // 封面图：优先用 cover_image（新数据为完整API路径），否则用第一张预览图
+  const coverUrl = (() => {
+    const cover = getFirstImage(work?.cover_image);
+    if (cover && !isRelativePath(cover)) return cover;
+    if (previewImages.length > 0) return getFileUrl(previewImages[0]!);
+    return null;
+  })();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -181,6 +190,11 @@ export default function WorkDetailPage() {
 
   // 处理下载全部（动态打包 ZIP）
   const handleDownloadAll = async () => {
+    if (downloading) {
+      toast.info('正在打包下载中，请稍候...');
+      return;
+    }
+    setDownloading(true);
     try {
       const token = tokenStorage.getToken();
       const response = await fetch(
@@ -203,6 +217,8 @@ export default function WorkDetailPage() {
       for (const file of files) {
         await handleDownload(file);
       }
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -259,9 +275,9 @@ export default function WorkDetailPage() {
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Cover Banner */}
       <div className="relative h-80 lg:h-96 bg-gradient-to-br from-brand-dark to-brand-light overflow-hidden">
-        {getFirstImage(work.cover_image) ? (
+        {coverUrl ? (
           <img
-            src={getFirstImage(work.cover_image)!}
+            src={coverUrl}
             alt={work.title}
             className="w-full h-full object-cover opacity-50"
           />
@@ -290,8 +306,8 @@ export default function WorkDetailPage() {
               {/* Thumbnail */}
               <div className="flex-shrink-0 -mt-20 lg:-mt-24">
                 <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-brand-dark to-brand-light">
-                  {getFirstImage(work.cover_image) ? (
-                    <img src={getFirstImage(work.cover_image)!} alt={work.title} className="w-full h-full object-cover" />
+                  {coverUrl ? (
+                    <img src={coverUrl} alt={work.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl">
                       {toolInfo.icon}
@@ -354,12 +370,13 @@ export default function WorkDetailPage() {
                     </button>
                     <button
                       onClick={handleDownloadAll}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium bg-white text-[#1E3A5F] border border-[#E4E7EB] hover:border-brand-dark hover:text-brand-dark transition-all"
+                      disabled={downloading}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium bg-white text-[#1E3A5F] border border-[#E4E7EB] hover:border-brand-dark hover:text-brand-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className={`w-5 h-5 ${downloading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                      下载全部
+                      {downloading ? '下载中...' : '下载全部'}
                     </button>
                   </div>
                 </div>
@@ -470,10 +487,10 @@ export default function WorkDetailPage() {
                     {/* Main Preview */}
                     <div
                       className="aspect-video bg-[#F8FAFC] rounded-xl overflow-hidden cursor-pointer"
-                      onClick={() => setSelectedImage(previewImages[0]!.file_url)}
+                      onClick={() => setSelectedImage(getFileUrl(previewImages[0]!))}
                     >
                       <img
-                        src={previewImages[0]!.file_url}
+                        src={getFileUrl(previewImages[0]!)}
                         alt={previewImages[0]!.file_name}
                         className="w-full h-full object-contain"
                       />
@@ -485,12 +502,12 @@ export default function WorkDetailPage() {
                         {previewImages.map((file) => (
                           <button
                             key={file.id}
-                            onClick={() => setSelectedImage(file.file_url)}
+                            onClick={() => setSelectedImage(getFileUrl(file))}
                             className="aspect-square bg-[#F8FAFC] rounded-lg overflow-hidden border-2 border-transparent hover:border-brand-light transition-colors"
                           >
                             {file.file_url && file.file_url !== '#' && (
                               <img
-                                src={file.file_url}
+                                src={getFileUrl(file)}
                                 alt={file.file_name}
                                 className="w-full h-full object-cover"
                               />
@@ -558,7 +575,7 @@ export default function WorkDetailPage() {
                       </div>
                       {file.file_type === 'image' && file.file_url && file.file_url !== '#' && (
                         <button
-                          onClick={() => setSelectedImage(file.file_url)}
+                          onClick={() => setSelectedImage(getFileUrl(file))}
                           className="px-4 py-2 text-sm font-medium text-brand-light hover:bg-blue-50 rounded-lg transition-colors"
                         >
                           查看

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { toolApi } from '@/lib/api/modules/tool';
-import { getFirstImage } from '@/lib/utils/image';
+import { getFirstImage, resolveApiUrl } from '@/lib/utils/image';
 
 const formatRelativeTime = (timestamp: number | string | null | undefined): string => {
   if (!timestamp) return '未知';
@@ -103,7 +103,7 @@ export default function FavoritesPage() {
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {favorites.map((fav: any) => {
-                const coverImage = getFirstImage(fav.cover_image);
+                const coverImage = resolveApiUrl(getFirstImage(fav.cover_image));
                 return (
                   <div key={fav.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden card-hover" style={{ transition: 'all 0.25s ease-out' }}>
                     <div className="p-5">

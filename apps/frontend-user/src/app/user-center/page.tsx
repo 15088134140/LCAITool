@@ -10,7 +10,7 @@ import { toolApi } from '@/lib/api/modules/tool';
 import { taskApi } from '@/lib/api/modules/task';
 import { workApi } from '@/lib/api/modules/work';
 import ratingApi from '@/lib/api/modules/rating';
-import { getFirstImage } from '@/lib/utils/image';
+import { getFirstImage, resolveApiUrl } from '@/lib/utils/image';
 import { API_BASE_URL, tokenStorage } from '@/lib/api/client';
 import CheckinModal from '@/components/checkin/CheckinModal';
 import InvitePanel from '@/components/invite/InvitePanel';
@@ -56,6 +56,7 @@ export default function UserCenterPage() {
   const [ratedTasks, setRatedTasks] = useState<Set<string>>(new Set());
   const [viewRating, setViewRating] = useState<ToolRating | null>(null);
   const [viewingTaskId, setViewingTaskId] = useState<string | null>(null);
+  const [downloadingWorkId, setDownloadingWorkId] = useState<string | null>(null);
 
   useEffect(() => {
     // Zustand v5 persist 异步从 localStorage 恢复状态
@@ -142,6 +143,11 @@ export default function UserCenterPage() {
 
   // 下载作品 ZIP（带 Token 认证）
   const handleDownloadWork = async (workId: string) => {
+    if (downloadingWorkId) {
+      toast.info('请等待当前下载完成');
+      return;
+    }
+    setDownloadingWorkId(workId);
     try {
       const token = tokenStorage.getToken();
       const response = await fetch(
@@ -160,6 +166,8 @@ export default function UserCenterPage() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('下载失败:', err);
+    } finally {
+      setDownloadingWorkId(null);
     }
   };
 
@@ -637,7 +645,7 @@ export default function UserCenterPage() {
               ) : latestWorks.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {latestWorks.map(work => {
-                    const coverImage = getFirstImage(work.cover_image);
+                    const coverImage = resolveApiUrl(getFirstImage(work.cover_image));
                     return (
                       <div key={work.id} className="card-hover rounded-xl border border-gray-200 overflow-hidden group" style={{ transition: 'all 0.25s ease-out' }}>
                         <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
@@ -645,9 +653,11 @@ export default function UserCenterPage() {
                             {coverImage ? (
                               <img src={coverImage} alt={work.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                <svg className="w-14 h-14 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="1.5" />
+                                  <circle cx="8.5" cy="8.5" r="1.5" strokeWidth="1.5" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 15l-5-5L5 21" />
                                 </svg>
                               </div>
                             )}
@@ -674,8 +684,8 @@ export default function UserCenterPage() {
                                 评价
                               </button>
                             )}
-                            <button onClick={() => handleDownloadWork(work.id)} className="px-3 py-1.5 bg-[#059669] text-white rounded-lg text-xs font-medium hover:bg-[#047857]">
-                              下载
+                            <button onClick={() => handleDownloadWork(work.id)} disabled={downloadingWorkId === work.id} className="px-3 py-1.5 bg-[#059669] text-white rounded-lg text-xs font-medium hover:bg-[#047857] disabled:opacity-50 disabled:cursor-not-allowed">
+                              {downloadingWorkId === work.id ? '下载中...' : '下载'}
                             </button>
                           </div>
                         </div>
@@ -707,7 +717,7 @@ export default function UserCenterPage() {
               ) : recentTools.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {recentTools.map(tool => {
-                    const coverImage = getFirstImage(tool.cover_image);
+                    const coverImage = resolveApiUrl(getFirstImage(tool.cover_image));
                     return (
                       <div key={tool.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all group">
                         <div className="flex items-center gap-3 mb-3">
@@ -851,7 +861,7 @@ function FavoritesPreview() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {favorites.map((fav: any) => {
-        const coverImage = getFirstImage(fav.cover_image);
+        const coverImage = resolveApiUrl(getFirstImage(fav.cover_image));
         return (
           <div key={fav.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-pink-200 hover:shadow-md transition-all group">
             <div className="flex items-center gap-3 mb-3">
