@@ -360,6 +360,16 @@ class BaseToolExecutor(ABC):
             step_index=6, total_steps=TOTAL_STEPS, step_status='completed',
         )
 
+        # Mock 模式下如果有提示词记录开关，写入说明
+        if self._tool_config.get('is_prompt_logging_enabled', False):
+            await self._record_llm_interaction(
+                step_name="模拟执行说明",
+                model="mock",
+                prompt="（模拟执行模式，未实际调用 AI）",
+                response=type('obj', (object,), {'content': '此任务使用模拟数据执行，不涉及真实 AI 调用。如需真实记录，请关闭 Mock 执行模式。'})(),
+                response_type="text",
+            )
+
         # ── 创建成果记录和文件 ──
         works_dir = settings.WORKS_DIR
         task_dir = os.path.join(works_dir, str(self.task_id))

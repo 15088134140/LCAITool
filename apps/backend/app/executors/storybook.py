@@ -20,6 +20,7 @@ import json
 import math
 import os
 import re
+import time
 import struct
 import uuid
 import wave
@@ -256,10 +257,24 @@ class StorybookExecutor(BaseToolExecutor):
         else:
             user_prompt = f"请根据主题「{theme}」为{target_age}岁的儿童写一个短故事。"
 
+        _t0 = time.time()
         response = await self.deepseek_provider.generate_text(
             prompt=user_prompt,
             system_prompt=system_prompt,
             thinking=True
+        )
+        _t1 = time.time()
+
+        await self._record_llm_interaction(
+            step_name="故事大纲生成",
+            model="deepseek-v4-pro",
+            prompt=user_prompt,
+            system_prompt=system_prompt,
+            response=response,
+            response_type="text",
+            duration=_t1 - _t0,
+            usage={"input": response.usage.input_tokens, "output": response.usage.output_tokens}
+                if response.usage else None,
         )
 
         if not response.success:
@@ -308,10 +323,24 @@ class StorybookExecutor(BaseToolExecutor):
             f"绘画风格：{art_style}"
         )
 
+        _t0 = time.time()
         response = await self.deepseek_provider.generate_text(
             prompt=user_prompt,
             system_prompt=system_prompt,
             thinking=False
+        )
+        _t1 = time.time()
+
+        await self._record_llm_interaction(
+            step_name="插画提示词生成",
+            model="deepseek-v4-flash",
+            prompt=user_prompt,
+            system_prompt=system_prompt,
+            response=response,
+            response_type="text",
+            duration=_t1 - _t0,
+            usage={"input": response.usage.input_tokens, "output": response.usage.output_tokens}
+                if response.usage else None,
         )
 
         if not response.success:
@@ -355,9 +384,21 @@ class StorybookExecutor(BaseToolExecutor):
                         page['image_generated'] = False
                         return page
 
+                    _t0 = time.time()
                     response = await self.doubao_provider.generate_image(
                         prompt=prompt,
                         size="1920x1920"
+                    )
+                    _t1 = time.time()
+
+                    await self._record_llm_interaction(
+                        step_name="批量插画生成",
+                        model="doubao-seedream-4.5",
+                        prompt=prompt,
+                        response=response,
+                        response_type="image",
+                        duration=_t1 - _t0,
+                        extra_info=f"第 {index + 1}/{total_pages} 张",
                     )
 
                     if response.success and response.content:
@@ -422,9 +463,21 @@ class StorybookExecutor(BaseToolExecutor):
                         page['audio_generated'] = False
                         return page
 
+                    _t0 = time.time()
                     response = await self.zhipu_provider.generate_audio(
                         text=text,
                         voice=voice
+                    )
+                    _t1 = time.time()
+
+                    await self._record_llm_interaction(
+                        step_name="语音合成",
+                        model="zhipu-glm-tts",
+                        prompt=text,
+                        response=response,
+                        response_type="audio",
+                        duration=_t1 - _t0,
+                        extra_info=f"第 {index + 1}/{total_pages} 段",
                     )
 
                     if response.success and response.content:
