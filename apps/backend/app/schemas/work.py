@@ -10,7 +10,7 @@ class WorkBase(BaseModel):
     description: Optional[str] = Field(None, description="描述")
     tool_id: Optional[uuid.UUID] = Field(None, description="工具ID")
     cover_image: Optional[str] = Field(None, max_length=255, description="封面图片URL")
-    status: Optional[str] = Field("draft", max_length=20, description="状态：draft published archived")
+    status: Optional[str] = Field("draft", max_length=20, description="状态：draft published")
     is_public: Optional[bool] = Field(False, description="是否公开")
 
 
@@ -48,7 +48,7 @@ class WorkInDBBase(WorkBase):
 
 class Work(WorkInDBBase):
     """成果信息（对外）"""
-    pass
+    usage_modes: List[str] = Field(default_factory=list, description="工具使用模式")
 
 
 class WorkDetail(WorkInDBBase):
@@ -56,6 +56,10 @@ class WorkDetail(WorkInDBBase):
     files: List["WorkFile"] = Field(default_factory=list, description="文件列表")
     shares: List["WorkShare"] = Field(default_factory=list, description="分享记录列表")
     has_download_permission: Optional[bool] = Field(None, description="当前用户是否有下载权限")
+    input_params: Optional[Dict[str, Any]] = Field(None, description="任务输入参数")
+    tool_param_schema: Optional[Any] = Field(None, description="工具参数字段映射，按 order 排序")
+    usage_modes: List[str] = Field(default_factory=list, description="工具使用模式，用于前端判断是否显示继续优化")
+    actual_cost: Optional[int] = Field(None, description="实际消耗积分")
 
 
 # ============ WorkFile Schemas ============
@@ -125,13 +129,23 @@ class WorkShare(WorkShareInDBBase):
 
 # ============ Work List Query Schemas ============
 
+class WorkStats(BaseModel):
+    """成果列表统计信息"""
+    total: int = Field(0, description="总作品数")
+    published_count: int = Field(0, description="已发布数")
+    total_views: int = Field(0, description="总浏览数")
+    avg_version: float = Field(0.0, description="平均版本")
+
+
 class WorkListQuery(BaseModel):
     """成果列表查询参数"""
-    status: Optional[str] = Field(None, description="状态筛选")
-    tool_id: Optional[uuid.UUID] = Field(None, description="工具ID筛选")
-    is_public: Optional[bool] = Field(None, description="是否公开筛选")
-    skip: int = Field(0, ge=0, description="跳过数量")
-    limit: int = Field(20, ge=1, le=100, description="每页数量")
+    status: Optional[str] = Field(None, description="状态筛选：published, draft")
+    category_id: Optional[uuid.UUID] = Field(None, description="工具分类ID筛选")
+    search: Optional[str] = Field(None, max_length=255, description="按名称搜索")
+    date_from: Optional[int] = Field(None, description="时间范围起始（时间戳）")
+    date_to: Optional[int] = Field(None, description="时间范围结束（时间戳）")
+    page: int = Field(1, ge=1, description="页码")
+    page_size: int = Field(12, ge=1, le=100, description="每页数量")
 
 
 # ============ Iteration Create Schema ============
