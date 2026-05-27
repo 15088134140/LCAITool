@@ -531,35 +531,23 @@ export default function WorkDetailPage() {
                     {files.some(f => f.file_type === 'audio') && (
                       <div className="mt-8 p-5 lg:p-6 bg-[#F8FAFC] rounded-xl">
                         <h3 className="text-sm font-semibold text-[#1E3A5F] mb-3">🎧 音频</h3>
-                        {files.filter(f => f.file_type === 'audio').map(file => {
-                          const audioRef = `audio-${file.id}`;
-                          return (
-                            <div key={file.id} className="flex items-center gap-3 lg:gap-4 p-3 lg:p-4 bg-white rounded-lg mb-2 last:mb-0">
-                              <div className="w-10 h-10 rounded-lg bg-green-50 text-success-dark flex items-center justify-center flex-shrink-0">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 18V5l12-2v13M9 18c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                </svg>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-[#1F2937] truncate">{file.file_name}</p>
-                                <p className="text-xs text-[#94A3B8]">{formatFileSize(file.file_size)}{file.duration && ` · ${formatDuration(file.duration)}`}</p>
-                              </div>
-                              <div className="hidden lg:block w-32 h-8 rounded bg-gradient-to-r from-success-dark to-success-light opacity-20 relative overflow-hidden" />
-                              <audio id={audioRef} preload="none">
-                                <source src={getFileUrl(file)} type={file.mime_type || 'audio/wav'} />
-                              </audio>
-                              <button
-                                onClick={() => {
-                                  const el = document.getElementById(audioRef) as HTMLAudioElement;
-                                  if (el) el.play();
-                                }}
-                                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-success-dark to-success-light hover:shadow-md transition-all"
-                              >
-                                ▶ 播放
-                              </button>
+                        {files.filter(f => f.file_type === 'audio').map(file => (
+                          <div key={file.id} className="flex items-center gap-3 lg:gap-4 p-3 lg:p-4 bg-white rounded-lg mb-2 last:mb-0">
+                            {getFileIcon('audio')}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-[#1F2937] truncate">{file.file_name}</p>
+                              <p className="text-xs text-[#94A3B8]">{formatFileSize(file.file_size)}{file.duration && ` · ${formatDuration(file.duration)}`}</p>
                             </div>
-                          );
-                        })}
+                            <audio
+                              controls
+                              className="h-8 w-48"
+                              preload="none"
+                            >
+                              <source src={getFileUrl(file)} type={file.mime_type || 'audio/wav'} />
+                              您的浏览器不支持音频播放
+                            </audio>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
