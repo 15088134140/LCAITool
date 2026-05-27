@@ -548,54 +548,64 @@ class StorybookExecutor(BaseToolExecutor):
             tool_id=task.tool_id,
             title=outline.get('title', '有声绘本'),
             description=outline.get('story', outline.get('synopsis', '')),
-            cover_image=f"images/page_1.png" if pages else None,
+            cover_image=None,  # 先置空，flush 获取文件 ID 后再填充
             status="published",
             is_public=False,
             version=1
         )
         work = await WorkService.create_work(self.db, work_in)
 
+        # 收集所有新增的 WorkFile 对象，用于获取 ID 后更新 cover_image
+        first_image_file = None  # 记录第一张图片作为封面
+
         pdf_path = files.get('pdf_path')
         if pdf_path:
-            pdf_file_in = WorkFileCreate(
+            pdf_file = WorkFile(**WorkFileCreate(
                 work_id=work.id,
                 file_type="pdf",
                 file_name=f"{work.title}.pdf",
                 file_url="storybook.pdf",
                 file_size=files.get('pdf_size', 0),
                 mime_type="application/pdf"
-            )
-            self.db.add(WorkFile(**pdf_file_in.model_dump()))
+            ).model_dump())
+            self.db.add(pdf_file)
 
         for page in pages:
             page_num = page.get('page_number', 0) or (pages.index(page) + 1)
 
             image_url = page.get('image_url')
             if image_url:
-                img_file_in = WorkFileCreate(
+                img_file = WorkFile(**WorkFileCreate(
                     work_id=work.id,
                     file_type="image",
-                    file_name=f"page_{page_num}.png",
-                    file_url=f"images/page_{page_num}.png",
+                    file_name=f"page_{page_num:03d}.png",
+                    file_url=f"images/page_{page_num:03d}.png",
                     page_number=page_num,
                     mime_type="image/png"
-                )
-                self.db.add(WorkFile(**img_file_in.model_dump()))
+                ).model_dump())
+                self.db.add(img_file)
+                if first_image_file is None:
+                    first_image_file = img_file
 
             audio_url = page.get('audio_url')
             if audio_url:
                 # 根据扩展名判断 MIME 类型
                 mime_type = "audio/mpeg" if audio_url.endswith('.mp3') else "audio/wav"
                 ext = '.mp3' if audio_url.endswith('.mp3') else '.wav'
-                audio_file_in = WorkFileCreate(
+                self.db.add(WorkFile(**WorkFileCreate(
                     work_id=work.id,
                     file_type="audio",
-                    file_name=f"page_{page_num}{ext}",
-                    file_url=f"audio/page_{page_num}{ext}",
+                    file_name=f"page_{page_num:03d}{ext}",
+                    file_url=f"audio/page_{page_num:03d}{ext}",
                     page_number=page_num,
                     mime_type=mime_type
-                )
-                self.db.add(WorkFile(**audio_file_in.model_dump()))
+                ).model_dump()))
+
+        # flush 以获取自动生成的 ID，然后更新封面图
+        await self.db.flush()
+
+        if first_image_file:
+            work.cover_image = f"/api/v1/files/works/{first_image_file.id}"
 
         await self.db.commit()
 

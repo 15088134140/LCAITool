@@ -139,6 +139,57 @@ class WorkService:
         return work_detail
 
     @staticmethod
+    def _is_relative_path(url: Optional[str]) -> bool:
+        """判断 cover_image 是否为无法解析的相对路径"""
+        if not url:
+            return True
+        # 相对路径如 'images/page_1.png' 无法被前端 resolveApiUrl 解析
+        return not (url.startswith("http://") or url.startswith("https://") or url.startswith("/"))
+
+    @staticmethod
+    async def _fill_cover_images(db: AsyncSession, works: List[Work]) -> None:
+        """
+        为 cover_image 为空或为相对路径的成果自动填充 WorkFile 中的第一张图片
+
+        查询 WorkFile 中 file_type='image' 的第一张图（按 page_number 排序），
+        将 cover_image 设为 /api/v1/files/works/{file_id} 格式，前端 resolveApiUrl 可解析。
+
+        Args:
+            db: 数据库会话
+            works: 成果列表（会被就地修改）
+        """
+        # 找出 cover_image 为空或为相对路径的成果
+        need_fill = [w for w in works if WorkService._is_relative_path(w.cover_image)]
+        if not need_fill:
+            return
+
+        work_ids = [w.id for w in need_fill]
+        # 查询这些成果的第一张图片文件（按 page_number 排序），需要 id 构造 URL
+        sub = (
+            select(
+                WorkFile.work_id,
+                WorkFile.id,
+                func.row_number().over(
+                    partition_by=WorkFile.work_id,
+                    order_by=WorkFile.page_number.asc().nulls_last()
+                ).label("rn")
+            )
+            .where(
+                WorkFile.work_id.in_(work_ids),
+                WorkFile.file_type == "image"
+            )
+            .subquery()
+        )
+        stmt = select(sub.c.work_id, sub.c.id).where(sub.c.rn == 1)
+        result = await db.execute(stmt)
+        cover_map = {row.work_id: row.id for row in result}
+
+        # 就地填充为前端可解析的 API 路径
+        for w in need_fill:
+            if w.id in cover_map:
+                w.cover_image = f"/api/v1/files/works/{cover_map[w.id]}"
+
+    @staticmethod
     async def list_user_works(
         db: AsyncSession,
         user_id: uuid.UUID,
@@ -183,7 +234,10 @@ class WorkService:
             .limit(limit)
         )
         result = await db.execute(query)
-        works = result.scalars().all()
+        works = list(result.scalars().all())
+
+        # 自动填充 cover_image
+        await WorkService._fill_cover_images(db, works)
 
         return works, total
 
@@ -225,7 +279,10 @@ class WorkService:
             .limit(limit)
         )
         result = await db.execute(query)
-        works = result.scalars().all()
+        works = list(result.scalars().all())
+
+        # 自动填充 cover_image
+        await WorkService._fill_cover_images(db, works)
 
         return works, total
 
@@ -619,7 +676,9 @@ class WorkService:
             or_(Work.id == root_id, Work.parent_id == root_id, Work.id == current_work.id)
         ).order_by(Work.version)
         result = await db.execute(stmt)
-        return result.scalars().all()
+        versions = list(result.scalars().all())
+        await WorkService._fill_cover_images(db, versions)
+        return versions
 
     @staticmethod
     async def add_work_file(
