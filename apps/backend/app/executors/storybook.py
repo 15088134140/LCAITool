@@ -48,7 +48,7 @@ class StorybookExecutor(BaseToolExecutor):
         tool: Optional[Dict[str, Any]] = None,
         progress_callback=None
     ):
-        super().__init__(task_id, db, progress_callback)
+        super().__init__(task_id, db, tool=tool, progress_callback=progress_callback)
         self.deepseek_provider = None  # lazy init
         self.doubao_provider = None
         self.zhipu_provider = None

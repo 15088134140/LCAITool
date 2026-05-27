@@ -54,6 +54,10 @@ class Tool(BaseModel):
     rating_count = Column(Integer, default=0, nullable=False, comment="评价次数")
     rating_avg = Column(Numeric(2, 1), default=0.0, nullable=False, comment="平均评分")
     is_mock_enabled = Column(Boolean, default=False, nullable=False, comment="是否启用Mock执行模式")
+    is_prompt_logging_enabled = Column(
+        Boolean, default=False, nullable=False,
+        comment="是否记录提示词（prompt/response 会写入成果目录的 prompts.md，默认关闭以避免存量工具意外开启）"
+    )
     usage_modes = Column(JSONType, nullable=True, comment="使用模式，JSON数组：[\"form\", \"dialog\"]")
     param_schema = Column(JSONType, nullable=True, comment="参数字段映射，JSON数组：[{key, label, type, order}]")
 

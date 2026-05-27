@@ -359,6 +359,7 @@ async def _execute_with_async_session(
                         'audio_fee': tool.audio_fee,
                         'token_fee': tool.token_fee,
                         'is_mock_enabled': tool.is_mock_enabled,
+                        'is_prompt_logging_enabled': tool.is_prompt_logging_enabled,
                     }
 
             # 创建异步进度回调

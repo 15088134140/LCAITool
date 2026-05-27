@@ -59,6 +59,7 @@ class ToolBase(BaseModel):
     status: int = Field(1, description="状态：0下线 1上线 2维护中")
     is_featured: bool = Field(False, description="是否推荐展示在首页精品工具")
     is_mock_enabled: bool = Field(False, description="是否启用Mock执行模式")
+    is_prompt_logging_enabled: bool = Field(False, description="是否记录提示词")
     usage_modes: Optional[list[str]] = Field(default=None, description="使用模式，可选值 form/dialog")
     param_schema: Optional[Any] = Field(None, description="参数字段映射，JSON数组：[{key, label, type, order}]")
 
@@ -84,6 +85,7 @@ class ToolUpdate(BaseModel):
     status: Optional[int] = Field(None, description="状态：0下线 1上线 2维护中")
     is_featured: Optional[bool] = Field(None, description="是否推荐展示在首页精品工具")
     is_mock_enabled: Optional[bool] = Field(None, description="是否启用Mock执行模式")
+    is_prompt_logging_enabled: Optional[bool] = Field(None, description="是否记录提示词")
     usage_modes: Optional[list[str]] = Field(None, description="使用模式")
     param_schema: Optional[Any] = Field(None, description="参数字段映射，JSON数组：[{key, label, type, order}]")
 

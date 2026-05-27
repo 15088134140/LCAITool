@@ -31,18 +31,22 @@ class BaseToolExecutor(ABC):
         self,
         task_id: uuid.UUID,
         db: AsyncSession,
+        tool: Optional[Dict[str, Any]] = None,
         progress_callback: Optional[Callable[[int, str, Optional[Dict[str, Any]]], Awaitable[None]]] = None
     ):
         """
         初始化执行器
         :param task_id: 任务ID
         :param db: 数据库会话
+        :param tool: 工具配置字典
         :param progress_callback: 进度回调函数 (percent, message, data) -> None
         """
         self.task_id = task_id
         self.db = db
         self._snapshot: Optional[Dict[str, Any]] = None
         self._progress_callback = progress_callback
+        self._tool_config = tool or {}
+        self._prompts_lock = asyncio.Lock()
 
     @abstractmethod
     def estimate_cost(self, params: Dict[str, Any]) -> int:
