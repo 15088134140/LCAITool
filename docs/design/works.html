@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>创作成果列表 - 灵创AI工具箱</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+      background: #F8FAFC;
+      color: #1F2937;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block; }
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
+
+    /* ===== Color Tokens ===== */
+    :root {
+      --brand-dark: #1E3A5F;
+      --brand-light: #2563EB;
+      --success-dark: #059669;
+      --success-light: #10B981;
+      --border: #E4E7EB;
+      --text-primary: #1F2937;
+      --text-secondary: #64748B;
+      --text-muted: #94A3B8;
+      --bg-hover: #F8FAFC;
+      --shadow-sm: 0 1px 3px rgba(30, 58, 95, 0.08);
+      --shadow-md: 0 4px 12px rgba(30, 58, 95, 0.10);
+      --shadow-lg: 0 12px 32px rgba(30, 58, 95, 0.14);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    /* ===== Layout ===== */
+    .page-wrapper {
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* ===== Header ===== */
+    .page-header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    .page-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .page-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--brand-dark);
+      letter-spacing: -0.3px;
+    }
+    .page-header p {
+      font-size: 15px;
+      color: var(--text-secondary);
+    }
+    .btn-create {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--success-dark), var(--success-light));
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      border-radius: var(--radius-md);
+      transition: all 0.25s ease-out;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+    }
+    .btn-create:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(5, 150, 105, 0.35);
+    }
+    .btn-create svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ===== Filter Bar ===== */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .filter-group + .filter-group {
+      margin-left: auto;
+    }
+    .filter-chip {
+      padding: 7px 18px;
+      border-radius: 99px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border: 1.5px solid var(--border);
+      color: var(--text-secondary);
+      background: #fff;
+    }
+    .filter-chip:hover {
+      border-color: var(--brand-light);
+      color: var(--brand-light);
+    }
+    .filter-chip.active {
+      background: linear-gradient(135deg, var(--brand-dark), var(--brand-light));
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+    .filter-chip.danger.active {
+      background: #DC2626;
+      border-color: transparent;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 14px;
+      transition: border-color 0.2s;
+      min-width: 200px;
+    }
+    .search-box:focus-within {
+      border-color: var(--brand-light);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .search-box svg {
+      width: 18px;
+      height: 18px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .search-box input {
+      border: none;
+      outline: none;
+      padding: 9px 10px;
+      font-size: 14px;
+      font-family: inherit;
+      background: transparent;
+      width: 100%;
+      color: var(--text-primary);
+    }
+    .search-box input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .date-picker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .date-picker svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ===== Stats Summary ===== */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 32px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px 16px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-number {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .stat-number.blue { color: var(--brand-dark); }
+    .stat-number.green { color: var(--success-dark); }
+    .stat-number.emerald { color: var(--brand-light); }
+    .stat-number.amber { color: #D97706; }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ===== Card Grid ===== */
+    .works-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    /* ===== Work Card ===== */
+    .work-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all 0.25s ease-out;
+    }
+    .work-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(30, 58, 95, 0.12);
+    }
+    .work-card.draft {
+      opacity: 0.75;
+    }
+    .work-card.draft:hover {
+      opacity: 1;
+    }
+
+    .card-cover {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      background: linear-gradient(135deg, #E2E8F0, #F1F5F9);
+      overflow: hidden;
+    }
+    .card-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+    .work-card:hover .card-cover img {
+      transform: scale(1.05);
+    }
+    .card-cover .placeholder-icon {
+      width: 56px;
+      height: 56px;
+      color: #CBD5E1;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .card-badges {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .card-badge {
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      pointer-events: auto;
+    }
+    .card-badge.tool-type {
+      background: rgba(255,255,255,0.95);
+      color: var(--brand-dark);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .card-badge.tool-type.storybook { background: #EFF6FF; color: #1D4ED8; }
+    .card-badge.tool-type.ecommerce { background: #ECFDF5; color: #047857; }
+    .card-badge.tool-type.marketing { background: #FFFBEB; color: #B45309; }
+    .card-badge.status {
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .card-badge.status.published { background: #ECFDF5; color: #059669; }
+    .card-badge.status.draft { background: #FEF2F2; color: #DC2626; border: 1px solid rgba(220,38,38,0.2); }
+
+    .card-footer-badges {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .card-footer-badge {
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.92);
+      color: var(--brand-dark);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card-footer-badge svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .card-body {
+      padding: 18px 20px 16px;
+    }
+    .card-body .tool-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--brand-light);
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .card-body .tool-link:hover {
+      color: var(--brand-dark);
+    }
+    .card-body .tool-link svg {
+      width: 13px;
+      height: 13px;
+    }
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--brand-dark);
+      margin-bottom: 4px;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 14px;
+      min-height: 39px;
+    }
+    .card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-muted);
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .card-meta .time {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card-meta .time svg {
+      width: 14px;
+      height: 14px;
+    }
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .card-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .card-action-btn svg {
+      width: 15px;
+      height: 15px;
+    }
+    .card-action-btn.primary {
+      background: linear-gradient(135deg, var(--success-dark), var(--success-light));
+      color: #fff;
+    }
+    .card-action-btn.primary:hover {
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+    .card-action-btn.secondary {
+      background: #fff;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .card-action-btn.secondary:hover {
+      border-color: var(--brand-light);
+      color: var(--brand-light);
+    }
+    .card-action-btn.danger {
+      background: #fff;
+      color: #DC2626;
+      border: 1px solid #FECACA;
+    }
+    .card-action-btn.danger:hover {
+      background: #FEF2F2;
+      border-color: #FCA5A5;
+    }
+    .card-action-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .card-action-btn:disabled:hover {
+      box-shadow: none;
+    }
+
+    /* ===== Pagination ===== */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 36px;
+    }
+    .page-btn {
+      min-width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      background: #fff;
+      transition: all 0.2s;
+    }
+    .page-btn:hover:not(.active):not(.disabled) {
+      border-color: var(--brand-light);
+      color: var(--brand-light);
+    }
+    .page-btn.active {
+      background: linear-gradient(135deg, var(--brand-dark), var(--brand-light));
+      color: #fff;
+      border-color: transparent;
+    }
+    .page-btn.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .page-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+    .page-info {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0 12px;
+    }
+
+    /* ===== Modals ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(2px);
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-box {
+      background: #fff;
+      border-radius: var(--radius-xl);
+      width: 100%;
+      max-width: 440px;
+      padding: 28px;
+      box-shadow: var(--shadow-lg);
+      animation: modalIn 0.2s ease-out;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-box h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--brand-dark);
+      margin-bottom: 8px;
+    }
+    .modal-box p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .modal-btn {
+      padding: 10px 24px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .modal-btn.cancel {
+      background: #fff;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .modal-btn.cancel:hover {
+      border-color: var(--text-muted);
+    }
+    .modal-btn.confirm-danger {
+      background: #DC2626;
+      color: #fff;
+    }
+    .modal-btn.confirm-danger:hover {
+      background: #B91C1C;
+      box-shadow: 0 4px 12px rgba(220,38,38,0.3);
+    }
+    .modal-btn.confirm {
+      background: linear-gradient(135deg, var(--success-dark), var(--success-light));
+      color: #fff;
+    }
+    .modal-btn.confirm:hover {
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+
+    /* ===== Toast ===== */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-radius: var(--radius-md);
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      font-size: 14px;
+      font-weight: 500;
+      animation: toastIn 0.3s ease-out;
+      min-width: 280px;
+    }
+    .toast.success { border-left: 4px solid var(--success-dark); }
+    .toast.error { border-left: 4px solid #DC2626; }
+    .toast svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .toast.success svg { color: var(--success-dark); }
+    .toast.error svg { color: #DC2626; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+      text-align: center;
+      padding: 64px 24px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+    .empty-state .empty-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #E2E8F0, #F1F5F9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94A3B8;
+    }
+    .empty-state .empty-icon svg {
+      width: 40px;
+      height: 40px;
+    }
+    .empty-state h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--brand-dark);
+      margin-bottom: 8px;
+    }
+    .empty-state p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .page-wrapper { padding: 20px 16px; }
+      .page-header h1 { font-size: 24px; }
+      .works-grid { grid-template-columns: 1fr; }
+      .filter-group + .filter-group { margin-left: 0; }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .search-box { min-width: 0; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .modal-box { padding: 24px 20px; }
+    }
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .works-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+    }
+    .tooltip::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1F2937;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+    }
+    .tooltip:hover::after {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+  <div class="container">
+
+    <!-- ===== Header ===== -->
+    <div class="page-header">
+      <div class="page-header-top">
+        <div>
+          <h1>我的创作成果</h1>
+          <p>管理和查看您使用AI工具创建的所有作品</p>
+        </div>
+        <a href="#" class="btn-create">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          创建新作品
+        </a>
+      </div>
+    </div>
+
+    <!-- ===== Stats Bar ===== -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-card">
+        <div class="stat-number blue">24</div>
+        <div class="stat-label">总作品数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number green">18</div>
+        <div class="stat-label">已发布</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number emerald">356</div>
+        <div class="stat-label">总浏览</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number amber">1.8</div>
+        <div class="stat-label">平均版本</div>
+      </div>
+    </div>
+
+    <!-- ===== Filter Bar ===== -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <button class="filter-chip active" data-filter="all">全部</button>
+        <button class="filter-chip" data-filter="storybook">有声绘本</button>
+        <button class="filter-chip" data-filter="ecommerce">电商详情</button>
+        <button class="filter-chip" data-filter="marketing">营销文案</button>
+        <button class="filter-chip" data-filter="ai-chat">AI对话</button>
+        <button class="filter-chip" data-filter="logo">LOGO设计</button>
+      </div>
+      <div class="filter-group">
+        <button class="filter-chip active" data-status="all">全部状态</button>
+        <button class="filter-chip" data-status="published">已发布</button>
+        <button class="filter-chip" data-status="draft">草稿</button>
+      </div>
+      <div class="filter-group" style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="date-picker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>2026-01-01 → 2026-05-27</span>
+        </div>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="搜索成果名称..." id="searchInput">
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Works Grid ===== -->
+    <div class="works-grid" id="worksGrid">
+      <!-- Card 1: Storybook - Published -->
+      <div class="work-card" data-tool="storybook" data-status="published">
+        <div class="card-cover">
+          <img src="https://picsum.photos/seed/story1/640/400" alt="封面" loading="lazy">
+          <div class="card-badges">
+            <span class="card-badge tool-type storybook">📖 有声绘本</span>
+            <span class="card-badge status published">已发布</span>
+          </div>
+          <div class="card-footer-badges">
+            <span class="card-footer-badge">v2</span>
+            <span class="card-footer-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              8 文件
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="tool-link" onclick="event.stopPropagation();alert('跳转到工具详情')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            有声绘本生成器
+          </span>
+          <h3 class="card-title">小兔子的大冒险</h3>
+          <p class="card-desc">一只勇敢的小兔子在森林中探险，遇到了各种有趣的动物朋友，最终找到了传说中的彩虹花园。</p>
+          <div class="card-meta">
+            <span class="time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              3 天前
+            </span>
+            <span>35 积分</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-action-btn primary tooltip" data-tooltip="下载ZIP包" onclick="event.stopPropagation();showToast('success', '开始打包下载...')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载
+            </button>
+            <button class="card-action-btn secondary" onclick="event.stopPropagation();alert('跳转继续优化')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              继续优化
+            </button>
+            <button class="card-action-btn danger" onclick="event.stopPropagation();openDeleteModal('小兔子的大冒险')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Ecommerce - Draft -->
+      <div class="work-card draft" data-tool="ecommerce" data-status="draft">
+        <div class="card-cover">
+          <img src="https://picsum.photos/seed/ecom1/640/400" alt="封面" loading="lazy">
+          <div class="card-badges">
+            <span class="card-badge tool-type ecommerce">🛒 电商详情</span>
+            <span class="card-badge status draft">草稿</span>
+          </div>
+          <div class="card-footer-badges">
+            <span class="card-footer-badge">v1</span>
+            <span class="card-footer-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              4 文件
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="tool-link" onclick="event.stopPropagation();alert('跳转到工具详情')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            电商详情页生成器
+          </span>
+          <h3 class="card-title">有机绿茶礼盒装</h3>
+          <p class="card-desc">高山有机绿茶，精美礼盒装，适合送礼和自用。</p>
+          <div class="card-meta">
+            <span class="time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              1 周前
+            </span>
+            <span>18 积分</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-action-btn primary tooltip" data-tooltip="下载ZIP包" onclick="event.stopPropagation();showToast('success', '开始打包下载...')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载
+            </button>
+            <button class="card-action-btn danger" onclick="event.stopPropagation();openDeleteModal('有机绿茶礼盒装')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Marketing - Published -->
+      <div class="work-card" data-tool="marketing" data-status="published">
+        <div class="card-cover">
+          <div style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+            <svg class="placeholder-icon" style="width:64px;height:64px;color:#D97706;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
+          <div class="card-badges">
+            <span class="card-badge tool-type marketing">📝 营销文案</span>
+            <span class="card-badge status published">已发布</span>
+          </div>
+          <div class="card-footer-badges">
+            <span class="card-footer-badge">v3</span>
+            <span class="card-footer-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              2 文件
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="tool-link" onclick="event.stopPropagation();alert('跳转到工具详情')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            营销文案大师
+          </span>
+          <h3 class="card-title">夏季防晒霜全渠道营销方案</h3>
+          <p class="card-desc">针对夏季防晒霜产品的全渠道营销文案，包含小红书、抖音、公众号等多平台适配版本。</p>
+          <div class="card-meta">
+            <span class="time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              昨天
+            </span>
+            <span>8 积分</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-action-btn primary tooltip" data-tooltip="下载ZIP包" onclick="event.stopPropagation();showToast('success', '开始打包下载...')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载
+            </button>
+            <button class="card-action-btn secondary" onclick="event.stopPropagation();alert('跳转继续优化')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              继续优化
+            </button>
+            <button class="card-action-btn danger" onclick="event.stopPropagation();openDeleteModal('夏季防晒霜全渠道营销方案')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: AI Chat - Published (has 继续优化) -->
+      <div class="work-card" data-tool="ai-chat" data-status="published">
+        <div class="card-cover">
+          <img src="https://picsum.photos/seed/chat1/640/400" alt="封面" loading="lazy">
+          <div class="card-badges">
+            <span class="card-badge tool-type">💬 AI对话</span>
+            <span class="card-badge status published">已发布</span>
+          </div>
+          <div class="card-footer-badges">
+            <span class="card-footer-badge">v1</span>
+            <span class="card-footer-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              1 文件
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="tool-link" onclick="event.stopPropagation();alert('跳转到工具详情')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            AI对话助手
+          </span>
+          <h3 class="card-title">品牌定位咨询报告</h3>
+          <p class="card-desc">通过AI对话生成的新锐茶饮品牌定位分析报告，包含目标客群、竞品分析、差异化策略。</p>
+          <div class="card-meta">
+            <span class="time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              5 天前
+            </span>
+            <span>12 积分</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-action-btn primary tooltip" data-tooltip="下载ZIP包" onclick="event.stopPropagation();showToast('success', '开始打包下载...')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载
+            </button>
+            <button class="card-action-btn secondary" onclick="event.stopPropagation();alert('跳转继续优化')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              继续优化
+            </button>
+            <button class="card-action-btn danger" onclick="event.stopPropagation();openDeleteModal('品牌定位咨询报告')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5: Storybook - Published, no 继续优化 (纯form工具) -->
+      <div class="work-card" data-tool="storybook" data-status="published">
+        <div class="card-cover">
+          <img src="https://picsum.photos/seed/story2/640/400" alt="封面" loading="lazy">
+          <div class="card-badges">
+            <span class="card-badge tool-type storybook">📖 有声绘本</span>
+            <span class="card-badge status published">已发布</span>
+          </div>
+          <div class="card-footer-badges">
+            <span class="card-footer-badge">v1</span>
+            <span class="card-footer-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              6 文件
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="tool-link" onclick="event.stopPropagation();alert('跳转到工具详情')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            有声绘本生成器
+          </span>
+          <h3 class="card-title">星空下的约定</h3>
+          <p class="card-desc">两个小朋友在星空下许下友谊的约定，温暖治愈的成长故事。</p>
+          <div class="card-meta">
+            <span class="time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              2 周前
+            </span>
+            <span>35 积分</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-action-btn primary tooltip" data-tooltip="下载ZIP包" onclick="event.stopPropagation();showToast('success', '开始打包下载...')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载
+            </button>
+            <!-- 纯form工具不显示"继续优化"按钮 -->
+            <button class="card-action-btn danger" onclick="event.stopPropagation();openDeleteModal('星空下的约定')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 6: Marketing - Draft -->
+      <div class="work-card draft" data-tool="marketing" data-status="draft">
+        <div class="card-cover">
+          <img src="https://picsum.photos/seed/mkt1/640/400" alt="封面" loading="lazy">
+          <div class="card-badges">
+            <span class="card-badge tool-type marketing">📝 营销文案</span>
+            <span class="card-badge status draft">草稿</span>
+          </div>
+          <div class="card-footer-badges">
+            <span class="card-footer-badge">v1</span>
+            <span class="card-footer-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              1 文件
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="tool-link" onclick="event.stopPropagation();alert('跳转到工具详情')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            营销文案大师
+          </span>
+          <h3 class="card-title">新锐咖啡品牌上市推广</h3>
+          <p class="card-desc">针对Z世代的新锐即溶咖啡品牌推广文案（未完成）</p>
+          <div class="card-meta">
+            <span class="time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              3 天前
+            </span>
+            <span>8 积分</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-action-btn primary tooltip" data-tooltip="下载ZIP包" onclick="event.stopPropagation();showToast('success', '开始打包下载...')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载
+            </button>
+            <button class="card-action-btn secondary" onclick="event.stopPropagation();alert('跳转继续优化')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              继续优化
+            </button>
+            <button class="card-action-btn danger" onclick="event.stopPropagation();openDeleteModal('新锐咖啡品牌上市推广')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Pagination ===== -->
+    <div class="pagination">
+      <button class="page-btn disabled" onclick="alert('已是第一页')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="page-btn active">1</button>
+      <button class="page-btn" onclick="alert('翻到第2页')">2</button>
+      <button class="page-btn" onclick="alert('翻到第3页')">3</button>
+      <span class="page-info">共 4 页</span>
+      <button class="page-btn" onclick="alert('翻到第4页')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== Delete Confirmation Modal ===== -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <h3>确认删除</h3>
+    <p id="deleteModalText">确定要删除作品「<span id="deleteWorkName"></span>」吗？<br>删除后不可恢复，相关文件也会一并清除。</p>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeDeleteModal()">取消</button>
+      <button class="modal-btn confirm-danger" onclick="confirmDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Toast Container ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  // ===== Filter Logic =====
+  const filterChips = document.querySelectorAll('.filter-chip');
+  const statusChips = document.querySelectorAll('[data-status]');
+  const cards = document.querySelectorAll('.work-card');
+
+  function updateFilters() {
+    const activeFilter = document.querySelector('.filter-chip.active[data-filter]')?.dataset.filter || 'all';
+    const activeStatus = document.querySelector('.filter-chip.active[data-status]')?.dataset.status || 'all';
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+    cards.forEach(card => {
+      const tool = card.dataset.tool;
+      const status = card.dataset.status;
+      const title = card.querySelector('.card-title')?.textContent?.toLowerCase() || '';
+
+      const toolMatch = activeFilter === 'all' || tool === activeFilter;
+      const statusMatch = activeStatus === 'all' || status === activeStatus;
+      const searchMatch = !searchTerm || title.includes(searchTerm);
+
+      card.style.display = toolMatch && statusMatch && searchMatch ? 'block' : 'none';
+    });
+  }
+
+  filterChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const group = chip.hasAttribute('data-filter') ? '[data-filter]' : '[data-status]';
+      document.querySelectorAll(`.filter-chip${group}`).forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      updateFilters();
+    });
+  });
+
+  document.getElementById('searchInput').addEventListener('input', updateFilters);
+
+  // ===== Delete Modal =====
+  let deleteTargetName = '';
+
+  function openDeleteModal(name) {
+    deleteTargetName = name;
+    document.getElementById('deleteWorkName').textContent = name;
+    document.getElementById('deleteModal').classList.add('open');
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('open');
+  }
+
+  function confirmDelete() {
+    closeDeleteModal();
+    showToast('success', `已删除「${deleteTargetName}」`);
+  }
+
+  document.getElementById('deleteModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeDeleteModal();
+  });
+
+  // ===== Toast =====
+  function showToast(type, message) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    if (type === 'success') {
+      toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>${message}`;
+    } else {
+      toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>${message}`;
+    }
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(40px)';
+      toast.style.transition = 'all 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  // ===== Keyboard: ESC to close modal =====
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDeleteModal();
+  });
+</script>
+</body>
+</html>
