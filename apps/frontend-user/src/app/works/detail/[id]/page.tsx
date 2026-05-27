@@ -122,6 +122,7 @@ export default function WorkDetailPage() {
   const [viewRating, setViewRating] = useState<ToolRating | null>(null);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [bannerImgError, setBannerImgError] = useState(false);
 
   const taskType = work?.task_type?.toLowerCase() || '';
   const toolInfo = taskType === 'storybook-generator' ? toolConfig.storybook :
@@ -283,10 +284,11 @@ if (isLoading) {
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Cover Banner */}
       <div className="relative h-80 lg:h-96 bg-gradient-to-br from-brand-dark to-brand-light overflow-hidden">
-        {coverUrl ? (
+        {coverUrl && !bannerImgError ? (
           <img
             src={coverUrl}
             alt={work.title}
+            onError={() => setBannerImgError(true)}
             className="w-full h-full object-cover opacity-50"
           />
         ) : null}
@@ -294,15 +296,15 @@ if (isLoading) {
 
         {/* Back Button */}
         <div className="absolute top-4 left-4">
-          <Link
-            href="/works"
+          <button
+            onClick={() => router.back()}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-xl transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             返回
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -314,8 +316,8 @@ if (isLoading) {
               {/* Thumbnail */}
               <div className="flex-shrink-0 -mt-20 lg:-mt-[76px]">
                 <div className="w-32 h-32 lg:w-34 lg:h-34 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-brand-dark to-brand-light">
-                  {coverUrl ? (
-                    <img src={coverUrl} alt={work.title} className="w-full h-full object-cover" />
+                  {coverUrl && !bannerImgError ? (
+                    <img src={coverUrl} alt={work.title} onError={() => setBannerImgError(true)} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl">
                       {toolInfo.icon}

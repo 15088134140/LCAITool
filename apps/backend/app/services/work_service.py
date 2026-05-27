@@ -279,18 +279,33 @@ class WorkService:
         result = await db.execute(query)
         works = list(result.scalars().all())
 
-        # 批量加载 tool usage_modes（避免前端 N+1 查询每个 tool 的 usage_modes）
+        # 批量加载 tool 信息（name + usage_modes，避免前端 N+1 查询）
         tool_ids = list(set(w.tool_id for w in works if w.tool_id))
         if tool_ids:
             tool_result = await db.execute(
-                select(Tool.id, Tool.usage_modes).where(Tool.id.in_(tool_ids))
+                select(Tool.id, Tool.name, Tool.usage_modes).where(Tool.id.in_(tool_ids))
             )
-            usage_modes_map = {row.id: (row.usage_modes or []) for row in tool_result}
+            rows = tool_result.all()
+            tool_name_map = {row.id: row.name for row in rows}
+            usage_modes_map = {row.id: (row.usage_modes or []) for row in rows}
             for w in works:
+                w.tool_name = tool_name_map.get(w.tool_id, "")
                 w.usage_modes = usage_modes_map.get(w.tool_id, [])
 
         # 自动填充 cover_image
         await WorkService._fill_cover_images(db, works)
+
+        # 批量填充 file_count
+        work_ids = [w.id for w in works]
+        if work_ids:
+            count_result = await db.execute(
+                select(WorkFile.work_id, func.count(WorkFile.id).label("cnt"))
+                .where(WorkFile.work_id.in_(work_ids))
+                .group_by(WorkFile.work_id)
+            )
+            file_count_map = {row.work_id: row.cnt for row in count_result}
+            for w in works:
+                w.file_count = file_count_map.get(w.id, 0)
 
         return works, total
 

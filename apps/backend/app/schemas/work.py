@@ -49,6 +49,8 @@ class WorkInDBBase(WorkBase):
 class Work(WorkInDBBase):
     """成果信息（对外）"""
     usage_modes: List[str] = Field(default_factory=list, description="工具使用模式")
+    file_count: int = Field(0, description="关联文件数量")
+    tool_name: Optional[str] = Field(None, description="工具名称")
 
 
 class WorkDetail(WorkInDBBase):

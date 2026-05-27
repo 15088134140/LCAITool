@@ -113,6 +113,10 @@ const config: Config = {
           "33%": { transform: "translate(-60px, 80px) scale(1.2)" },
           "66%": { transform: "translate(80px, -40px) scale(0.85)" },
         },
+        slideInRight: {
+          from: { opacity: "0", transform: "translateX(40px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -120,6 +124,7 @@ const config: Config = {
         "blob-float-1": "blobFloat1 12s ease-in-out infinite",
         "blob-float-2": "blobFloat2 15s ease-in-out infinite",
         "blob-float-3": "blobFloat3 20s ease-in-out infinite",
+        "slide-in-right": "slideInRight 0.3s ease-out",
       },
     },
   },

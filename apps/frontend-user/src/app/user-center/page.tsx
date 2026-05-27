@@ -49,6 +49,7 @@ export default function UserCenterPage() {
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [dataLoading, setDataLoading] = useState(true);
   const [showCheckin, setShowCheckin] = useState(false);
+  const [imgErrors, setImgErrors] = useState<Set<string>>(new Set());
   const [showInvite, setShowInvite] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
@@ -650,8 +651,8 @@ export default function UserCenterPage() {
                       <div key={work.id} className="card-hover rounded-xl border border-gray-200 overflow-hidden group" style={{ transition: 'all 0.25s ease-out' }}>
                         <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                           <Link href={`/works/detail/${work.id}`} className="block w-full h-full">
-                            {coverImage ? (
-                              <img src={coverImage} alt={work.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            {coverImage && !imgErrors.has(work.id) ? (
+                              <img src={coverImage} alt={work.title || ''} onError={() => setImgErrors(prev => new Set(prev).add(work.id))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
                                 <svg className="w-14 h-14 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
