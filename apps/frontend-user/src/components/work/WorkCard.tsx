@@ -12,7 +12,13 @@ interface WorkCardProps {
     toolName?: string;
     coverImage?: string;
     fileCount?: number;
+    taskType?: string;
   };
+  hasDialogMode?: boolean;
+  onDownload?: (workId: string) => void;
+  onContinueOptimize?: (workId: string) => void;
+  onDelete?: (workId: string, title: string) => void;
+  onStatusToggle?: (workId: string, newStatus: 'published' | 'draft') => void;
 }
 
 const toolTypeMap: Record<string, { label: string; color: string; icon: string }> = {
@@ -22,7 +28,7 @@ const toolTypeMap: Record<string, { label: string; color: string; icon: string }
   'default': { label: '创作成果', color: 'bg-gray-100 text-gray-700', icon: '📁' }
 };
 
-export function WorkCard({ work }: WorkCardProps) {
+export function WorkCard({ work, hasDialogMode, onDownload, onContinueOptimize, onDelete }: WorkCardProps) {
   const getToolType = (taskType?: string) => {
     if (!taskType) return toolTypeMap['default']!;
     for (const [key, value] of Object.entries(toolTypeMap)) {
@@ -38,15 +44,13 @@ export function WorkCard({ work }: WorkCardProps) {
   const getStatusColor = () => {
     switch (work.status) {
       case 'published': return 'text-success-dark bg-green-50';
-      case 'archived': return 'text-gray-500 bg-gray-100';
-      default: return 'text-brand-light bg-blue-50';
+      default: return 'bg-red-50 text-red-600 border border-red-200';
     }
   };
 
   const getStatusLabel = () => {
     switch (work.status) {
       case 'published': return '已发布';
-      case 'archived': return '已归档';
       default: return '草稿';
     }
   };
@@ -69,7 +73,10 @@ export function WorkCard({ work }: WorkCardProps) {
       href={`/works/detail/${work.id}`}
       className="group block"
     >
-      <div className="tool-card card-hover overflow-hidden">
+      <div className={cn(
+        'tool-card card-hover overflow-hidden',
+        work.status === 'draft' && 'opacity-75 hover:opacity-100 transition-opacity duration-200'
+      )}>
         {/* Cover Image */}
         <div className="relative aspect-video bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
           {coverImageUrl ? (
@@ -90,12 +97,16 @@ export function WorkCard({ work }: WorkCardProps) {
 
           {/* Tool Type Badge */}
           <div className="absolute top-3 left-3">
-            <span className={cn(
-              'px-3 py-1 rounded-full text-xs font-semibold',
-              toolType.color
-            )}>
+            <Link
+              href={`/tools/${work.tool_id || ''}`}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'px-3 py-1 rounded-full text-xs font-semibold',
+                toolType.color
+              )}
+            >
               {toolType.label}
-            </span>
+            </Link>
           </div>
 
           {/* Status Badge */}
@@ -169,6 +180,49 @@ export function WorkCard({ work }: WorkCardProps) {
               )}
             </div>
           </div>
+        </div>
+
+        {/* 操作按钮区 */}
+        <div className="px-5 pb-4 pt-0 flex items-center gap-2 border-t border-[#E4E7EB] mt-4 pt-3">
+          {/* 下载 */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDownload?.(work.id);
+            }}
+            className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-[#059669] to-[#10B981] rounded-lg hover:shadow-md transition-all"
+          >
+            下载
+          </button>
+
+          {/* 继续优化（仅当 hasDialogMode 时显示） */}
+          {hasDialogMode && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onContinueOptimize?.(work.id);
+              }}
+              className="flex-1 px-3 py-1.5 text-xs font-medium text-[#1E3A5F] bg-[#F8FAFC] border border-[#E4E7EB] rounded-lg hover:bg-[#E4E7EB] transition-all"
+            >
+              继续优化
+            </button>
+          )}
+
+          {/* 删除 */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete?.(work.id, work.title);
+            }}
+            className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
         </div>
       </div>
     </Link>
