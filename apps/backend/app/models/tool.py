@@ -55,6 +55,7 @@ class Tool(BaseModel):
     rating_avg = Column(Numeric(2, 1), default=0.0, nullable=False, comment="平均评分")
     is_mock_enabled = Column(Boolean, default=False, nullable=False, comment="是否启用Mock执行模式")
     usage_modes = Column(JSONType, nullable=True, comment="使用模式，JSON数组：[\"form\", \"dialog\"]")
+    param_schema = Column(JSONType, nullable=True, comment="参数字段映射，JSON数组：[{key, label, type, order}]")
 
     category_obj = relationship("ToolCategory", back_populates="tools")
     favorites = relationship("ToolFavorite", back_populates="tool", cascade="all, delete-orphan")

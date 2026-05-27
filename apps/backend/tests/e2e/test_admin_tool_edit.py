@@ -148,3 +148,25 @@ class TestAdminToolEditUsageModes:
         print(f"  ✅ 工具名称字段: {has_name}")
         print(f"  ✅ slug 字段: {has_slug}")
         print(f"  ✅ 价格配置区块: {has_pricing}")
+
+    def test_edit_page_has_param_schema_section(self, admin_context):
+        """工具编辑页包含参数字段映射配置区块"""
+        page = admin_context
+        print("\n📌 [测试] 工具编辑页参数字段映射区块")
+
+        page.goto(f"{ADMIN_BASE_URL}/tools/storybook-generator/edit")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(1000)
+        take_screenshot(page, "05_param_schema_section", SCREENSHOTS_DIR)
+
+        page_text = page.content()
+
+        has_param_schema = "参数映射" in page_text or "param_schema" in page_text.lower()
+        has_section_title = "参数字段" in page_text
+        has_key_column = "key" in page_text.lower()
+        has_label_column = "label" in page_text.lower() or "字段名" in page_text
+
+        print(f"  ✅ 参数映射区块: {has_param_schema}")
+        print(f"  ✅ 参数字段标题: {has_section_title}")
+        print(f"  ✅ key 列: {has_key_column}")
+        print(f"  ✅ label 列: {has_label_column}")

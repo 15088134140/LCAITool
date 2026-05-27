@@ -163,6 +163,14 @@ async def seed_tools(db: AsyncSession):
             base_fee=20, image_fee=2, audio_fee=3, token_fee=0,
             status=1, use_count=128, favorite_count=45, rating_count=32, rating_avg=4.7,
             is_featured=True, usage_modes=["form"],
+            param_schema=json.dumps([
+                {"key": "theme", "label": "故事主题", "type": "text", "order": 1},
+                {"key": "style", "label": "绘画风格", "type": "text", "order": 2},
+                {"key": "page_count", "label": "页数", "type": "number", "order": 3},
+                {"key": "target_age", "label": "目标年龄", "type": "text", "order": 4},
+                {"key": "language", "label": "语言", "type": "text", "order": 5},
+                {"key": "prompt", "label": "提示词", "type": "textarea", "order": 6},
+            ]),
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000002"),
@@ -175,6 +183,13 @@ async def seed_tools(db: AsyncSession):
             status=1, use_count=96, favorite_count=32, rating_count=18, rating_avg=4.5,
             is_featured=True, usage_modes=["form"],
             cover_image="https://picsum.photos/seed/ecommerce1/600/400|https://picsum.photos/seed/ecommerce2/600/400|https://picsum.photos/seed/ecommerce3/600/400",
+            param_schema=json.dumps([
+                {"key": "product_name", "label": "商品名称", "type": "text", "order": 1},
+                {"key": "product_features", "label": "核心卖点", "type": "text", "order": 2},
+                {"key": "brand_style", "label": "品牌风格", "type": "text", "order": 3},
+                {"key": "target_audience", "label": "目标人群", "type": "text", "order": 4},
+                {"key": "image_count", "label": "详情图数量", "type": "number", "order": 5},
+            ]),
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000003"),
@@ -186,6 +201,13 @@ async def seed_tools(db: AsyncSession):
             base_fee=5, image_fee=0, audio_fee=0, token_fee=0,
             status=1, use_count=200, favorite_count=60, rating_count=45, rating_avg=4.6,
             is_featured=True, usage_modes=["form"],
+            param_schema=json.dumps([
+                {"key": "product_name", "label": "商品名称", "type": "text", "order": 1},
+                {"key": "keywords", "label": "关键词", "type": "text", "order": 2},
+                {"key": "platform", "label": "发布平台", "type": "text", "order": 3},
+                {"key": "tone", "label": "文案语气", "type": "text", "order": 4},
+                {"key": "output_count", "label": "生成版本数", "type": "number", "order": 5},
+            ]),
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000004"),
@@ -196,6 +218,11 @@ async def seed_tools(db: AsyncSession):
             tags=json.dumps(["图片", "修复", "高清", "增强"]),
             base_fee=3, image_fee=2, audio_fee=0, token_fee=0,
             status=1, use_count=320, favorite_count=88, rating_count=67, rating_avg=4.8,
+            is_featured=False,
+            param_schema=json.dumps([
+                {"key": "enhance_type", "label": "修复类型", "type": "text", "order": 1},
+                {"key": "scale_factor", "label": "放大倍数", "type": "number", "order": 2},
+            ]),
         ),
         Tool(
             id=uuid.UUID("20000001-0000-0000-0000-000000000005"),
@@ -206,6 +233,13 @@ async def seed_tools(db: AsyncSession):
             tags=json.dumps(["语音", "配音", "合成", "有声"]),
             base_fee=2, image_fee=0, audio_fee=1, token_fee=1,
             status=1, use_count=450, favorite_count=120, rating_count=89, rating_avg=4.5,
+            is_featured=False,
+            param_schema=json.dumps([
+                {"key": "text", "label": "文本内容", "type": "textarea", "order": 1},
+                {"key": "voice_type", "label": "音色", "type": "text", "order": 2},
+                {"key": "speed", "label": "语速", "type": "number", "order": 3},
+                {"key": "pitch", "label": "音调", "type": "number", "order": 4},
+            ]),
         ),
     ]
     count = 0
@@ -229,6 +263,7 @@ async def seed_tools(db: AsyncSession):
             existing_tool.is_featured = tool.is_featured
             existing_tool.usage_modes = tool.usage_modes
             existing_tool.cover_image = tool.cover_image
+            existing_tool.param_schema = tool.param_schema
             count += 1
     await db.commit()
     print(f"  ✓ 已同步 {count} 个工具")
