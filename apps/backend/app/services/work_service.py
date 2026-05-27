@@ -4,7 +4,7 @@ import secrets
 from typing import Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
-from app.models.task import Work, WorkFile, WorkShare
+from app.models.task import Work, WorkFile, WorkShare, Task
 from app.schemas.work import (
     WorkCreate, WorkUpdate, WorkFileCreate,
     WorkShareCreate, WorkDetail, IterationCreate
@@ -109,6 +109,33 @@ class WorkService:
         if not work:
             raise ResourceNotFoundException("成果不存在")
 
+        if work.is_deleted:
+            raise ResourceNotFoundException("成果不存在或已被删除")
+
+        # 获取 Task 的 input_params
+        input_params = None
+        tool_param_schema = None
+        usage_modes = []
+        if work.task_id:
+            task_result = await db.execute(
+                select(Task).where(Task.id == work.task_id)
+            )
+            task = task_result.scalar_one_or_none()
+            if task:
+                input_params = task.input_params
+
+        # 获取 Tool 的 param_schema 和 usage_modes
+        if work.tool_id:
+            from app.models.tool import Tool as ToolModel
+            tool_result = await db.execute(
+                select(ToolModel).where(ToolModel.id == work.tool_id)
+            )
+            tool = tool_result.scalar_one_or_none()
+            if tool:
+                if tool.param_schema:
+                    tool_param_schema = sorted(tool.param_schema, key=lambda x: x.get("order", 999))
+                usage_modes = tool.usage_modes or []
+
         # 获取文件列表
         files_result = await db.execute(
             select(WorkFile).where(WorkFile.work_id == work_id)
@@ -133,7 +160,10 @@ class WorkService:
             **work_dict,
             files=files,
             shares=shares,
-            has_download_permission=has_download_permission
+            has_download_permission=has_download_permission,
+            input_params=input_params,
+            tool_param_schema=tool_param_schema,
+            usage_modes=usage_modes,
         )
 
         return work_detail
@@ -194,47 +224,60 @@ class WorkService:
         db: AsyncSession,
         user_id: uuid.UUID,
         status: Optional[str] = None,
-        tool_id: Optional[uuid.UUID] = None,
+        category_id: Optional[uuid.UUID] = None,
+        search: Optional[str] = None,
+        date_from: Optional[int] = None,
+        date_to: Optional[int] = None,
         skip: int = 0,
-        limit: int = 20
+        limit: int = 12
     ) -> Tuple[List[Work], int]:
-        """
-        获取用户的成果列表（带筛选和分页）
-
-        Args:
-            db: 数据库会话
-            user_id: 用户ID
-            status: 状态筛选
-            tool_id: 工具ID筛选
-            skip: 跳过数量
-            limit: 每页数量
-
-        Returns:
-            Tuple[List[Work], int]: (成果列表, 总数)
-        """
-        conditions = [Work.user_id == user_id]
+        """获取用户的成果列表（带筛选和分页）"""
+        from app.models.tool import Tool
+        conditions = [Work.user_id == user_id, Work.is_deleted == False]
 
         if status is not None:
             conditions.append(Work.status == status)
 
-        if tool_id is not None:
-            conditions.append(Work.tool_id == tool_id)
+        if category_id is not None:
+            conditions.append(Tool.category_id == category_id)
 
-        # 总数查询
-        count_query = select(func.count()).select_from(Work).where(and_(*conditions))
+        if search is not None:
+            conditions.append(Work.title.ilike(f"%{search}%", escape="/"))
+
+        if date_from is not None:
+            conditions.append(Work.created_at >= date_from)
+
+        if date_to is not None:
+            conditions.append(Work.created_at <= date_to)
+
+        # 总数查询（category 筛选需要 JOIN Tool）
+        if category_id is not None:
+            base_query = select(Work).join(Tool, Work.tool_id == Tool.id).where(and_(*conditions))
+        else:
+            base_query = select(Work).where(and_(*conditions))
+        count_query = select(func.count()).select_from(base_query.subquery())
         total_result = await db.execute(count_query)
         total = total_result.scalar() or 0
 
         # 分页查询
         query = (
-            select(Work)
-            .where(and_(*conditions))
+            base_query
             .order_by(Work.created_at.desc())
             .offset(skip)
             .limit(limit)
         )
         result = await db.execute(query)
         works = list(result.scalars().all())
+
+        # 批量加载 tool usage_modes（避免前端 N+1 查询每个 tool 的 usage_modes）
+        tool_ids = list(set(w.tool_id for w in works if w.tool_id))
+        if tool_ids:
+            tool_result = await db.execute(
+                select(Tool.id, Tool.usage_modes).where(Tool.id.in_(tool_ids))
+            )
+            usage_modes_map = {row.id: (row.usage_modes or []) for row in tool_result}
+            for w in works:
+                w.usage_modes = usage_modes_map.get(w.tool_id, [])
 
         # 自动填充 cover_image
         await WorkService._fill_cover_images(db, works)
@@ -260,7 +303,7 @@ class WorkService:
         Returns:
             Tuple[List[Work], int]: (成果列表, 总数)
         """
-        conditions = [Work.is_public == True, Work.status == "published"]
+        conditions = [Work.is_public == True, Work.status == "published", Work.is_deleted == False]
 
         if tool_id is not None:
             conditions.append(Work.tool_id == tool_id)
@@ -328,14 +371,7 @@ class WorkService:
         work_id: uuid.UUID,
         current_user_id: uuid.UUID
     ) -> None:
-        """
-        删除成果
-
-        Args:
-            db: 数据库会话
-            work_id: 成果ID
-            current_user_id: 当前用户ID
-        """
+        """软删除成果（标记 is_deleted=True，数据保留）"""
         work = await WorkService.get_by_id(db, work_id)
         if not work:
             raise ResourceNotFoundException("成果不存在")
@@ -344,8 +380,87 @@ class WorkService:
         if work.user_id != current_user_id:
             raise InsufficientPermissionsException()
 
-        await db.delete(work)
+        work.is_deleted = True
+        work.deleted_at = int(time.time())
         await db.commit()
+
+    @staticmethod
+    async def toggle_status(
+        db: AsyncSession,
+        work_id: uuid.UUID,
+        current_user_id: uuid.UUID,
+        new_status: str
+    ) -> Work:
+        """切换成果的 published/draft 状态"""
+        if new_status not in ("published", "draft"):
+            raise BusinessException("状态值无效，仅支持 published 和 draft")
+
+        work = await WorkService.get_by_id(db, work_id)
+        if not work:
+            raise ResourceNotFoundException("成果不存在")
+
+        # 权限检查：仅所有者可修改状态
+        if work.user_id != current_user_id:
+            raise InsufficientPermissionsException()
+
+        work.status = new_status
+        await db.commit()
+        await db.refresh(work)
+        return work
+
+    @staticmethod
+    async def get_works_stats(
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        category_id: Optional[uuid.UUID] = None,
+        search: Optional[str] = None,
+        date_from: Optional[int] = None,
+        date_to: Optional[int] = None,
+    ) -> dict:
+        """获取用户的成果统计信息"""
+        from app.schemas.work import WorkStats
+        from app.models.tool import Tool
+        from sqlalchemy import func as sa_func
+
+        conditions = [Work.user_id == user_id, Work.is_deleted == False]
+
+        if category_id is not None:
+            conditions.append(Work.tool_id == Tool.id)
+            conditions.append(Tool.category_id == category_id)
+
+        if search is not None:
+            conditions.append(Work.title.ilike(f"%{search}%", escape="/"))
+
+        if date_from is not None:
+            conditions.append(Work.created_at >= date_from)
+
+        if date_to is not None:
+            conditions.append(Work.created_at <= date_to)
+
+        if category_id is not None:
+            stats_query = select(
+                sa_func.count().label("total"),
+                sa_func.sum(sa_func.cast(Work.status == "published", sa_func.Integer)).label("published_count"),
+                sa_func.coalesce(sa_func.sum(Work.view_count), 0).label("total_views"),
+                sa_func.coalesce(sa_func.avg(Work.version), 0.0).label("avg_version"),
+            ).select_from(Work).join(Tool, Work.tool_id == Tool.id).where(and_(*conditions))
+        else:
+            stats_query = select(
+                sa_func.count().label("total"),
+                sa_func.sum(sa_func.cast(Work.status == "published", sa_func.Integer)).label("published_count"),
+                sa_func.coalesce(sa_func.sum(Work.view_count), 0).label("total_views"),
+                sa_func.coalesce(sa_func.avg(Work.version), 0.0).label("avg_version"),
+            ).where(and_(*conditions))
+
+        stats_result = await db.execute(stats_query)
+        row = stats_result.one()
+
+        return WorkStats(
+            total=row.total,
+            published_count=row.published_count or 0,
+            total_views=row.total_views or 0,
+            avg_version=round(float(row.avg_version or 0), 1),
+        ).model_dump()
 
     # ============ Public Status Methods ============
 
