@@ -266,14 +266,11 @@ async def download_work_files(
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
     """
-    动态打包成果的所有文件为 ZIP 压缩包并下载
+    动态打包成果的完整工作目录为 ZIP 压缩包并下载
 
-    适用于：
-    - 旧成果没有预生成 ZIP 文件的情况
-    - 前端「下载全部」按钮的统一入口
+    直接以 task_id 目录为单位打包，不依赖 WorkFile 记录与磁盘文件名的一致性。
     """
-    from app.models.task import Work, WorkFile as WorkFileModel
-    from sqlalchemy import select
+    from app.models.task import Work
     from app.core.exceptions import ResourceNotFoundException, InsufficientPermissionsException
 
     # 验证成果存在且有权限
@@ -283,23 +280,19 @@ async def download_work_files(
     if work.user_id != current_user.id and not work.is_public:
         raise InsufficientPermissionsException()
 
-    # 获取所有文件记录
-    result = await db.execute(
-        select(WorkFileModel).where(WorkFileModel.work_id == work_id)
-    )
-    work_files = result.scalars().all()
+    work_dir = os.path.join(settings.WORKS_DIR, str(work.task_id))
+    if not os.path.isdir(work_dir):
+        raise HTTPException(status_code=404, detail="成果文件目录不存在")
 
-    if not work_files:
-        raise HTTPException(status_code=404, detail="成果暂无文件可下载")
-
-    # 在内存中创建 ZIP
+    # 在内存中创建 ZIP，保留目录结构
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for wf in work_files:
-            file_path = os.path.join(settings.WORKS_DIR, str(work.task_id), wf.file_url)
-            if os.path.exists(file_path):
-                # 用 file_url 保留目录结构（如 images/page_1.png）
-                zf.write(file_path, wf.file_url)
+        for root, _dirs, files in os.walk(work_dir):
+            for file_name in files:
+                full_path = os.path.join(root, file_name)
+                # 相对路径作为 ZIP 内的存档名，保留目录层级
+                arcname = os.path.relpath(full_path, work_dir)
+                zf.write(full_path, arcname)
 
     buf.seek(0)
 

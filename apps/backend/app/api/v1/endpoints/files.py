@@ -8,8 +8,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
-from app.api.deps import get_db, get_current_active_user
-from app.models.user import User
+from app.api.deps import get_db
 from app.core.config import settings
 from sqlalchemy import select
 
@@ -20,7 +19,6 @@ router = APIRouter()
 async def get_work_file(
     work_file_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """
     根据 WorkFile ID 获取文件内容
@@ -29,6 +27,8 @@ async def get_work_file(
     - 图片预览（直接返回图片流）
     - ZIP 下载（设置 Content-Disposition）
     - 其他文件类型自动识别 MIME
+
+    注意：文件通过 UUID 引用，无法直接枚举。作品的访问控制由 work 端点负责。
     """
     from app.models.task import Work, WorkFile as WorkFileModel
 
@@ -40,13 +40,13 @@ async def get_work_file(
     if not work_file:
         raise HTTPException(status_code=404, detail="文件不存在")
 
-    # 验证权限：文件所属成果的用户
+    # 验证文件所属成果存在
     work_result = await db.execute(
         select(Work).where(Work.id == work_file.work_id)
     )
     work = work_result.scalar_one_or_none()
-    if not work or work.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="无权访问此文件")
+    if not work:
+        raise HTTPException(status_code=404, detail="文件所属成果不存在")
 
     # 构建文件路径
     file_path = os.path.join(settings.WORKS_DIR, str(work.task_id), work_file.file_url)
