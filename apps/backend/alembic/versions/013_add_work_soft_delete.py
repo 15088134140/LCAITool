@@ -18,9 +18,12 @@ def upgrade() -> None:
     op.add_column("works", sa.Column("is_deleted", sa.Boolean(), server_default=sa.text("false"), nullable=False, comment="软删除标记"))
     op.add_column("works", sa.Column("deleted_at", sa.Integer(), nullable=True, comment="删除时间戳"))
     op.create_index("ix_works_is_deleted", "works", ["is_deleted"])
+    # Data migration: archived → draft
+    op.execute("UPDATE works SET status = 'draft' WHERE status = 'archived'")
 
 
 def downgrade() -> None:
     op.drop_index("ix_works_is_deleted", table_name="works")
     op.drop_column("works", "deleted_at")
     op.drop_column("works", "is_deleted")
+    # Reverse data migration (can't truly know which were archived, but it's OK for rollback)

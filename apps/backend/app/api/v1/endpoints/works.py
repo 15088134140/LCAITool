@@ -29,8 +29,12 @@ router = APIRouter()
 @router.get("", summary="获取用户成果列表")
 async def get_user_works(
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    status: Optional[str] = Query(None, description="状态筛选: draft, published, archived"),
+    page_size: int = Query(12, ge=1, le=100, description="每页数量"),
+    status: Optional[str] = Query(None, description="状态筛选: published, draft"),
+    category_id: Optional[str] = Query(None, description="工具分类ID"),
+    search: Optional[str] = Query(None, max_length=255, description="按名称搜索"),
+    date_from: Optional[int] = Query(None, description="起始时间戳"),
+    date_to: Optional[int] = Query(None, description="结束时间戳"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
@@ -38,23 +42,56 @@ async def get_user_works(
     分页获取当前用户的成果列表
     """
     skip = (page - 1) * page_size
+    category_uuid = uuid.UUID(category_id) if category_id else None
+
     works, total = await WorkService.list_user_works(
         db=db,
         user_id=current_user.id,
         status=status,
+        category_id=category_uuid,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
         skip=skip,
         limit=page_size
     )
 
-    # Convert SQLAlchemy models to Pydantic schemas for serialization
-    from app.schemas.work import Work as WorkSchema
     items = [WorkSchema.model_validate(w) for w in works]
+
+    # 获取统计信息（使用相同筛选条件，不分页）
+    stats = await WorkService.get_works_stats(
+        db=db,
+        user_id=current_user.id,
+        category_id=category_uuid,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
     return {
         "items": items,
         "total": total,
         "page": page,
         "page_size": page_size,
+        "stats": stats,
     }
+
+
+@router.put("/{work_id}/status", summary="切换成果状态")
+async def update_work_status(
+    work_id: uuid.UUID,
+    status: str = Query(..., description="目标状态：published 或 draft"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """切换成果的 published/draft 状态"""
+    work = await WorkService.toggle_status(
+        db=db,
+        work_id=work_id,
+        current_user_id=current_user.id,
+        new_status=status
+    )
+    return WorkSchema.model_validate(work)
 
 
 @router.get("/{work_id}", response_model=WorkDetailSchema, summary="获取成果详情")
