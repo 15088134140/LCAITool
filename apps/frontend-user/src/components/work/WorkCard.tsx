@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { type Work } from '@/lib/api/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -29,6 +30,7 @@ const toolTypeMap: Record<string, { label: string; color: string; icon: string }
 };
 
 export function WorkCard({ work, hasDialogMode, onDownload, onContinueOptimize, onDelete }: WorkCardProps) {
+  const router = useRouter();
   const getToolType = (taskType?: string) => {
     if (!taskType) return toolTypeMap['default']!;
     for (const [key, value] of Object.entries(toolTypeMap)) {
@@ -97,16 +99,19 @@ export function WorkCard({ work, hasDialogMode, onDownload, onContinueOptimize, 
 
           {/* Tool Type Badge */}
           <div className="absolute top-3 left-3">
-            <Link
-              href={`/tools/${work.tool_id || ''}`}
-              onClick={(e) => e.stopPropagation()}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                router.push(`/tools/${work.tool_id || ''}`);
+              }}
               className={cn(
                 'px-3 py-1 rounded-full text-xs font-semibold',
                 toolType.color
               )}
             >
               {toolType.label}
-            </Link>
+            </button>
           </div>
 
           {/* Status Badge */}

@@ -166,10 +166,14 @@ async def seed_tools(db: AsyncSession):
             param_schema=json.dumps([
                 {"key": "theme", "label": "故事主题", "type": "text", "order": 1},
                 {"key": "style", "label": "绘画风格", "type": "text", "order": 2},
+                {"key": "art_style", "label": "绘画风格", "type": "text", "order": 2},
                 {"key": "page_count", "label": "页数", "type": "number", "order": 3},
                 {"key": "target_age", "label": "目标年龄", "type": "text", "order": 4},
                 {"key": "language", "label": "语言", "type": "text", "order": 5},
                 {"key": "prompt", "label": "提示词", "type": "textarea", "order": 6},
+                {"key": "voice_type", "label": "音色", "type": "text", "order": 7},
+                {"key": "include_audio", "label": "包含音频", "type": "boolean", "order": 8},
+                {"key": "smart_page_count", "label": "智能页数", "type": "boolean", "order": 9},
             ]),
         ),
         Tool(
@@ -280,28 +284,28 @@ async def seed_demos(db: AsyncSession):
             title="森林小兔子的冒险",
             description="一个关于勇敢小兔子探索森林的温馨故事",
             demo_type="image", sort_order=1, is_active=True,
-            input_params={"theme": "勇敢的小兔子", "style": "温馨卡通", "pages": 5},
+            input_params={"theme": "勇敢的小兔子", "style": "温馨卡通", "page_count": 5, "target_age": "3-6岁", "language": "中文", "prompt": "一只勇敢的小兔子在森林里探险，遇到了各种有趣的动物朋友"},
         ),
         ToolDemo(
             tool_id=tool_storybook,
             title="太空探险记",
             description="小朋友探索太空的科幻冒险故事",
             demo_type="image", sort_order=2, is_active=True,
-            input_params={"theme": "太空探险", "style": "科幻", "pages": 8},
+            input_params={"theme": "太空探险", "style": "科幻", "page_count": 8, "target_age": "6-12岁", "language": "中文", "prompt": "小朋友乘坐宇宙飞船探索太空，发现神秘星球的故事"},
         ),
         ToolDemo(
             tool_id=tool_ecommerce,
             title="护肤精华液详情页",
             description="高端护肤品牌精华液的完整详情页案例",
             demo_type="image", sort_order=1, is_active=True,
-            input_params={"product": "精华液", "brand_style": "高端简约"},
+            input_params={"product_name": "修护精华液", "product_features": "深层保湿、修复屏障、淡化细纹", "brand_style": "高端简约", "target_audience": "25-40岁轻熟女性", "image_count": 6},
         ),
         ToolDemo(
             tool_id=tool_ecommerce,
             title="智能手表详情页",
             description="科技感智能手表的产品详情页案例",
             demo_type="image", sort_order=2, is_active=True,
-            input_params={"product": "智能手表", "brand_style": "科技感"},
+            input_params={"product_name": "智能运动手表Pro", "product_features": "心率监测、GPS定位、防水50米、续航14天", "brand_style": "科技感", "target_audience": "运动爱好者、商务人士", "image_count": 8},
         ),
     ]
     for demo in demos:

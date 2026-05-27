@@ -77,6 +77,21 @@ async def get_user_works(
     }
 
 
+@router.delete("/{work_id}", summary="软删除成果")
+async def delete_work(
+    work_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    """软删除成果（标记 is_deleted=True，数据保留）"""
+    await WorkService.delete_work(
+        db=db,
+        work_id=work_id,
+        current_user_id=current_user.id
+    )
+    return {"success": True, "message": "成果已删除"}
+
+
 @router.put("/{work_id}/status", summary="切换成果状态")
 async def update_work_status(
     work_id: uuid.UUID,
@@ -259,7 +274,7 @@ async def get_work_files(
     from app.core.exceptions import ResourceNotFoundException
 
     work = await WorkService.get_by_id(db=db, work_id=work_id)
-    if not work:
+    if not work or work.is_deleted:
         raise ResourceNotFoundException("成果不存在")
 
     if work.user_id != current_user.id and not work.is_public:
@@ -284,7 +299,7 @@ async def get_work_versions(
     from app.core.exceptions import ResourceNotFoundException
 
     work = await WorkService.get_by_id(db=db, work_id=work_id)
-    if not work:
+    if not work or work.is_deleted:
         raise ResourceNotFoundException("成果不存在")
 
     if work.user_id != current_user.id and not work.is_public:
@@ -312,7 +327,7 @@ async def download_work_files(
 
     # 验证成果存在且有权限
     work = await WorkService.get_by_id(db=db, work_id=work_id)
-    if not work:
+    if not work or work.is_deleted:
         raise ResourceNotFoundException("成果不存在")
     if work.user_id != current_user.id and not work.is_public:
         raise InsufficientPermissionsException()
