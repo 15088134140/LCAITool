@@ -206,6 +206,7 @@ const ToolManagement = () => {
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">评分</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">状态</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Mock</th>
+                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600" title="每次 AI 调用的提示词和响应是否记录到 prompts.md 中">提示词记录</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">创建时间</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">操作</th>
               </tr>
@@ -213,13 +214,13 @@ const ToolManagement = () => {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
                     加载中...
                   </td>
                 </tr>
               ) : tools.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
                     暂无数据
                   </td>
                 </tr>
@@ -285,6 +286,23 @@ const ToolManagement = () => {
                       }`}>
                         {tool.is_mock_enabled ? '开启' : '关闭'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {tool.is_prompt_logging_enabled === false ? (
+                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-500" title="提示词记录已关闭">
+                          <svg className="inline w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                          </svg>
+                          关闭
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700" title="开启：AI 调用记录将写入 prompts.md">
+                          <svg className="inline w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                          </svg>
+                          开启
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{formatDate(tool.created_at)}</td>
                     <td className="px-6 py-4">
