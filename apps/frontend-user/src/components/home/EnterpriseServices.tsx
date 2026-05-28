@@ -63,7 +63,7 @@ export function EnterpriseServices() {
 
         <div className="grid md:grid-cols-2 gap-8">
           {services.map((service) => (
-            <div key={service.id} className="service-card card-hover">
+            <div key={service.id} className="bg-white rounded-2xl p-6 border border-[#E4E7EB] card-hover">
               <div className="flex items-start gap-6">
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${service.gradient} flex items-center justify-center flex-shrink-0`}>
                   {service.icon}

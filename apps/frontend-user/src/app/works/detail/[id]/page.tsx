@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/lib/toast';
 import { workApi } from '@/lib/api/modules/work';
 import { tokenStorage } from '@/lib/api/client';
-import { getFirstImage, getFileUrl, isRelativePath } from '@/lib/utils/image';
+import { getFirstImage, getFileUrl, resolveApiUrl } from '@/lib/utils/image';
 import type { Work, WorkFile, Work as WorkVersion, ToolRating } from '@/lib/api/types';
 import ratingApi from '@/lib/api/modules/rating';
 import RatingModal from '@/components/rating/RatingModal';
@@ -135,7 +135,7 @@ export default function WorkDetailPage() {
   // 封面图：优先用 cover_image（新数据为完整API路径），否则用第一张预览图
   const coverUrl = (() => {
     const cover = getFirstImage(work?.cover_image);
-    if (cover && !isRelativePath(cover)) return cover;
+    if (cover) return resolveApiUrl(cover) || getFileUrl(previewImages[0]!);
     if (previewImages.length > 0) return getFileUrl(previewImages[0]!);
     return null;
   })();

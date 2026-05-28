@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALGORITHM: str = "HS256"
 
+    PUBLIC_URL: str = "http://localhost:8000"
+    """公开访问地址，用于构造可外部访问的完整 URL，如绘本 HTML 中的图片地址"""
+
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")

@@ -495,6 +495,24 @@
     }
   }
 
+  /* Hero图片圆角与阴影 */
+  .hero-image {
+    border-radius: 16px;
+    box-shadow: 0 25px 50px rgba(30, 58, 95, 0.15);
+  }
+
+  /* 价值卡片 */
+  .value-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #E4E7EB;
+    transition: all 0.25s ease;
+  }
+  .value-card:hover {
+    border-color: #2563EB;
+    background: #F8FAFC;
+  }
+
   /* 卡片悬浮效果 */
   .card-hover {
     transition: all 0.25s ease-out;
@@ -506,13 +524,14 @@
 
   /* 工具卡片 */
   .tool-card {
+    overflow: hidden;
     transition: all 0.25s ease;
     border: 1px solid #E4E7EB;
+    border-radius: 1rem;
   }
   .tool-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 20px 40px rgba(30, 58, 95, 0.12);
-    border-color: #2563EB;
   }
 
   /* 分类导航按钮 */

@@ -76,7 +76,7 @@ export function StatsAndTestimonials() {
         {/* Testimonials Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {testimonials.map((testimonial) => (
-            <div key={testimonial.id} className="testimonial-card card-hover">
+            <div key={testimonial.id} className="bg-white rounded-2xl p-6 border border-[#E4E7EB] card-hover">
               <div className="flex items-center gap-3 mb-4">
                 <img
                   src={`https://i.pravatar.cc/48?img=${testimonial.avatar}`}

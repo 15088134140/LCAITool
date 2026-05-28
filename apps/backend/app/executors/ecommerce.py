@@ -11,6 +11,7 @@ from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import httpx
+import aiofiles
 
 from .base import BaseToolExecutor, RecordedResponse
 from app.services.task_service import TaskService
@@ -159,24 +160,28 @@ class EcommerceExecutor(BaseToolExecutor):
         """保存 Dify 输出文件到持久化目录"""
         saved_files = {"images": [], "files": []}
 
-        # 主图
+        # 主图：从 Dify URL 下载到本地
         main_images = outputs.get("main_images", [])
         for i, img_url in enumerate(main_images):
             if img_url:
+                filename = f"main_image_{i+1}.png"
+                await self._download_file(img_url, works_dir, filename)
                 saved_files["images"].append({
                     "index": i,
                     "type": "main",
-                    "url": f"main_image_{i+1}.png"
+                    "url": filename
                 })
 
-        # 详情图
+        # 详情图：从 Dify URL 下载到本地
         detail_images = outputs.get("detail_images", [])
         for i, img_url in enumerate(detail_images):
             if img_url:
+                filename = f"detail_image_{i+1}.png"
+                await self._download_file(img_url, works_dir, filename)
                 saved_files["images"].append({
                     "index": i,
                     "type": "detail",
-                    "url": f"detail_image_{i+1}.png"
+                    "url": filename
                 })
 
         # 文案
@@ -188,6 +193,19 @@ class EcommerceExecutor(BaseToolExecutor):
         saved_files["zip_file"] = outputs.get("zip_file", "")
 
         return saved_files
+
+    async def _download_file(self, url: str, works_dir: str, filename: str) -> None:
+        """从 URL 下载文件到本地工作目录"""
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.get(url, follow_redirects=True)
+                resp.raise_for_status()
+                file_path = os.path.join(works_dir, filename)
+                async with aiofiles.open(file_path, 'wb') as f:
+                    await f.write(resp.content)
+                logger.info(f"[EcommerceExecutor] 下载成功: {filename} ({len(resp.content)} bytes)")
+        except Exception as e:
+            logger.warning(f"[EcommerceExecutor] 下载文件失败 {filename}: {e}")
 
     async def _create_work_record(self, params: Dict[str, Any], files: Dict[str, Any], works_dir: str) -> Any:
         task = await TaskService.get_by_id(self.db, self.task_id)

@@ -71,9 +71,9 @@ export function BenchmarkTools() {
                     />
                     <div className="absolute top-4 left-4">
                       {tool.isHot ? (
-                        <span className="hot-badge">HOT</span>
+                        <span className="px-3 py-1 bg-rose-500 text-white text-xs font-medium rounded-full">HOT</span>
                       ) : tool.isNew ? (
-                        <span className="new-badge">NEW</span>
+                        <span className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-full">NEW</span>
                       ) : (
                         <span className="px-3 py-1 bg-[#1E3A5F]/80 text-white text-xs font-medium rounded-full">推荐</span>
                       )}

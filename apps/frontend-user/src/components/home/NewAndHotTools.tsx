@@ -88,7 +88,7 @@ export function NewAndHotTools() {
           {/* New Tools */}
           <div>
             <div className="flex items-center gap-3 mb-8">
-              <span className="new-badge text-sm px-3 py-1">NEW</span>
+              <span className="text-sm px-3 py-1 bg-blue-500 text-white font-medium rounded-full">NEW</span>
               <h2 className="text-2xl font-bold text-[#1E3A5F]">新品上架</h2>
             </div>
             {displayNewTools.length > 0 ? (
@@ -127,7 +127,7 @@ export function NewAndHotTools() {
           {/* Hot Tools */}
           <div>
             <div className="flex items-center gap-3 mb-8">
-              <span className="hot-badge text-sm px-3 py-1">HOT</span>
+              <span className="text-sm px-3 py-1 bg-rose-500 text-white font-medium rounded-full">HOT</span>
               <h2 className="text-2xl font-bold text-[#1E3A5F]">热门工具</h2>
             </div>
             {displayHotTools.length > 0 ? (
