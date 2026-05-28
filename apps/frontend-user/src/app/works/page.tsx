@@ -158,8 +158,8 @@ export default function WorksPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] py-12 px-4">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-[#F8FAFC] py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse mb-8">
             <div className="h-8 w-48 bg-[#E4E7EB] rounded-lg mb-2" />
             <div className="h-4 w-64 bg-[#E4E7EB] rounded-lg" />
@@ -187,8 +187,8 @@ export default function WorksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#F8FAFC] py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-[#64748B] mb-3">
           <Link href="/user" className="hover:text-[#1E3A5F] transition-colors">个人中心</Link>
