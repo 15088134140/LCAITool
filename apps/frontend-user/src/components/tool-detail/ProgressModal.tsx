@@ -187,8 +187,8 @@ export function ProgressModal({
 
         setSteps((prev) => {
           const next = [...prev];
-          // Ensure we have enough slots
-          while (next.length < totalStepsVal) {
+          // Only reveal steps that have started; keep future steps hidden.
+          while (next.length <= stepIndex) {
             next.push({
               name: `步骤 ${next.length + 1}`,
               status: 'pending',
@@ -309,6 +309,7 @@ export function ProgressModal({
 
   // Get current description text (show waiting message cycler before steps arrive)
   const completedCount = steps.filter((s) => s.status === 'completed').length;
+  const hasStartedProgress = steps.length > 0 || progress > 0;
 
   if (!isOpen) return null;
 
@@ -388,24 +389,26 @@ export function ProgressModal({
           </p>
         </div>
 
-        {/* Progress Bar — always visible from start */}
-        <div className="mb-6">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-[#64748B]">
-              步骤 {completedCount}/{totalSteps}
-            </span>
-            <span className="font-medium text-[#059669]">{progress}%</span>
+        {/* Progress Bar — hidden while the task is still preparing */}
+        {hasStartedProgress && (
+          <div className="mb-6">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-[#64748B]">
+                步骤 {completedCount}/{totalSteps}
+              </span>
+              <span className="font-medium text-[#059669]">{progress}%</span>
+            </div>
+            <div className="h-3 bg-[#E4E7EB] rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  'h-full bg-gradient-to-r from-[#059669] to-[#10B981] rounded-full transition-all duration-500 ease-out',
+                  status === 'failed' && 'from-red-500 to-red-500'
+                )}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
-          <div className="h-3 bg-[#E4E7EB] rounded-full overflow-hidden">
-            <div
-              className={cn(
-                'h-full bg-gradient-to-r from-[#059669] to-[#10B981] rounded-full transition-all duration-500 ease-out',
-                status === 'failed' && 'from-red-500 to-red-500'
-              )}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+        )}
 
         {/* Steps List — container always present to prevent layout shift */}
         <div className="space-y-3 mb-6 min-h-[0px]">

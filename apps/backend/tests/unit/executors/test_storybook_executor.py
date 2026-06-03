@@ -28,7 +28,6 @@ def task_id():
 def executor(task_id, mock_db):
     """创建执行器实例，并手动注入 mock provider"""
     exec_inst = StorybookExecutor(task_id=task_id, db=mock_db)
-    exec_inst.deepseek_provider = AsyncMock()
     exec_inst.doubao_provider = AsyncMock()
     exec_inst.zhipu_provider = AsyncMock()
     return exec_inst
@@ -83,6 +82,25 @@ class TestStorybookExecutor:
             )
 
     @pytest.mark.asyncio
+    async def test_init_providers_uses_doubao_for_text_generation(self, task_id, mock_db):
+        """测试初始化不再请求独立 DeepSeek Provider"""
+        exec_inst = StorybookExecutor(task_id=task_id, db=mock_db)
+
+        async def fake_get_provider(_db, provider_name):
+            return AsyncMock(name=provider_name)
+
+        with patch(
+            'app.executors.storybook.AIProviderFactory.get_provider_from_db',
+            side_effect=fake_get_provider,
+        ) as mock_get_provider:
+            await exec_inst._init_providers()
+
+        provider_names = [call.args[1] for call in mock_get_provider.call_args_list]
+        assert provider_names == ["volcano", "zhipu"]
+        assert exec_inst.doubao_provider is not None
+        assert exec_inst.zhipu_provider is not None
+
+    @pytest.mark.asyncio
     async def test_save_and_get_snapshot(self, executor, mock_db):
         """测试快照保存和获取"""
         snapshot_data = {
@@ -109,7 +127,7 @@ class TestStorybookExecutor:
     @pytest.mark.asyncio
     async def test_generate_story_outline(self, executor):
         """测试故事大纲生成（DeepSeek thinking 模式）"""
-        executor.deepseek_provider.generate_text.return_value = AIResponse(
+        executor.doubao_provider.generate_text.return_value = AIResponse(
             success=True,
             content=json.dumps({
                 'title': '勇敢的小兔子',
@@ -127,7 +145,7 @@ class TestStorybookExecutor:
         assert result['suggested_page_count'] == 8
 
         # 验证调用参数
-        call_kwargs = executor.deepseek_provider.generate_text.call_args[1]
+        call_kwargs = executor.doubao_provider.generate_text.call_args[1]
         assert call_kwargs.get('thinking') is True
         assert '请根据主题' in call_kwargs.get('prompt', '')
         assert '儿童绘本作家' in call_kwargs.get('system_prompt', '')
@@ -135,7 +153,7 @@ class TestStorybookExecutor:
     @pytest.mark.asyncio
     async def test_generate_story_outline_failure(self, executor):
         """测试故事大纲生成失败"""
-        executor.deepseek_provider.generate_text.return_value = AIResponse(
+        executor.doubao_provider.generate_text.return_value = AIResponse(
             success=False, content='', raw_response={}, error='API Error'
         )
 
@@ -150,7 +168,7 @@ class TestStorybookExecutor:
             {'description': '场景1', 'prompt': 'prompt1', 'text_snippet': '片段1', 'importance': '5'},
             {'description': '场景2', 'prompt': 'prompt2', 'text_snippet': '片段2', 'importance': '4'},
         ]
-        executor.deepseek_provider.generate_text.return_value = AIResponse(
+        executor.doubao_provider.generate_text.return_value = AIResponse(
             success=True, content=json.dumps(mock_pages), raw_response={},
         )
 
@@ -162,7 +180,7 @@ class TestStorybookExecutor:
     @pytest.mark.asyncio
     async def test_generate_illustration_prompts_failure(self, executor):
         """测试插画提示词生成失败"""
-        executor.deepseek_provider.generate_text.return_value = AIResponse(
+        executor.doubao_provider.generate_text.return_value = AIResponse(
             success=False, content='', raw_response={}, error='API Error'
         )
 

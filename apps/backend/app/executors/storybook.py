@@ -2,7 +2,7 @@
 有声绘本工具执行器
 标杆工具1：AI有声绘本生成专家
 多 Provider 架构：
-- DeepSeek (thinking) -> 故事大纲 + 插画提示词
+- 火山方舟 DeepSeek -> 故事大纲 + 插画提示词
 - 豆包 Seedream 4.5 -> 图片生成
 - 智谱 GLM-TTS -> 语音合成
 
@@ -50,17 +50,13 @@ class StorybookExecutor(BaseToolExecutor):
         progress_callback=None
     ):
         super().__init__(task_id, db, tool=tool, progress_callback=progress_callback)
-        self.deepseek_provider = None  # lazy init
-        self.doubao_provider = None
+        self.doubao_provider = None  # lazy init
         self.zhipu_provider = None
         self.pdf_generator = PDFGenerator()
 
     async def _init_providers(self):
-        """延迟初始化三个 AI Provider（从数据库获取配置）"""
-        if self.deepseek_provider is None:
-            self.deepseek_provider = await AIProviderFactory.get_provider_from_db(
-                self.db, "deepseek"
-            )
+        """延迟初始化 AI Provider（从数据库获取配置）"""
+        if self.doubao_provider is None:
             self.doubao_provider = await AIProviderFactory.get_provider_from_db(
                 self.db, "volcano"
             )
@@ -223,7 +219,7 @@ class StorybookExecutor(BaseToolExecutor):
         self, theme: str, target_age: str, story_content: str = "", smart_page_count: bool = False
     ) -> Dict[str, Any]:
         """
-        使用 DeepSeek (thinking 模式) 生成故事梗概
+        使用火山方舟 DeepSeek (thinking 模式) 生成故事梗概
         :param theme: 故事主题（当有 story_content 时作为标题参考）
         :param target_age: 目标年龄段
         :param story_content: 用户提供的故事文案（非空时优先使用，提炼为大纲）
@@ -258,7 +254,7 @@ class StorybookExecutor(BaseToolExecutor):
             user_prompt = f"请根据主题「{theme}」为{target_age}岁的儿童写一个短故事。"
 
         _t0 = time.time()
-        response = await self.deepseek_provider.generate_text(
+        response = await self.doubao_provider.generate_text(
             prompt=user_prompt,
             system_prompt=system_prompt,
             thinking=True
@@ -294,7 +290,7 @@ class StorybookExecutor(BaseToolExecutor):
         self, outline: Dict[str, Any], page_count: int, art_style: str
     ) -> List[Dict[str, Any]]:
         """
-        使用 DeepSeek 为每一页生成插画提示词
+        使用火山方舟 DeepSeek 为每一页生成插画提示词
         :param outline: 故事大纲 (含 story 字段)
         :param page_count: 页数
         :param art_style: 绘画风格
@@ -324,7 +320,7 @@ class StorybookExecutor(BaseToolExecutor):
         )
 
         _t0 = time.time()
-        response = await self.deepseek_provider.generate_text(
+        response = await self.doubao_provider.generate_text(
             prompt=user_prompt,
             system_prompt=system_prompt,
             thinking=False

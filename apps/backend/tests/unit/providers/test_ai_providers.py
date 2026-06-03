@@ -2,6 +2,7 @@
 AI Providers 单元测试
 使用 pytest-httpx 模拟 API 调用
 """
+import inspect
 import pytest
 import json
 import base64
@@ -98,6 +99,15 @@ def test_factory_register_provider():
 
 # ============ DoubaoProvider Tests ============
 
+def test_doubao_generate_text_signature_matches_deepseek_kwargs_style():
+    """测试豆包文本生成签名与 DeepSeek 一样通过 kwargs 接收 thinking"""
+    doubao_signature = inspect.signature(DoubaoProvider.generate_text)
+    deepseek_signature = inspect.signature(DeepSeekProvider.generate_text)
+
+    assert "thinking" not in doubao_signature.parameters
+    assert list(doubao_signature.parameters) == list(deepseek_signature.parameters)
+
+
 @pytest.mark.asyncio
 async def test_doubao_generate_text_success(httpx_mock):
     """测试豆包文本生成成功"""
@@ -125,6 +135,10 @@ async def test_doubao_generate_text_success(httpx_mock):
     assert response.usage["total_tokens"] == 30
     assert response.error is None
 
+    request_payload = json.loads(httpx_mock.get_requests()[0].content)
+    assert request_payload["model"] == "deepseek-v4-flash-260425"
+    assert request_payload["thinking"] == {"type": "disabled"}
+
 
 @pytest.mark.asyncio
 async def test_doubao_generate_text_with_system_prompt(httpx_mock):
@@ -146,6 +160,30 @@ async def test_doubao_generate_text_with_system_prompt(httpx_mock):
 
     assert response.success is True
     assert response.content == "我是助手"
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_text_thinking_uses_pro_model(httpx_mock):
+    """测试豆包文本生成开启深度思考模式"""
+    mock_response = {
+        "choices": [
+            {"message": {"content": "深度思考后的回复", "reasoning_content": "思考过程"}}
+        ],
+        "usage": {"total_tokens": 50}
+    }
+
+    httpx_mock.add_response(json=mock_response)
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_text(prompt="分析这个问题", thinking=True)
+
+    assert response.success is True
+    assert response.content == "深度思考后的回复"
+
+    request_payload = json.loads(httpx_mock.get_requests()[0].content)
+    assert request_payload["model"] == "deepseek-v4-pro-260425"
+    assert request_payload["thinking"] == {"type": "enabled"}
+    assert request_payload["reasoning_effort"] == "max"
 
 
 @pytest.mark.asyncio

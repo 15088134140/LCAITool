@@ -29,7 +29,7 @@ class DoubaoProvider(BaseAIProvider):
         **kwargs
     ) -> AIResponse:
         """
-        调用豆包大模型生成文本
+        调用火山方舟 Chat API 生成文本
         """
         url = f"{self.api_base}/chat/completions"
 
@@ -38,13 +38,18 @@ class DoubaoProvider(BaseAIProvider):
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
+        thinking = kwargs.pop("thinking", False)
+
         payload = {
-            "model": kwargs.get("model", self.model),
+            "model": "deepseek-v4-pro-260425" if thinking else "deepseek-v4-flash-260425",
             "messages": messages,
             "temperature": kwargs.get("temperature", 0.7),
             "max_tokens": kwargs.get("max_tokens", 2048),
+            "thinking": {"type": "enabled" if thinking else "disabled"},
             "stream": False
         }
+        if thinking:
+            payload["reasoning_effort"] = "max"
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
