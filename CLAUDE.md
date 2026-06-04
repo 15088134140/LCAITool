@@ -1,446 +1,113 @@
-# 灵创AI工具箱（LCAITool）- 项目开发规范
+# 灵创AI工具箱（LCAITool）- Claude 工作入口
 
-## 📋 项目概述
+## 项目一句话
 
-**灵创AI工具箱** 是专注于垂直专业场景的精品AI工具集合平台，深耕细分场景，做深做透每一个工具，让用户在特定场景下获得开箱即用的专业级效果。
+**灵创AI工具箱** 是专注于垂直专业场景的精品 AI 工具集合平台，深耕细分场景，提供可交付、可迭代的专业 AI 工具成果。
 
-**使用中文回复我的问题**
+## 基础沟通规则
 
-### 核心差异化优势
-- ✅ **场景化**：针对具体场景深度优化，不是通用大模型的简单封装
-- ✅ **专业化**：每个工具都经过专业人员调试，输出质量达到商用标准
-- ✅ **可交付**：提供完整可下载的成果包，不只是在线预览
-- ✅ **可迭代**：支持基于历史成果持续优化，形成个人创作资产
-- ✅ **透明化**：按次按量计费，费用清晰可见，无订阅负担
+- 使用中文回复用户问题。
+- 不确定需求边界时先沟通，不做假设。
+- 功能开发前先对照 PRD、设计文档或相关专题文档确认边界。
 
----
+## 渐进式披露原则
 
-## 🛠 技术栈规范
+本文件是 Claude 工作入口，不是完整项目手册。
 
-### 前端技术栈
-| 层级 | 技术选型 | 版本要求 |
-|------|---------|---------|
-| **用户端前端** | Next.js 14+ (App Router) | 14.x |
-| **管理端前端** | React + Vite | 18.x / 5.x |
-| **UI框架** | Tailwind CSS + shadcn/ui | 3.x |
-| **状态管理** | Zustand | 4.x |
+- 只有每次会话必须生效的强制行为规则进入本文件。
+- 产品背景、技术栈、业务流程、安全规范、路线图等详细资料放入专题文档。
+- Claude 应根据任务类型按需读取下方专题文档，避免默认加载全部背景资料。
+- 后续新增规范时，优先判断应进入哪个专题文档；只有强制行为规则才加入本文件。
 
-### 后端技术栈
-| 层级 | 技术选型 | 版本要求 |
-|------|---------|---------|
-| **后端框架** | FastAPI | 0.100+ |
-| **数据库** | PostgreSQL | 16.x |
-| **缓存/队列** | Redis | 7.x |
-| **ORM** | SQLAlchemy + Alembic | 2.x |
-| **异步任务** | Celery | 5.x |
+## 按需读取规则
 
-### 部署
-- Docker + Docker Compose 容器化部署
-- Nginx 反向代理
+- 涉及产品定位、业务边界、用户价值：读取 `docs/project/overview.md`。
+- 涉及 MVP 范围、功能状态、后续路线：读取 `docs/project/roadmap.md`。
+- 涉及技术栈、目录结构、部署：读取 `docs/development/tech-stack.md`。
+- 涉及 UI 视觉、颜色、字体、组件交互：读取 `docs/development/design-system.md`。
+- 涉及编码原则、测试、数据库迁移、安全编码：读取 `docs/development/coding-principles.md`。
+- 涉及子代理、commit、Superpowers/gstack 协作：读取 `docs/development/agent-workflow.md`。
+- 涉及认证、工具使用、支付、迭代创作流程：读取 `docs/architecture/business-flows.md`。
+- 涉及执行器、任务队列、AI Provider、Dify、回调：读取 `docs/architecture/executor-patterns.md`。
+- 涉及隐私、接口安全、资金安全、性能目标：读取 `docs/architecture/security-and-performance.md`。
+- 查找完整 PRD、技术方案、设计稿、历史 plans/specs：读取 `docs/project/reference-index.md`。
 
----
+## 高优先级开发原则
 
-## 🎨 设计系统规范
-
-### 色彩系统
-| 用途 | 色值 | 说明 |
-|------|------|------|
-| **主色调** | `#1E3A5F` | 深蓝色 - 品牌主色 |
-| **主色调渐变** | `#2563EB` | 蓝色 - 强调、渐变 |
-| **强调色** | `#059669` → `#10B981` | 绿色渐变 - 主按钮、成功状态 |
-| **边框色** | `#E4E7EB` | 浅灰 - 卡片边框 |
-| **背景色** | `#F8FAFC` | 极浅蓝 - 悬浮背景 |
-| **文字色** | `#1F2937` | 深灰 - 主文字 |
-
-### 字体规范
-- **首选字体**：`DM Sans`
-- **备用字体**：`system-ui, -apple-system, sans-serif`
-- **字体粗细**：400（常规）、500（中等）、700（粗体）
-
-### 组件交互规范
-```css
-/* 卡片悬停效果 */
-.card-hover {
-    transition: all 0.25s ease-out;
-}
-.card-hover:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 40px rgba(30, 58, 95, 0.12);
-}
-
-/* 主按钮 */
-.btn-primary {
-    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
-}
-.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 25px rgba(5, 150, 105, 0.3);
-}
-
-/* 进度条 */
-.progress-fill {
-    background: linear-gradient(90deg, #059669, #10B981);
-}
-```
-
----
-
-## 📁 目录结构规范
-
-```
-LCAiTool/
-├── apps/
-│   ├── frontend-user/          # 用户端前端 (Next.js)
-│   │   ├── src/app/            # App Router 页面
-│   │   ├── src/components/     # 组件 (ui/ 公共UI + common/ 业务组件 + layout/ + home/ + tool-detail/)
-│   │   ├── src/lib/            # API客户端 (api/modules/ 按模块拆分)、工具函数
-│   │   ├── src/store/          # Zustand 状态管理 (useAuthStore/useToolStore/useUserStore等)
-│   │   ├── src/providers/      # Provider 层 (数据接口定义 + Mock实现 + 真实API)
-│   │   └── src/styles/         # 全局样式
-│   │
-│   ├── frontend-admin/         # 管理端前端 (React + Vite)
-│   │   ├── src/pages/          # 页面路由
-│   │   ├── src/components/     # 通用组件
-│   │   ├── src/api/            # API客户端
-│   │   └── src/store/          # 状态管理
-│   │
-│   └── backend/                # FastAPI 后端
-│       ├── app/api/v1/         # API路由层 (endpoints/ 按模块拆分)
-│       ├── app/core/           # 核心配置
-│       ├── app/models/         # 数据模型层 (35张核心业务表)
-│       ├── app/schemas/        # Pydantic 模式
-│       ├── app/services/       # 业务服务层
-│       ├── app/providers/      # 第三方提供商
-│       │   ├── ai/             # AI提供商 (OpenAI / 火山方舟(豆包) / Dify)
-│       │   ├── storage/        # 存储提供商 (本地 + OSS)
-│       │   └── payment/        # 支付提供商 (微信 + 模拟)
-│       ├── app/executors/      # 工具执行器
-│       │   ├── base.py         # 执行器基类 (含Mock执行模式)
-│       │   ├── storybook.py    # 有声绘本执行器 (本地逐步执行: LLM→图片→音频→打包)
-│       │   ├── ecommerce.py    # 电商详情页执行器 (Dify SSE流式消费)
-│       │   └── marketing.py    # 营销文案执行器 (Celery转发+外部HTTP回调)
-│       ├── app/workers/        # Celery 异步任务 (3级队列优先级: fast/medium/heavy)
-│       ├── alembic/            # 数据库迁移
-│       ├── storage/            # 本地文件存储 (works/{task_id}/ 按任务隔离)
-│       └── tests/              # 测试目录 (unit/e2e/api)
-│
-├── docs/                       # 文档目录
-│   ├── 灵创AI工具箱产品需求文档PRD.md
-│   ├── 灵创AI工具箱-技术方案文档-v1.1.md
-│   ├── design/                 # 设计稿 (HTML原型)
-│   └── superpowers/            # 设计文档与实施计划
-│       ├── specs/              # 设计文档
-│       └── plans/              # 实施计划
-│
-├── packages/                   # 共享包
-├── docker-compose.yml          # Docker编排
-└── nginx/                      # Nginx配置
-```
-
----
-
-## 🏗 核心业务流程规范
-
-### 1. 用户注册与认证流程
-```
-微信一键登录：
-  用户点击「微信登录」
-    → 前端跳转微信OAuth授权页
-    → 用户扫码确认
-    → 微信回调code到后端
-    → 后端换取openid + access_token
-    → 查询用户是否存在
-      → 存在：生成JWT，返回登录成功
-      → 不存在：创建新用户，赠送体验积分
-    → 前端存储Token
-
-实名认证：
-  用户填写姓名+身份证号
-    → 后端调用第三方实名核验API
-    → 核验通过：AES-256加密存储身份证号
-    → 标记id_card_verified = true
-    → 赠送认证奖励积分
-```
-
-### 2. 工具使用完整链路
-```
-用户使用工具流程：
-  1. 用户进入工具详情页
-     → 读取工具配置（Redis缓存）
-     → 展示费用说明和案例
-
-  2. 用户填写参数/对话交互
-     → 前端实时校验输入
-     → 实时估算费用：base_fee + 资源费
-
-  3. 点击「开始生成」
-     → 检查用户积分余额 ≥ 预估费用
-     → 检查实名认证状态
-     → 创建Task记录（status=pending）
-     → 预冻结积分
-     → 提交任务到Celery队列
-     → 返回task_id，前端进入进度页
-
-  4. 任务执行中
-     → Worker拉取任务，更新status=running
-     → 执行器分步执行，每步调用update_progress
-     → 实时写入TaskLog
-     → 调用AI Provider API
-
-  5. 任务完成
-     → 计算实际费用（多退少不补）
-     → 结算：解冻预冻结，扣取实际费用
-     → 创建Work记录和WorkFile记录
-     → 更新Task状态=completed
-     → 触发站内通知（可选）
-
-  6. 异常处理
-     → AI调用失败：自动重试2次 → 仍失败 → 标记failed
-     → 超时失败：status=timeout，全额退还积分
-     → 用户主动取消：根据进度按比例扣费
-```
-
-### 3. 支付与充值流程
-```
-积分充值流程：
-  用户选择充值档位
-    → 创建Order记录（status=pending）
-    → 调用微信支付统一下单API
-    → 返回prepay_id和支付参数
-    → 前端唤起微信支付
-    → 用户支付完成
-    → 微信异步回调notify_url
-    → 后端验证签名，更新order=paid
-    → 发放积分 + 赠送积分
-    → 记录交易流水
-```
-
-### 4. 迭代创作流程
-```
-基于已有成果继续优化：
-  用户在成果详情页点击「继续优化」
-    → 加载历史版本树（支持选择任意版本为父节点）
-    → 展示历史输入参数和最终提示词
-    → 用户输入修改需求
-    → 系统合并上下文
-    → 生成新的prompt_text
-    → 费用预估（迭代优惠：基础费8折）
-    → 创建新Task，parent_id指向原Work
-    → 执行生成流程
-    → 完成后生成新版本Work（version+1）
-    → 版本对比：自动生成差异说明
-```
-
----
-
-## 🧪 标杆工具执行规范
-
-### 标杆工具1：AI有声绘本生成专家
-| 阶段 | 进度 | 操作 | 费用计算 |
-|------|------|------|---------|
-| 1. 故事生成 | 0-15% | LLM根据主题生成完整故事大纲 + 分页故事文本 | 包含在基础费 |
-| 2. 插画提示词生成 | 15-25% | 为每一页生成精准的绘画提示词 | 包含在基础费 |
-| 3. 批量生成插图 | 25-60% | 并行调用图片生成API，N页同时生成 | image_fee × 页数 |
-| 4. 语音合成 | 60-80% | 为每一页故事文本生成语音 narration | audio_fee × 页数 |
-| 5. 排版与打包 | 80-95% | 生成统一封面、PDF排版、打包ZIP | 包含在基础费 |
-| 6. 完成结算 | 100% | 计算总费用，生成预览，保存成果 | - |
-
-### 标杆工具2：AI电商商品详情页生成器
-- 基础费：12积分
-- 图片费：1积分/张
-- 输出：商品主图、详情页分段图片、营销文案、PSD源文件
-- 执行模式：Dify 平台工作流（SSE流式消费）
-
-### 标杆工具3：AI营销文案大师
-- 基础费：8积分
-- 输出：营销文案
-- 执行模式：Celery 转发 + 外部 HTTP 回调
-
----
-
-## 🔒 安全规范
-
-### 数据安全
-- **用户隐私信息**：AES-256 加密存储
-- **身份证号**：脱敏显示（仅显示前后4位）+ SHA-256 哈希去重
-- **数据库备份**：每日全量备份 + 小时级增量备份
-- **操作日志**：所有关键操作留存6个月，可审计
-
-### 接口安全
-- **签名校验**：所有接口请求签名校验
-- **限流策略**：按 User + IP 双重限流
-- **防护**：SQL 注入/XSS/CSRF 防护
-- **幂等性**：敏感接口（支付、扣费）加幂等性Token
-
-### 资金安全
-- **预冻结机制**：扣费前预冻结，任务完成后结算
-- **异常检测**：异常扣费自动检测和退款机制
-- **每日对账**：财务数据每日对账校验
-
----
-
-## 🚀 性能指标要求
-
-| 指标 | 目标值 |
-|------|--------|
-| **首屏加载** | < 1.5秒 (LCP) |
-| **工具详情页** | < 2秒 |
-| **API响应** | 99% < 500ms |
-| **并发用户** | 支持2000并发 |
-| **搜索响应** | < 300ms |
-
----
-
-## 📊 MVP功能范围
-
-### ✅ P0 - 已经完成（上线即有）
-- [x] 完整首页设计（8个区块）、工具卡片、分类导航、搜索
-- [x] 完整工具详情页、效果演示、定价说明、评价展示
-- [x] 微信一键登录注册、个人实名认证
-- [x] 积分充值（微信/支付宝）、按次扣费、消费明细 — **统一在 /pricing 一站式完成**
-- [x] AI有声绘本生成专家完整功能（表单模式） — **含 Mock 执行模式**
-- [x] AI电商商品详情页生成器完整功能 — **Dify 平台对接**
-- [x] AI营销文案大师完整功能 — **HTTP 回调驱动**
-- [x] 成果列表、详情预览、打包下载（含文件服务 API）
-- [x] 构思工具列表、投票功能、查看全部
-- [x] 工具配置管理、用户管理、订单管理、基础数据看板
-- [x] 个人中心完整功能（侧边栏分组 + 4个内容区块 + 真实数据替换）
-- [x] 收藏管理（后端同步 + 乐观更新 + 独立收藏页面）
-- [x] 订单管理（时间筛选 + 统计卡片 + 详情弹窗 + CSV导出）
-- [x] SSE 实时进度推送（Redis Pub/Sub + progress/completed/error 事件）
-- [x] 通用进度更新 API（支持 Dify/外部平台 HTTP 回调）
-- [x] retryTask 任务重试机制（前后端完整实现）
-- [x] 本地文件存储服务（storage/works/{task_id}/ 按任务隔离）
-- [x] 新增业务API端点：/users/stats（个人中心统计）、/tools/recent（最近使用工具）、/payment/custom-recharge（自定义充值）、/payment/orders（订单列表）
-- [x] SSE事件模型优化：独立progress、completed、error三条事件线，支持断线重连状态恢复，结构化进度信息
-- [x] 执行器架构扩展：支持三种执行模式（本地逐步执行、Dify SSE流式消费、外部HTTP回调驱动），Mock执行模式完善
-
-### ⭐ P1 - 已部分完成 / 开发中
-- [x] 对话模式工具（通用对话界面 + 后端预留接口 POST /api/v1/chat/）
-- [x] 迭代创作基础能力（前端入口梳理 + 后端 parent_id/task_id 链路）
-- [x] 通用详情页 usage_modes 配置驱动（form/dialog Tab 切换）
-- [x] 每日签到功能（数据表设计 + 后端接口实现）
-- [ ] 工具评价、通用反馈、建议奖励机制（数据表设计完成，前端开发中）
-- [ ] 邀请机制（用户邀请表、奖励规则已设计，前端接入中）
-- [ ] 中英文切换支持（数据表字段设计完成，前端适配中）
-
-### 🚀 P2 - 后续迭代（上线后1-2个月）
-- [ ] 定时任务、批量生成
-- [ ] 工具定制咨询入口、私有化部署咨询
-- [ ] 开发者入驻初步方案、工具分账机制设计
-
----
-
-## 🧭 开发原则
-
-### 1. 先设计后编码
-- 功能开发前先对照 PRD 确认需求边界
-- 技术方案确认后再动手编码
-- 不确定的地方及时沟通，不做假设
-
-### 2. 最小可行原则
-- 优先实现核心路径，边缘场景后置
-- 不做过度设计，不提前抽象
-- 每个功能完成后及时自测验证
-
-### 3. 代码质量
-- 遵循现有代码风格
-- 新增代码必须有注释
-- 关键业务逻辑必须有单元测试
-- 数据库变更必须通过 Alembic migration
-
-### 4. 安全第一
-- 涉及用户数据的操作必须留痕
-- 支付相关代码必须双人 Review
-- 新增接口必须考虑权限控制
-
----
+- 先设计后编码。
+- 遵循现有代码风格。
+- 优先实现核心路径，不做过度设计。
+- 新增接口必须考虑权限控制。
+- 涉及数据库变更必须通过 Alembic migration。
+- 涉及用户数据、支付、资金和安全相关逻辑必须考虑审计、幂等和回滚。
 
 ## 子代理工作流规范（强制执行）
 
-> ⚠️ 本项目所有子代理任务必须遵循以下规则
+本项目所有子代理任务必须遵循以下规则。
 
 ### 禁止子代理自行执行 git commit
 
-**规则：子代理（implementer）只负责写代码，不执行 git commit。**
-- 子代理完成工作后，只需要在报告中列出所有"修改/创建的文件路径清单"
-- git commit 操作统一由父代理（父会话）按任务批量执行
-- 原因：子代理的隔离环境中git操作经常静默失败，导致出现"报告说已提交，实际没提交"的不一致问题
+子代理只负责写代码，不执行 `git commit`。
+
+- 子代理完成工作后，只需要在报告中列出所有修改/创建的文件路径清单。
+- git commit 操作统一由父代理按任务批量执行。
+- 原因：子代理隔离环境中的 git 操作可能静默失败，导致“报告说已提交，实际没提交”的不一致问题。
 
 ### 派遣子代理的标准 prompt 必须附加规则
 
 父代理每次构造子代理 prompt 时，末尾必须加上这一行：
-```
+
+```text
 ⚠️ 重要规则：不要执行 git commit 命令！完成后只需要列出你修改/创建的所有文件路径，提交操作由父代理统一执行。
 ```
 
-### 父代理的提交责任（强制执行）
+### 父代理提交责任
 
-**规则：父代理收到子代理的完成报告后，必须立即执行 git commit，不需要等待用户提醒。**
+子代理完成实现后，父代理应：
 
-```
-子代理完成实现 → 列出文件清单
-    ↓
-父代理立即 git add 相关文件
-    ↓
-父代理立即 git commit (按任务分批次)
-    ↓
-父代理发送 "已完成并提交" 报告给用户 ✓
-```
-
-**注意事项：**
-- 按每个子代理任务单独 commit，不要混在一起
-- commit message 格式：`feat: 实现 XXX (Task N)`
-- 只有全部验证通过后才发送完成报告
-- 禁止：等用户说"提交一下"才提交
-
----
+1. 查看子代理列出的文件清单。
+2. 运行必要验证。
+3. `git add` 相关文件。
+4. 按任务单独 `git commit`。
+5. 向用户报告“已完成并提交”。
 
 ## Superpowers + gstack 搭配配置
 
 ### Superpowers（思考与流程层）
+
 负责所有 plan、brainstorm、debug、TDD、verify、code review。
+
 触发方式：自动触发。
 
 ### gstack（执行与外部世界层）
+
 负责浏览器操作、QA、ship、deploy、canary、安全审计。
+
 触发方式：斜杠命令手动触发。
 
 ### 浏览器规则
-使用 /browse 作为唯一浏览器入口。
-禁止使用 mcp__claude-in-chrome__* 操作浏览器。
+
+- 使用 `/browse` 作为唯一浏览器入口。
+- 禁止使用 `mcp__claude-in-chrome__*` 操作浏览器。
 
 ### 分工裁决
-- 计划撰写 → Superpowers: writing-plans
-- 计划多视角审查 → gstack: /autoplan
-- 编码 → Superpowers: test-driven-development
-- 调试 → Superpowers: systematic-debugging
-- 真实环境验证 → gstack: /qa
-- 代码审查 → Superpowers: requesting-code-review
-- 发布 → gstack: /ship
-- 安全审计 → gstack: /cso
 
-Available skills: /office-hours, /plan-ceo-review, /plan-eng-review,
-/plan-design-review, /design-consultation, /design-shotgun, /design-html,
-/review, /ship, /land-and-deploy, /canary, /benchmark, /browse, /qa,
-/qa-only, /design-review, /setup-browser-cookies, /setup-deploy, /retro,
-/investigate, /document-release, /codex, /cso, /autoplan, /pair-agent,
-/careful, /freeze, /guard, /unfreeze, /gstack-upgrade, /learn
+- 计划撰写 → Superpowers: writing-plans。
+- 计划多视角审查 → gstack: `/autoplan`。
+- 编码 → Superpowers: test-driven-development。
+- 调试 → Superpowers: systematic-debugging。
+- 真实环境验证 → gstack: `/qa`。
+- 代码审查 → Superpowers: requesting-code-review。
+- 发布 → gstack: `/ship`。
+- 安全审计 → gstack: `/cso`。
 
----
+可用技能以当前会话提供的技能列表为准，不在本文件维护完整技能列表。
 
-## 📚 参考文档
+## 参考入口
 
-| 文档 | 说明 |
-|------|------|
-| `docs/灵创AI工具箱产品需求文档PRD.md` | 完整产品需求说明 |
-| `docs/灵创AI工具箱-技术方案文档-v1.1.md` | 技术架构与详细设计 (V2.0) |
-| `docs/design/` | 页面设计稿与HTML原型 |
-| `docs/superpowers/specs/` | 各模块详细设计文档 |
-| `docs/superpowers/plans/` | 各模块实施计划 |
-| `docs/superpowers/plans/MVP完整开发实施计划.md` | MVP 整体开发计划 |
+- `docs/project/reference-index.md`：项目资料总索引。
+- `docs/superpowers/specs/2026-06-04-claude-md-progressive-disclosure-design.md`：本文件渐进式披露重构设计。
+- `docs/superpowers/plans/2026-06-04-claude-md-progressive-disclosure.md`：本文件渐进式披露重构实施计划。
 
----
-
-**最后更新时间**：2026-05-29
-**文档版本**：V1.2
+**最后更新时间**：2026-06-04  
+**文档版本**：V2.0
