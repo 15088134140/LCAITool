@@ -2,22 +2,22 @@
 
 ## 前端技术栈
 
-| 层级 | 技术选型 | 版本要求 |
-|---|---|---|
-| 用户端前端 | Next.js App Router | 14.x |
-| 管理端前端 | React + Vite | 18.x / 5.x |
-| UI 框架 | Tailwind CSS + shadcn/ui | 3.x |
-| 状态管理 | Zustand | 4.x |
+| 层级       | 技术选型                 | 版本要求   |
+| ---------- | ------------------------ | ---------- |
+| 用户端前端 | Next.js App Router       | 14.x       |
+| 管理端前端 | React + Vite             | 18.x / 5.x |
+| UI 框架    | Tailwind CSS + shadcn/ui | 3.x        |
+| 状态管理   | Zustand                  | 4.x        |
 
 ## 后端技术栈
 
-| 层级 | 技术选型 | 版本要求 |
-|---|---|---|
-| 后端框架 | FastAPI | 0.100+ |
-| 数据库 | PostgreSQL | 16.x |
-| 缓存/队列 | Redis | 7.x |
-| ORM | SQLAlchemy + Alembic | 2.x |
-| 异步任务 | Celery | 5.x |
+| 层级      | 技术选型             | 版本要求 |
+| --------- | -------------------- | -------- |
+| 后端框架  | FastAPI              | 0.100+   |
+| 数据库    | PostgreSQL           | 16.x     |
+| 缓存/队列 | Redis                | 7.x      |
+| ORM       | SQLAlchemy + Alembic | 2.x      |
+| 异步任务  | Celery               | 5.x      |
 
 ## 部署
 
