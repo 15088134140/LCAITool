@@ -106,8 +106,6 @@
 ## 参考入口
 
 - `docs/project/reference-index.md`：项目资料总索引。
-- `docs/superpowers/specs/2026-06-04-claude-md-progressive-disclosure-design.md`：本文件渐进式披露重构设计。
-- `docs/superpowers/plans/2026-06-04-claude-md-progressive-disclosure.md`：本文件渐进式披露重构实施计划。
 
 **最后更新时间**：2026-06-04  
 **文档版本**：V2.0
