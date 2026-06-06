@@ -67,12 +67,36 @@ def _get_redis_client():
         _redis_client = redis.from_url(settings.REDIS_URL)
     return _redis_client
 
-# 执行器映射
+# 执行器映射（保留作为回退，registry 是主要来源）
 EXECUTOR_MAP: Dict[str, type[BaseToolExecutor]] = {
     'storybook-generator': StorybookExecutor,
     'ecommerce-detail': EcommerceExecutor,
     'product-description': MarketingExecutor,
 }
+
+
+def _resolve_initial_executor_class(tool_type: str) -> Optional[type[BaseToolExecutor]]:
+    """初始执行器解析：先用 registry（支持 alias），再用 EXECUTOR_MAP 回退"""
+    from app.executors.registry import get_executor_class as resolve_executor
+    executor_class = resolve_executor(tool_type)
+    if executor_class:
+        return executor_class
+    return EXECUTOR_MAP.get(tool_type)
+
+
+def _resolve_executor_class(tool, fallback_class: type[BaseToolExecutor]) -> type[BaseToolExecutor]:
+    """根据工具配置的 executor_key 解析执行器类，为空时回退到 fallback"""
+    from app.executors.registry import get_executor_class as resolve_executor
+    if tool and getattr(tool, 'executor_key', None):
+        resolved = resolve_executor(tool.executor_key)
+        if resolved:
+            logger.info(f"[Executor] 使用工具配置的 executor_key={tool.executor_key}")
+            return resolved
+        logger.error(
+            f"[Executor] executor_key={tool.executor_key} 在 registry 中未找到，"
+            f"回退到 {fallback_class.__name__}"
+        )
+    return fallback_class
 
 
 class AsyncProgressCallback:
@@ -249,8 +273,8 @@ def execute_tool_task(
         # 存储 Celery 任务 ID，以便取消时能终止 worker
         _store_celery_task_id(task_uuid, self.request.id)
 
-        # 获取执行器类
-        executor_class = EXECUTOR_MAP.get(tool_type)
+        # 获取执行器类（先用 registry 支持 alias，再用 EXECUTOR_MAP 回退）
+        executor_class = _resolve_initial_executor_class(tool_type)
         if not executor_class:
             raise ValueError(f"不支持的工具类型: {tool_type}")
 
@@ -364,6 +388,9 @@ async def _execute_with_async_session(
 
             # 创建异步进度回调
             progress_callback = AsyncProgressCallback(task_uuid)
+
+            # 根据工具配置的 executor_key 解析执行器（优先于传入的 executor_class）
+            executor_class = _resolve_executor_class(tool, executor_class)
 
             # 创建执行器，传入工具配置
             executor = executor_class(

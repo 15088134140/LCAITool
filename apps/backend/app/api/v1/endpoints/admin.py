@@ -535,6 +535,18 @@ async def update_order_status(
     return {"message": "更新成功", "order_id": order_id}
 
 
+# ==================== 执行器管理 ====================
+
+@router.get("/executors", summary="获取可用执行器列表")
+async def list_executors(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """获取可用执行器列表，供管理后台选择 executor_key"""
+    from app.executors.registry import list_executors as get_executors
+    return get_executors()
+
+
 # ==================== 工具管理 ====================
 
 @router.post("/tools", summary="创建工具")

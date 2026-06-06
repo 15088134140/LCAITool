@@ -62,6 +62,7 @@ class ToolBase(BaseModel):
     is_prompt_logging_enabled: bool = Field(False, description="是否记录提示词")
     usage_modes: Optional[list[str]] = Field(default=None, description="使用模式，可选值 form/dialog")
     param_schema: Optional[Any] = Field(None, description="参数字段映射，JSON数组：[{key, label, type, order}]")
+    executor_key: Optional[str] = Field(None, max_length=100, description="执行器Key")
 
 
 class ToolCreate(ToolBase):
@@ -88,6 +89,7 @@ class ToolUpdate(BaseModel):
     is_prompt_logging_enabled: Optional[bool] = Field(None, description="是否记录提示词")
     usage_modes: Optional[list[str]] = Field(None, description="使用模式")
     param_schema: Optional[Any] = Field(None, description="参数字段映射，JSON数组：[{key, label, type, order}]")
+    executor_key: Optional[str] = Field(None, max_length=100, description="执行器Key")
 
 
 class ToolResponse(ToolBase):
