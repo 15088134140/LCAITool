@@ -14,6 +14,7 @@ from app.models.system import (
 )
 from app.models.api_key import ApiKey
 from app.models.external_file import ExternalFile
+from app.models.user_upload import UserUpload
 
 __all__ = [
     "BaseModel",
@@ -24,5 +25,5 @@ __all__ = [
     "PaymentProvider", "OrderStatus", "ReconciliationStatus", "PointTransactionType",
     "RealNameVerification", "IdeaSubmission", "IdeaVote", "AdminAuditLog",
     "Feedback", "SystemConfig", "AiProvider",
-    "ApiKey", "ExternalFile"
+    "ApiKey", "ExternalFile", "UserUpload"
 ]

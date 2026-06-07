@@ -1,81 +1,140 @@
 """
 文件服务 API 端点
-从本地持久化存储读取文件，支持图片预览和 ZIP 下载
+从本地持久化存储读取文件，支持图片预览、ZIP 下载和用户文件上传
 """
 import os
-from fastapi import APIRouter, Depends, HTTPException, Header
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-import uuid
-
-from app.api.deps import get_db
-from app.core.config import settings
 from sqlalchemy import select
+
+from app.api.deps import get_db, get_current_active_user
+from app.core.config import settings
+from app.models.user import User
+from app.models.user_upload import UserUpload
 
 router = APIRouter()
 
+# 允许的 MIME 类型
+ALLOWED_MIME_PREFIXES = (
+    "image/", "application/pdf", "text/plain",
+    "audio/", "video/", "application/zip",
+)
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
 
-@router.get("/works/{work_file_id}", summary="获取成果文件")
-async def get_work_file(
-    work_file_id: uuid.UUID,
+
+def _safe_filename(filename: str) -> str:
+    """生成安全的存储文件名"""
+    name, ext = os.path.splitext(filename)
+    safe_name = "".join(c for c in name if c.isalnum() or c in "._-")
+    return f"{safe_name}{ext}"
+
+
+def _validate_mime(mime_type: str) -> bool:
+    """校验 MIME 类型是否在允许列表中"""
+    for prefix in ALLOWED_MIME_PREFIXES:
+        if prefix.endswith("/"):
+            if mime_type and mime_type.startswith(prefix):
+                return True
+        elif mime_type == prefix:
+            return True
+    return False
+
+
+@router.post("/uploads", summary="上传文件")
+async def upload_file(
+    file: UploadFile = File(...),
+    tool_id: str = Form(None),
+    field_key: str = Form(None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
-    根据 WorkFile ID 获取文件内容
+    用户上传文件（需登录）
 
-    支持：
-    - 图片预览（直接返回图片流）
-    - ZIP 下载（设置 Content-Disposition）
-    - 其他文件类型自动识别 MIME
-
-    注意：文件通过 UUID 引用，无法直接枚举。作品的访问控制由 work 端点负责。
+    - 文件大小限制 20MB
+    - MIME 类型白名单校验
+    - 返回文件元数据供写入 input_params
     """
-    from app.models.task import Work, WorkFile as WorkFileModel
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="文件名为空")
 
-    result = await db.execute(
-        select(WorkFileModel).where(WorkFileModel.id == work_file_id)
+    # 校验文件大小
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail=f"文件大小超过限制（最大 {MAX_FILE_SIZE // 1024 // 1024}MB）")
+
+    # 校验 MIME 类型
+    mime_type = file.content_type or "application/octet-stream"
+    if not _validate_mime(mime_type):
+        raise HTTPException(status_code=400, detail=f"不支持的文件类型: {mime_type}")
+
+    # 生成存储路径
+    upload_id = uuid.uuid4()
+    safe_name = _safe_filename(file.filename)
+    upload_dir = os.path.join(settings.STORAGE_DIR, "uploads", str(current_user.id))
+    os.makedirs(upload_dir, exist_ok=True)
+    storage_name = f"{upload_id}_{safe_name}"
+    file_path = os.path.join(upload_dir, storage_name)
+
+    # 写入文件
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    # 记录到数据库
+    tool_uuid = uuid.UUID(tool_id) if tool_id else None
+    upload = UserUpload(
+        id=upload_id,
+        user_id=current_user.id,
+        tool_id=tool_uuid,
+        field_key=field_key,
+        file_name=file.filename,
+        file_path=os.path.join("uploads", str(current_user.id), storage_name),
+        file_size=file_size,
+        mime_type=mime_type,
     )
-    work_file = result.scalar_one_or_none()
+    db.add(upload)
+    await db.commit()
+    await db.refresh(upload)
 
-    if not work_file:
+    return {
+        "id": str(upload.id),
+        "file_name": upload.file_name,
+        "file_size": upload.file_size,
+        "mime_type": upload.mime_type,
+        "url": f"/api/v1/files/uploads/{upload.id}",
+    }
+
+
+@router.get("/uploads/{upload_id}", summary="获取上传文件")
+async def get_upload_file(
+    upload_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    下载/预览用户上传的文件（需登录，只能访问自己的文件）
+    """
+    result = await db.execute(
+        select(UserUpload).where(
+            UserUpload.id == upload_id,
+            UserUpload.user_id == current_user.id,
+        )
+    )
+    upload = result.scalar_one_or_none()
+    if not upload:
         raise HTTPException(status_code=404, detail="文件不存在")
 
-    # 验证文件所属成果存在
-    work_result = await db.execute(
-        select(Work).where(Work.id == work_file.work_id)
-    )
-    work = work_result.scalar_one_or_none()
-    if not work:
-        raise HTTPException(status_code=404, detail="文件所属成果不存在")
-
-    # 构建文件路径
-    file_path = os.path.join(settings.WORKS_DIR, str(work.task_id), work_file.file_url)
-
-    if not os.path.exists(file_path):
+    full_path = os.path.join(settings.STORAGE_DIR, str(upload.file_path))
+    if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail="文件不存在或已被清理")
 
-    # 根据文件类型设置 Content-Type
-    media_type_map = {
-        "image": "image/png",
-        "audio": "audio/wav",
-        "pdf": "application/pdf",
-        "psd": "application/octet-stream",
-        "other": "application/octet-stream",
-    }
-    media_type = media_type_map.get(work_file.file_type, "application/octet-stream")
-
-    # .md 文件返回 text/markdown 以便浏览器正确渲染
-    if work_file.file_name and work_file.file_name.endswith('.md'):
-        media_type = "text/markdown; charset=utf-8"
-
-    # ZIP 文件设置下载头
-    headers = {}
-    if work_file.file_type == "other" and work_file.file_name.endswith(".zip"):
-        headers["Content-Disposition"] = f'attachment; filename="{work_file.file_name}"'
-
     return FileResponse(
-        path=file_path,
-        media_type=media_type,
-        filename=work_file.file_name,
-        headers=headers
+        path=full_path,
+        media_type=str(upload.mime_type or "application/octet-stream"),
+        filename=str(upload.file_name),
     )
