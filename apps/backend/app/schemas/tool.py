@@ -63,6 +63,7 @@ class ToolBase(BaseModel):
     usage_modes: Optional[list[str]] = Field(default=None, description="使用模式，可选值 form/dialog")
     param_schema: Optional[Any] = Field(None, description="参数字段映射，JSON数组：[{key, label, type, order}]")
     executor_key: Optional[str] = Field(None, max_length=100, description="执行器Key")
+    pricing_schema: Optional[Any] = Field(None, description="工具计价规则配置")
 
 
 class ToolCreate(ToolBase):
@@ -90,6 +91,7 @@ class ToolUpdate(BaseModel):
     usage_modes: Optional[list[str]] = Field(None, description="使用模式")
     param_schema: Optional[Any] = Field(None, description="参数字段映射，JSON数组：[{key, label, type, order}]")
     executor_key: Optional[str] = Field(None, max_length=100, description="执行器Key")
+    pricing_schema: Optional[Any] = Field(None, description="工具计价规则配置")
 
 
 class ToolResponse(ToolBase):

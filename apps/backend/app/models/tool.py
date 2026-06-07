@@ -61,6 +61,7 @@ class Tool(BaseModel):
     usage_modes = Column(JSONType, nullable=True, comment="使用模式，JSON数组：[\"form\", \"dialog\"]")
     param_schema = Column(JSONType, nullable=True, comment="参数字段映射，JSON数组：[{key, label, type, order}]")
     executor_key = Column(String(100), nullable=True, index=True, comment="执行器Key，为空时回退slug/task_type")
+    pricing_schema = Column(JSONType, nullable=True, comment="工具计价规则配置")
 
     category_obj = relationship("ToolCategory", back_populates="tools")
     favorites = relationship("ToolFavorite", back_populates="tool", cascade="all, delete-orphan")

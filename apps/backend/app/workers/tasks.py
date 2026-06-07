@@ -99,6 +99,18 @@ def _resolve_executor_class(tool, fallback_class: type[BaseToolExecutor]) -> typ
     return fallback_class
 
 
+def _calculate_actual_cost(tool, input_params: Dict[str, Any], executor: BaseToolExecutor) -> int:
+    """计算实际费用：优先使用 PricingService，回退执行器 estimate_cost"""
+    try:
+        from app.services.pricing_service import PricingService
+        result = PricingService.estimate_tool_cost(tool, input_params)
+        logger.info(f"[Pricing] PricingService 计算费用: total={result.total}, warnings={result.warnings}")
+        return result.total
+    except Exception as e:
+        logger.info(f"[Pricing] PricingService 不可用 ({e})，回退到执行器 estimate_cost")
+        return executor.estimate_cost(input_params)
+
+
 class AsyncProgressCallback:
     """异步进度回调类，用于在执行器执行过程中更新进度和发布消息"""
 
@@ -407,8 +419,8 @@ async def _execute_with_async_session(
             else:
                 result = await executor.execute(input_params)
 
-                # 结算任务（计算实际费用）
-                actual_cost = executor.estimate_cost(input_params)
+                # 结算任务（计算实际费用）：优先使用 PricingService，回退执行器 estimate_cost
+                actual_cost = _calculate_actual_cost(tool, input_params, executor)
 
                 logger.info(
                     f"[Settlement] task={task_uuid} "

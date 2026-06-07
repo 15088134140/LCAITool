@@ -28,6 +28,26 @@ from app.workers.tasks import execute_tool_task, publish_task_message
 router = APIRouter()
 
 
+async def _calculate_task_cost(db: AsyncSession, task_in: TaskCreate) -> int:
+    """后端计算任务费用：优先 PricingService，回退执行器 estimate_cost"""
+    from app.services.pricing_service import PricingService, PricingNotConfiguredError
+    from app.executors.registry import get_executor_class
+
+    # 查询工具获取 pricing_schema 和单价字段
+    if task_in.tool_id:
+        result = await db.execute(select(Tool).where(Tool.id == task_in.tool_id))
+        tool = result.scalar_one_or_none()
+        if tool:
+            try:
+                pricing_result = PricingService.estimate_tool_cost(tool, task_in.input_params or {})
+                return pricing_result.total
+            except PricingNotConfiguredError:
+                pass
+
+    # 回退：用前端传入的 estimated_cost
+    return task_in.estimated_cost or 0
+
+
 class ProgressUpdateRequest(BaseModel):
     progress: int = Field(..., ge=0, le=100, description="进度 0-100")
     message: str = Field("", description="进度消息")
@@ -72,6 +92,12 @@ async def create_task(
     """
     # 确保使用当前用户ID
     task_in.user_id = current_user.id
+
+    # 后端重新计算费用（不信任前端传入的 estimated_cost）
+    estimated_cost = await _calculate_task_cost(db, task_in)
+
+    # 覆盖前端传入的 estimated_cost
+    task_in.estimated_cost = estimated_cost
 
     # 创建任务（含预冻结积分）
     task = await TaskService.create_task(db=db, task_in=task_in)
