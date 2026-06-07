@@ -13,6 +13,7 @@ from app.api.deps import get_db, get_current_active_user
 from app.core.config import settings
 from app.models.user import User
 from app.models.user_upload import UserUpload
+from app.models.task import Work, WorkFile
 
 router = APIRouter()
 
@@ -137,4 +138,43 @@ async def get_upload_file(
         path=full_path,
         media_type=str(upload.mime_type or "application/octet-stream"),
         filename=str(upload.file_name),
+    )
+
+
+@router.get("/works/{file_id}", summary="获取/预览成果文件")
+async def get_work_file(
+    file_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    返回 WorkFile 对应的二进制（图片/音频/PDF/文本等）。
+
+    供 <img src>、<audio src>、浏览器直接预览使用，**不要求 Bearer Token**。
+    访问者必须先拿到具体 WorkFile.id（UUID v4），UUID 充当能力凭证。
+    需要受控访问的能力（私密成果、付费成果）走 /works/{work_id}/download。
+    """
+    wf = (
+        await db.execute(select(WorkFile).where(WorkFile.id == file_id))
+    ).scalar_one_or_none()
+    if not wf:
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    work = (
+        await db.execute(select(Work).where(Work.id == wf.work_id))
+    ).scalar_one_or_none()
+    if not work:
+        raise HTTPException(status_code=404, detail="成果不存在")
+
+    # 实际磁盘路径：STORAGE_DIR/works/{task_id}/{file_url}
+    # file_url 在 DB 中是相对 task 目录的路径，如 "images/page_001.png" / "storybook.pdf"
+    full_path = os.path.join(
+        settings.STORAGE_DIR, "works", str(work.task_id), str(wf.file_url)
+    )
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=404, detail="文件已被清理")
+
+    return FileResponse(
+        path=full_path,
+        media_type=str(wf.mime_type or "application/octet-stream"),
+        filename=str(wf.file_name),
     )
