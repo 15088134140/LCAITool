@@ -41,7 +41,7 @@ class MarketingExecutor(BaseToolExecutor):
 
         真实场景下，外部平台通过 POST /tasks/{id}/progress 驱动进度。
         """
-        platform_count = params.get('platform_count', 3)
+        platform_count = params.get('platformCount', 3)
         total_steps = 3  # 需求分析 → 文案生成 → 保存
 
         # Step 1: 需求分析 (0-30%)

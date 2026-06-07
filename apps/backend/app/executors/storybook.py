@@ -71,16 +71,17 @@ class StorybookExecutor(BaseToolExecutor):
         :return: 预估费用（积分）
         """
         page_count = params.get('page_count', 5)
-        include_audio = params.get('include_audio', True)
+        voice_type = params.get('voiceType', 'none')
+        include_audio = voice_type != 'none'
 
         base_fee = self._tool_config.get('base_fee', 20)
         image_fee = self._tool_config.get('image_fee', 2)
         audio_fee = self._tool_config.get('audio_fee', 1)
 
         total = base_fee
-        total += image_fee * page_count
+        total += image_fee * (page_count or 1)
         if include_audio:
-            total += audio_fee * page_count
+            total += audio_fee * (page_count or 1)
 
         return total
 
@@ -106,14 +107,15 @@ class StorybookExecutor(BaseToolExecutor):
         target_age = params.get('target_age', '3-6')
         page_count = params.get('page_count', 5)
         art_style = params.get('art_style', 'watercolor')
-        custom_style = params.get('custom_style', '')
-        include_audio = params.get('include_audio', True)
-        voice_type = params.get('voice_type', 'tongtong')
+        # allowCustom 机制下 art_style 直接就是用户输入值，不再有 custom_style
+        voice_type = params.get('voiceType', 'tongtong')
+        # 根据 voiceType 判断是否包含音频（替代 include_audio）
+        include_audio = voice_type != 'none'
         smart_page_count = params.get('smart_page_count', False)
 
-        # 如果自定义风格不为空，覆盖 art_style
-        if custom_style:
-            art_style = custom_style
+        # smart_page_count 为 true 时 page_count 可能为 null，由执行器内部处理
+        if smart_page_count and not page_count:
+            page_count = None  # 让 AI 决定页数
 
         # 初始化结果数据
         result_data = snapshot.get('data', {}) if snapshot else {}

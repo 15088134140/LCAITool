@@ -163,17 +163,60 @@ async def seed_tools(db: AsyncSession):
             base_fee=20, image_fee=2, audio_fee=3, token_fee=0,
             status=1, use_count=128, favorite_count=45, rating_count=32, rating_avg=4.7,
             is_featured=True, usage_modes=["form"],
+            executor_key="storybook-generator",
+            pricing_schema=json.dumps({
+                "version": 1, "currency": "credits", "rounding": "ceil",
+                "items": [
+                    {"key": "base", "type": "fixed", "label": "绘本生成基础费", "amount_ref": "base_fee"},
+                    {"key": "page_images", "type": "per_unit", "label": "插画生成费",
+                     "field": "page_count", "unit_amount_ref": "image_fee",
+                     "default_quantity": 1, "min_quantity": 1, "max_quantity": 30},
+                    {"key": "page_audio", "type": "per_unit", "label": "语音合成费",
+                     "field": "page_count", "unit_amount_ref": "audio_fee",
+                     "default_quantity": 1, "min_quantity": 1, "max_quantity": 30,
+                     "when": {"field": "include_audio", "operator": "eq", "value": True}}
+                ],
+                "display": {"show_breakdown": True, "total_label": "预计消耗", "unit_label": "积分"}
+            }),
             param_schema=json.dumps([
-                {"key": "theme", "label": "故事主题", "type": "text", "order": 1},
-                {"key": "style", "label": "绘画风格", "type": "text", "order": 2},
-                {"key": "art_style", "label": "绘画风格", "type": "text", "order": 2},
-                {"key": "page_count", "label": "页数", "type": "number", "order": 3},
-                {"key": "target_age", "label": "目标年龄", "type": "text", "order": 4},
-                {"key": "language", "label": "语言", "type": "text", "order": 5},
-                {"key": "prompt", "label": "提示词", "type": "textarea", "order": 6},
-                {"key": "voice_type", "label": "音色", "type": "text", "order": 7},
-                {"key": "include_audio", "label": "包含音频", "type": "boolean", "order": 8},
-                {"key": "smart_page_count", "label": "智能页数", "type": "boolean", "order": 9},
+                {"key": "_section_basic", "type": "section", "label": "基础信息", "order": 1},
+                {"key": "inputMode", "label": "创作方式", "type": "radio", "required": True, "defaultValue": "theme", "uiHint": "card",
+                 "options": [
+                     {"label": "主题创作", "value": "theme", "icon": "📝", "desc": "输入关键词，AI 自动创作故事"},
+                     {"label": "文案改编", "value": "storyContent", "icon": "📖", "desc": "粘贴已有文案，AI 提炼为绘本"}
+                 ], "order": 2},
+                {"key": "theme", "label": "绘本主题", "type": "text", "required": True, "placeholder": "例如：小兔子的森林冒险", "defaultValue": "小蝌蚪找妈妈", "order": 3,
+                 "condition": {"when": {"field": "inputMode", "operator": "eq", "value": "theme"}, "effect": "show"}},
+                {"key": "storyContent", "label": "故事文案", "type": "textarea", "required": True, "placeholder": "粘贴您已有的故事文案，AI 将提炼为绘本故事大纲...", "order": 4,
+                 "condition": {"when": {"field": "inputMode", "operator": "eq", "value": "storyContent"}, "effect": "show"}},
+                {"key": "_section_style", "type": "section", "label": "风格设置", "order": 10},
+                {"key": "art_style", "label": "艺术风格", "type": "radio", "required": True, "defaultValue": "cartoon", "uiHint": "card", "allowCustom": True,
+                 "options": [
+                     {"label": "卡通水彩", "value": "cartoon", "icon": "🎨"},
+                     {"label": "梦幻油画", "value": "oil", "icon": "🖼️"},
+                     {"label": "日系动漫", "value": "watercolor", "icon": "🌸"},
+                     {"label": "扁平插画", "value": "flat", "icon": "💎"}
+                 ], "order": 11},
+                {"key": "target_age", "label": "目标年龄段", "type": "select", "required": True, "defaultValue": "3-6",
+                 "options": [
+                     {"label": "3-6岁", "value": "3-6"},
+                     {"label": "6-9岁", "value": "6-9"},
+                     {"label": "9-12岁", "value": "9-12"}
+                 ], "order": 12},
+                {"key": "smart_page_count", "label": "智能决策页数", "type": "boolean", "defaultValue": False, "order": 13},
+                {"key": "page_count", "label": "绘本页数", "type": "number", "required": False, "min": 1, "max": 30, "defaultValue": 1, "order": 14,
+                 "condition": {"when": {"field": "smart_page_count", "operator": "eq", "value": False}, "effect": "enable"}},
+                {"key": "_section_audio", "type": "section", "label": "音频设置", "order": 20},
+                {"key": "voiceType", "label": "配音音色", "type": "radio", "required": False, "defaultValue": "tongtong", "uiHint": "card",
+                 "options": [
+                     {"label": "温柔女声", "value": "tongtong", "icon": "👩"},
+                     {"label": "磁性男声", "value": "xiaochen", "icon": "👨"},
+                     {"label": "可爱童声", "value": "chuichui", "icon": "👧"},
+                     {"label": "故事主播", "value": "luodo", "icon": "🧙"},
+                     {"label": "不需要", "value": "none", "icon": "🚫"}
+                 ], "order": 21},
+                {"key": "hasBackgroundMusic", "label": "添加背景音乐", "type": "boolean", "defaultValue": False, "order": 22},
+                {"key": "hasSoundEffects", "label": "添加音效", "type": "boolean", "defaultValue": False, "order": 23},
             ]),
         ),
         Tool(
@@ -187,12 +230,45 @@ async def seed_tools(db: AsyncSession):
             status=1, use_count=96, favorite_count=32, rating_count=18, rating_avg=4.5,
             is_featured=True, usage_modes=["form"],
             cover_image="https://picsum.photos/seed/ecommerce1/600/400|https://picsum.photos/seed/ecommerce2/600/400|https://picsum.photos/seed/ecommerce3/600/400",
+            executor_key="ecommerce-detail",
+            pricing_schema=json.dumps({
+                "version": 1, "currency": "credits", "rounding": "ceil",
+                "items": [
+                    {"key": "base", "type": "fixed", "label": "电商详情页基础费", "amount_ref": "base_fee"},
+                    {"key": "main_images", "type": "per_unit", "label": "主图生成费",
+                     "field": "mainImageCount", "unit_amount_ref": "image_fee",
+                     "default_quantity": 3, "min_quantity": 1, "max_quantity": 5},
+                    {"key": "detail_images", "type": "per_unit", "label": "详情图生成费",
+                     "field": "detailImageCount", "unit_amount_ref": "image_fee",
+                     "default_quantity": 3, "min_quantity": 2, "max_quantity": 10}
+                ],
+                "display": {"show_breakdown": True, "total_label": "预计消耗", "unit_label": "积分"}
+            }),
             param_schema=json.dumps([
-                {"key": "product_name", "label": "商品名称", "type": "text", "order": 1},
-                {"key": "product_features", "label": "核心卖点", "type": "text", "order": 2},
-                {"key": "brand_style", "label": "品牌风格", "type": "text", "order": 3},
-                {"key": "target_audience", "label": "目标人群", "type": "text", "order": 4},
-                {"key": "image_count", "label": "详情图数量", "type": "number", "order": 5},
+                {"key": "_section_basic", "type": "section", "label": "商品信息", "order": 1},
+                {"key": "productName", "label": "商品名称", "type": "text", "required": True, "placeholder": "请输入商品名称", "order": 2},
+                {"key": "productCategory", "label": "商品类目", "type": "select", "required": False,
+                 "options": [
+                     {"label": "电子产品", "value": "electronics"},
+                     {"label": "时尚服饰", "value": "fashion"},
+                     {"label": "美妆护肤", "value": "beauty"},
+                     {"label": "食品饮料", "value": "food"},
+                     {"label": "家居生活", "value": "home"},
+                     {"label": "其他", "value": "other"}
+                 ], "order": 3},
+                {"key": "productFeatures", "label": "核心卖点", "type": "textarea", "required": True, "placeholder": "请输入商品的核心卖点和特色", "order": 4},
+                {"key": "targetAudience", "label": "目标人群", "type": "text", "placeholder": "例如：25-35岁都市白领女性", "order": 5},
+                {"key": "_section_style", "type": "section", "label": "风格与数量", "order": 10},
+                {"key": "imageStyle", "label": "视觉风格", "type": "radio", "required": True, "defaultValue": "professional", "uiHint": "card",
+                 "options": [
+                     {"label": "专业商务", "value": "professional", "icon": "💼"},
+                     {"label": "简约清新", "value": "minimal", "icon": "🌿"},
+                     {"label": "生活方式", "value": "lifestyle", "icon": "📸"},
+                     {"label": "科技感", "value": "tech", "icon": "⚡"}
+                 ], "order": 11},
+                {"key": "mainImageCount", "label": "主图数量", "type": "range", "required": False, "defaultValue": 3, "min": 1, "max": 5, "order": 12},
+                {"key": "detailImageCount", "label": "详情图数量", "type": "range", "required": False, "defaultValue": 3, "min": 2, "max": 10, "order": 13},
+                {"key": "includePsd", "label": "导出PSD源文件", "type": "boolean", "defaultValue": True, "order": 14},
             ]),
         ),
         Tool(
@@ -205,12 +281,41 @@ async def seed_tools(db: AsyncSession):
             base_fee=5, image_fee=0, audio_fee=0, token_fee=0,
             status=1, use_count=200, favorite_count=60, rating_count=45, rating_avg=4.6,
             is_featured=True, usage_modes=["form"],
+            executor_key="product-description",
+            pricing_schema=json.dumps({
+                "version": 1, "currency": "credits", "rounding": "ceil",
+                "items": [
+                    {"key": "base", "type": "fixed", "label": "营销文案基础费", "amount_ref": "base_fee"}
+                ],
+                "display": {"show_breakdown": True, "total_label": "预计消耗", "unit_label": "积分"}
+            }),
             param_schema=json.dumps([
-                {"key": "product_name", "label": "商品名称", "type": "text", "order": 1},
-                {"key": "keywords", "label": "关键词", "type": "text", "order": 2},
-                {"key": "platform", "label": "发布平台", "type": "text", "order": 3},
-                {"key": "tone", "label": "文案语气", "type": "text", "order": 4},
-                {"key": "output_count", "label": "生成版本数", "type": "number", "order": 5},
+                {"key": "_section_basic", "type": "section", "label": "基本信息", "order": 1},
+                {"key": "productOrBrand", "label": "产品/品牌名称", "type": "text", "required": True, "placeholder": "请输入产品名称或品牌", "order": 2},
+                {"key": "keySellingPoints", "label": "核心卖点", "type": "textarea", "required": True, "placeholder": "请输入产品的核心卖点和优势", "order": 3},
+                {"key": "_section_style", "type": "section", "label": "风格设置", "order": 10},
+                {"key": "targetPlatform", "label": "目标平台", "type": "select", "required": False, "defaultValue": "all",
+                 "options": [
+                     {"label": "全平台", "value": "all"},
+                     {"label": "小红书", "value": "xiaohongshu"},
+                     {"label": "微信", "value": "wechat"},
+                     {"label": "抖音", "value": "douyin"},
+                     {"label": "微博", "value": "weibo"}
+                 ], "order": 11},
+                {"key": "toneStyle", "label": "文案风格", "type": "radio", "required": True, "defaultValue": "professional", "uiHint": "card",
+                 "options": [
+                     {"label": "专业正式", "value": "professional", "icon": "💼"},
+                     {"label": "亲切友好", "value": "friendly", "icon": "😊"},
+                     {"label": "幽默风趣", "value": "humorous", "icon": "😄"},
+                     {"label": "高端奢华", "value": "luxury", "icon": "💎"}
+                 ], "order": 12},
+                {"key": "copyLength", "label": "文案长度", "type": "select", "required": False, "defaultValue": "medium",
+                 "options": [
+                     {"label": "短文案", "value": "short"},
+                     {"label": "中等长度", "value": "medium"},
+                     {"label": "长文案", "value": "long"}
+                 ], "order": 13},
+                {"key": "platformCount", "label": "生成平台数量", "type": "hidden", "defaultValue": 3, "order": 14},
             ]),
         ),
         Tool(
@@ -268,6 +373,8 @@ async def seed_tools(db: AsyncSession):
             existing_tool.usage_modes = tool.usage_modes
             existing_tool.cover_image = tool.cover_image
             existing_tool.param_schema = tool.param_schema
+            existing_tool.executor_key = tool.executor_key
+            existing_tool.pricing_schema = tool.pricing_schema
             count += 1
     await db.commit()
     print(f"  ✓ 已同步 {count} 个工具")

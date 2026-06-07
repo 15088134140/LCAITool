@@ -48,8 +48,8 @@ class EcommerceExecutor(BaseToolExecutor):
         self._tool_config = tool or {}
 
     def estimate_cost(self, params: Dict[str, Any]) -> int:
-        main_image_count = params.get('main_image_count', 3)
-        detail_image_count = params.get('detail_image_count', 3)
+        main_image_count = params.get('mainImageCount', 3)
+        detail_image_count = params.get('detailImageCount', 3)
         total_images = main_image_count + detail_image_count
 
         base_fee = self._tool_config.get('base_fee', 12)
@@ -57,7 +57,7 @@ class EcommerceExecutor(BaseToolExecutor):
         result = base_fee + total_images * image_fee
         logger.info(
             f"[EcommerceExecutor.estimate_cost] "
-            f"main_image_count={main_image_count}, detail_image_count={detail_image_count}, "
+            f"mainImageCount={main_image_count}, detailImageCount={detail_image_count}, "
             f"base_fee={base_fee}, image_fee={image_fee}, result={result}"
         )
         return result
@@ -66,10 +66,10 @@ class EcommerceExecutor(BaseToolExecutor):
         works_dir = self.get_works_dir()
         _t0 = time.time()
         dify_inputs = {
-            "product_name": params.get("product_name", ""),
-            "product_description": params.get("product_description", ""),
-            "main_image_count": params.get("main_image_count", 3),
-            "detail_image_count": params.get("detail_image_count", 3),
+            "product_name": params.get("productName", ""),
+            "product_description": params.get("productFeatures", ""),
+            "main_image_count": params.get("mainImageCount", 3),
+            "detail_image_count": params.get("detailImageCount", 3),
         }
 
         # 调用 Dify Workflow Run API (streaming)
