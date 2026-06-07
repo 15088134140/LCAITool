@@ -153,12 +153,12 @@ class ToolRatingResponse(BaseModel):
     tool_id: uuid.UUID
     task_id: uuid.UUID
     rating: int
-    content: Optional[str]
-    images: Optional[str]
+    content: Optional[str] = None
+    images: Optional[str] = None
     is_useful_count: int
     status: int
-    admin_reply: Optional[str]
-    replied_at: Optional[int]
+    admin_reply: Optional[str] = None
+    replied_at: Optional[int] = None
     created_at: int
     updated_at: int
     user: Optional[RatingUserInfo] = None

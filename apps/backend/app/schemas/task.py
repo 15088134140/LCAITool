@@ -32,12 +32,12 @@ class TaskInDBBase(TaskBase):
     user_id: uuid.UUID
     status: str
     progress: int
-    progress_message: Optional[str]
-    result_preview: Optional[str]
-    error_message: Optional[str]
-    actual_cost: Optional[int]
-    started_at: Optional[int]
-    completed_at: Optional[int]
+    progress_message: Optional[str] = None
+    result_preview: Optional[str] = None
+    error_message: Optional[str] = None
+    actual_cost: Optional[int] = None
+    started_at: Optional[int] = None
+    completed_at: Optional[int] = None
     created_at: int
     updated_at: int
 
@@ -52,7 +52,7 @@ class Task(TaskInDBBase):
 
 class TaskDetail(TaskInDBBase):
     """任务详情（包含快照数据）"""
-    snapshot_data: Optional[Dict[str, Any]]
+    snapshot_data: Optional[Dict[str, Any]] = None
     tool_name: Optional[str] = Field(None, description="工具名称")
     tool_cover: Optional[str] = Field(None, description="工具封面图")
 
@@ -115,7 +115,7 @@ class WorkInDBBase(WorkBase):
     id: uuid.UUID
     user_id: uuid.UUID
     task_id: uuid.UUID
-    parent_id: Optional[uuid.UUID]
+    parent_id: Optional[uuid.UUID] = None
     version: int
     view_count: int
     like_count: int

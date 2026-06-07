@@ -35,7 +35,7 @@ class WorkInDBBase(WorkBase):
     id: uuid.UUID
     user_id: uuid.UUID
     task_id: uuid.UUID
-    parent_id: Optional[uuid.UUID]
+    parent_id: Optional[uuid.UUID] = None
     version: int
     view_count: int
     like_count: int
@@ -111,14 +111,14 @@ class WorkShareCreate(WorkShareBase):
 class WorkShareInDBBase(WorkShareBase):
     id: uuid.UUID
     work_id: uuid.UUID
-    share_url: Optional[str]
-    expire_at: Optional[int]
+    share_url: Optional[str] = None
+    expire_at: Optional[int] = None
     view_count: int
     like_count: int
     comment_count: int
     status: str
-    reviewed_by: Optional[uuid.UUID]
-    reviewed_at: Optional[int]
+    reviewed_by: Optional[uuid.UUID] = None
+    reviewed_at: Optional[int] = None
     created_at: int
 
     model_config = {"from_attributes": True}
