@@ -17,6 +17,7 @@ export * from './modules/payment';
 export * from './modules/idea';
 export * from './modules/chat';
 export * from './modules/feedback';
+export * from './modules/upload';
 
 // 按命名空间导出，方便使用
 import { authApi, userApi } from './modules/user';
@@ -27,6 +28,7 @@ import { paymentApi } from './modules/payment';
 import { ideaApi } from './modules/idea';
 import { chatApi } from './modules/chat';
 import { feedbackApi } from './modules/feedback';
+import { uploadApi } from './modules/upload';
 
 export const apiModules = {
   auth: { ...authApi },
@@ -39,6 +41,7 @@ export const apiModules = {
   idea: { ...ideaApi },
   chat: { ...chatApi },
   feedback: { ...feedbackApi },
+  upload: { ...uploadApi },
 };
 
 export default apiModules;

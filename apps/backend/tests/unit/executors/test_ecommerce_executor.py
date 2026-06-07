@@ -42,8 +42,8 @@ class TestEcommerceExecutor:
 
         # 自定义数量
         params_custom = {
-            'main_image_count': 5,
-            'detail_image_count': 5
+            'mainImageCount': 5,
+            'detailImageCount': 5
         }
         cost_custom = executor.estimate_cost(params_custom)
         assert cost_custom == 12 + (5 + 5) * 2
@@ -51,8 +51,8 @@ class TestEcommerceExecutor:
 
         # 只有主图
         params_only_main = {
-            'main_image_count': 5,
-            'detail_image_count': 0
+            'mainImageCount': 5,
+            'detailImageCount': 0
         }
         cost_only_main = executor.estimate_cost(params_only_main)
         assert cost_only_main == 12 + 5 * 2
