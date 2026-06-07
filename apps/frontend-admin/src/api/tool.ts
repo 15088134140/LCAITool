@@ -1,5 +1,115 @@
 import request from '@/utils/request';
 
+// ==================== 动态表单字段类型 ====================
+
+export type ToolParamFieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'select'
+  | 'radio'
+  | 'radioCard'
+  | 'checkbox'
+  | 'boolean'
+  | 'date'
+  | 'file'
+  | 'section'
+  | 'range'
+  | 'hidden';
+
+export interface ToolParamOption {
+  label: string;
+  value: string | number;
+  icon?: string;
+  desc?: string;
+}
+
+export interface ToolParamCondition {
+  when: {
+    field: string;
+    operator: 'eq' | 'neq' | 'in' | 'nin';
+    value: any;
+  };
+  effect: 'show' | 'hide' | 'enable' | 'disable';
+}
+
+export interface ToolParamField {
+  key: string;
+  label: string;
+  type: ToolParamFieldType;
+  required?: boolean;
+  placeholder?: string;
+  helpText?: string;
+  defaultValue?: string | number | boolean | string[] | null;
+  options?: ToolParamOption[];
+  min?: number;
+  max?: number;
+  step?: number;
+  order?: number;
+  accept?: string;
+  multiple?: boolean;
+  maxSizeMB?: number;
+  maxFiles?: number;
+  allowCustom?: boolean;
+  condition?: ToolParamCondition;
+  uiHint?: 'card';
+}
+
+// ==================== 计价规则类型 ====================
+
+export type PricingAmountRef = 'base_fee' | 'image_fee' | 'audio_fee' | 'token_fee';
+
+export interface PricingWhenCondition {
+  field: string;
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'truthy' | 'falsy';
+  value?: any;
+}
+
+export interface PricingItemFixed {
+  key: string;
+  type: 'fixed';
+  label: string;
+  amount_ref: PricingAmountRef;
+  when?: PricingWhenCondition;
+}
+
+export interface PricingItemPerUnit {
+  key: string;
+  type: 'per_unit';
+  label: string;
+  field: string;
+  unit_amount_ref: PricingAmountRef;
+  default_quantity?: number;
+  min_quantity?: number;
+  max_quantity?: number;
+  unit_size?: number;
+  when?: PricingWhenCondition;
+}
+
+export type PricingItem = PricingItemFixed | PricingItemPerUnit;
+
+export interface PricingSchema {
+  version: 1;
+  currency: 'credits';
+  rounding?: 'ceil' | 'floor' | 'round';
+  min_total?: number | null;
+  max_total?: number | null;
+  items: PricingItem[];
+  display?: {
+    show_breakdown?: boolean;
+    total_label?: string;
+    unit_label?: string;
+  };
+}
+
+// ==================== 执行器类型 ====================
+
+export interface ExecutorInfo {
+  key: string;
+  name: string;
+  description: string;
+}
+
 export interface Tool {
   id: string;
   slug: string;
@@ -20,6 +130,9 @@ export interface Tool {
   is_mock_enabled?: boolean;
   is_prompt_logging_enabled?: boolean;
   usage_modes?: string[];
+  param_schema?: ToolParamField[] | null;
+  pricing_schema?: PricingSchema | null;
+  executor_key?: string | null;
   use_count: number;
   favorite_count: number;
   rating_count: number;
@@ -94,6 +207,9 @@ export interface CreateToolParams {
   is_mock_enabled?: boolean;
   is_prompt_logging_enabled?: boolean;
   usage_modes?: string[];
+  param_schema?: ToolParamField[] | null;
+  pricing_schema?: PricingSchema | null;
+  executor_key?: string | null;
 }
 
 export interface UpdateToolParams {
@@ -116,6 +232,9 @@ export interface UpdateToolParams {
   is_mock_enabled?: boolean;
   is_prompt_logging_enabled?: boolean;
   usage_modes?: string[];
+  param_schema?: ToolParamField[] | null;
+  pricing_schema?: PricingSchema | null;
+  executor_key?: string | null;
 }
 
 export interface CreateDemoParams {
@@ -260,5 +379,10 @@ export const toolApi = {
   // 更新演示案例排序
   updateDemoOrder: (toolId: string, demoIds: string[]) => {
     return request.put(`${ADMIN_PREFIX}/tools/${toolId}/demos/order`, { demo_ids: demoIds });
+  },
+
+  // 获取可用执行器列表
+  getExecutors: () => {
+    return request.get<ExecutorInfo[]>(`${ADMIN_PREFIX}/executors`);
   },
 };

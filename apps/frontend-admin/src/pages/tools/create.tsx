@@ -2,8 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
 import { useAppStore } from '@/store';
-import { toolApi, ToolCategory, CreateToolParams } from '@/api';
+import { toolApi, ToolCategory, CreateToolParams, ToolParamField, PricingSchema } from '@/api';
 import { Button } from '@lcaitool/ui';
+import {
+  DynamicSchemaEditor,
+  PricingSchemaEditor,
+  ExecutorSelect,
+} from '@/components/ToolFormDesigner';
 
 const CreateTool = () => {
   const navigate = useNavigate();
@@ -29,6 +34,10 @@ const CreateTool = () => {
     status: 0,
     is_mock_enabled: false,
     is_prompt_logging_enabled: false,
+    usage_modes: ['form'],
+    param_schema: [],
+    pricing_schema: null,
+    executor_key: null,
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -411,6 +420,97 @@ const CreateTool = () => {
               />
             </div>
           </div>
+        </div>
+
+        {/* ===== 使用模式 ===== */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">使用模式</h2>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.usage_modes?.includes('form') ?? true}
+                onChange={(e) => {
+                  const modes = formData.usage_modes || ['form'];
+                  if (e.target.checked) {
+                    handleInputChange('usage_modes', Array.from(new Set([...modes, 'form'])));
+                  } else {
+                    const newModes = modes.filter((m) => m !== 'form');
+                    if (newModes.length > 0) {
+                      handleInputChange('usage_modes', newModes);
+                    }
+                  }
+                }}
+                className="w-4 h-4 text-[#1E3A5F] border-gray-300 rounded focus:ring-[#1E3A5F]"
+              />
+              <div>
+                <span className="font-medium text-gray-800">表单模式 (form)</span>
+                <p className="text-sm text-gray-500">用户填写表单参数后开始生成</p>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.usage_modes?.includes('dialog') ?? false}
+                onChange={(e) => {
+                  const modes = formData.usage_modes || ['form'];
+                  if (e.target.checked) {
+                    handleInputChange('usage_modes', Array.from(new Set([...modes, 'dialog'])));
+                  } else {
+                    handleInputChange('usage_modes', modes.filter((m) => m !== 'dialog'));
+                  }
+                }}
+                className="w-4 h-4 text-[#1E3A5F] border-gray-300 rounded focus:ring-[#1E3A5F]"
+              />
+              <div>
+                <span className="font-medium text-gray-800">对话模式 (dialog)</span>
+                <p className="text-sm text-gray-500">用户通过自然语言对话描述需求</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* ===== 执行器绑定 ===== */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">执行器绑定</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            指定该工具实际由哪个后端执行器处理任务。为空时回退到 task_type / slug 匹配。
+          </p>
+          <ExecutorSelect
+            value={formData.executor_key}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, executor_key: value }))
+            }
+          />
+        </div>
+
+        {/* ===== 动态表单字段配置 ===== */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">表单字段配置 (param_schema)</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            定义用户填写表单时的字段、类型、默认值、选项和条件显示规则。
+          </p>
+          <DynamicSchemaEditor
+            value={formData.param_schema}
+            onChange={(value: ToolParamField[]) =>
+              setFormData((prev) => ({ ...prev, param_schema: value }))
+            }
+          />
+        </div>
+
+        {/* ===== 计价规则配置 ===== */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">计价规则配置 (pricing_schema)</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            配置如何根据用户输入和工具单价计算总积分。引用上方"价格配置"中的标准单价字段。
+          </p>
+          <PricingSchemaEditor
+            value={formData.pricing_schema}
+            onChange={(value: PricingSchema | null) =>
+              setFormData((prev) => ({ ...prev, pricing_schema: value }))
+            }
+            paramSchema={formData.param_schema}
+          />
         </div>
 
         <div className="flex justify-end gap-4">
