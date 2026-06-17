@@ -131,6 +131,7 @@ export default function WorkDetailPage() {
                    toolConfig.default;
 
   const previewImages = files.filter(f => f.file_type === 'image' && f.file_url && f.file_url !== '#');
+  const previewVideos = files.filter(f => f.file_type === 'video' && f.file_url && f.file_url !== '#');
 
   // 封面图：优先用 cover_image（新数据为完整API路径），否则用第一张预览图
   const coverUrl = (() => {
@@ -520,7 +521,32 @@ if (isLoading) {
             {/* Preview Tab */}
             {activeTab === 'preview' && (
               <div>
-                {previewImages.length > 0 ? (
+                {previewVideos.length > 0 ? (
+                  <div className="space-y-6">
+                    <div className="aspect-video bg-black rounded-xl overflow-hidden">
+                      <video controls className="w-full h-full" preload="metadata">
+                        <source src={getFileUrl(previewVideos[0]!)} type={previewVideos[0]!.mime_type || 'video/mp4'} />
+                        您的浏览器不支持视频播放
+                      </video>
+                    </div>
+                    {previewVideos.length > 1 && (
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
+                        {previewVideos.map(file => (
+                          <div key={file.id} className="p-3 bg-[#F8FAFC] rounded-lg border border-[#E4E7EB]">
+                            <p className="text-sm font-medium text-[#1E3A5F] truncate">{file.file_name}</p>
+                            <p className="text-xs text-[#64748B]">{formatFileSize(file.file_size)}</p>
+                            <button
+                              onClick={() => handleDownload(file)}
+                              className="mt-2 px-3 py-1.5 text-xs font-medium text-white bg-brand-light rounded-lg"
+                            >
+                              下载
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : previewImages.length > 0 ? (
                   <div className="space-y-6">
                     {/* Main Preview */}
                     <div
@@ -670,6 +696,14 @@ if (isLoading) {
                           className="px-4 py-2 text-sm font-medium text-brand-light hover:bg-blue-50 rounded-lg transition-colors"
                         >
                           查看
+                        </button>
+                      )}
+                      {file.file_type === 'video' && file.file_url && file.file_url !== '#' && (
+                        <button
+                          onClick={() => setActiveTab('preview')}
+                          className="px-4 py-2 text-sm font-medium text-brand-light hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          播放
                         </button>
                       )}
                       <button
