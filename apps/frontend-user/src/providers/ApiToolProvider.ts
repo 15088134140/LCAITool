@@ -49,6 +49,9 @@ function mapApiTool(apiItem: any): Tool {
     reviewCount: apiItem.rating_count ?? apiItem.reviewCount ?? 0,
     stats: apiItem.stats || undefined,
     demos: apiItem.demos || undefined,
+    param_schema: apiItem.param_schema || [],
+    executor_key: apiItem.executor_key || apiItem.slug || '',
+    pricing_schema: apiItem.pricing_schema || undefined,
   };
 }
 

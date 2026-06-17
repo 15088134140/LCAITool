@@ -23,6 +23,40 @@ export interface ToolPricing {
   example?: string;
 }
 
+export interface ToolParamOption {
+  label: string;
+  value: string | number | boolean;
+  icon?: string;
+  desc?: string;
+}
+
+export interface ToolParamCondition {
+  when: {
+    field: string;
+    operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'truthy' | 'falsy';
+    value?: any;
+  };
+  effect: 'show' | 'hide' | 'enable' | 'disable';
+}
+
+export interface ToolParamField {
+  key: string;
+  label: string;
+  type: 'section' | 'text' | 'textarea' | 'radio' | 'select' | 'range' | 'number' | 'boolean' | 'file' | 'action' | 'hidden';
+  required?: boolean;
+  defaultValue?: any;
+  placeholder?: string;
+  accept?: string;
+  min?: number;
+  max?: number;
+  order?: number;
+  uiHint?: string;
+  helpText?: string;
+  action?: string;
+  options?: ToolParamOption[];
+  condition?: ToolParamCondition;
+}
+
 /**
  * 工具类型 - AI工具的完整信息
  */
@@ -61,6 +95,9 @@ export interface Tool {
   image_fee?: number;
   audio_fee?: number;
   token_fee?: number;
+  param_schema?: ToolParamField[];
+  executor_key?: string;
+  pricing_schema?: Record<string, any>;
 }
 
 /**
