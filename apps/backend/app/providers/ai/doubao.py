@@ -16,9 +16,6 @@ class DoubaoProvider(BaseAIProvider):
 
     def __init__(self, **config):
         super().__init__(**config)
-        self.api_base = self.api_base or "https://ark.cn-beijing.volces.com/api/v3"
-        self.model = self.model or "doubao-seed-2-0-lite-260428"
-        self.audio_model = config.get("audio_model", "doubao-tts")
 
     SUPPORTED_IMAGE_SIZES = ["1024x1024", "1920x1920", "1440x2560", "2560x1440"]
 
@@ -31,7 +28,13 @@ class DoubaoProvider(BaseAIProvider):
         """
         调用火山方舟 Chat API 生成文本
         """
-        url = f"{self.api_base}/chat/completions"
+        if not self.text_model:
+            return AIResponse(
+                success=False, content="", raw_response={},
+                error=f"provider '{self.slug}' 未配置 text_model"
+            )
+
+        url = f"{self.base_url}/chat/completions"
 
         messages = []
         if system_prompt:
@@ -41,7 +44,7 @@ class DoubaoProvider(BaseAIProvider):
         thinking = kwargs.pop("thinking", False)
 
         payload = {
-            "model": "deepseek-v4-pro-260425" if thinking else "deepseek-v4-flash-260425",
+            "model": self.text_model,
             "messages": messages,
             "temperature": kwargs.get("temperature", 0.7),
             "max_tokens": kwargs.get("max_tokens", 2048),
@@ -122,10 +125,16 @@ class DoubaoProvider(BaseAIProvider):
                 error=f"不支持的图片尺寸 '{size}'，豆包支持: {', '.join(self.SUPPORTED_IMAGE_SIZES)}"
             )
 
-        url = f"{self.api_base}/images/generations"
+        if not self.image_model:
+            return AIResponse(
+                success=False, content="", raw_response={},
+                error=f"provider '{self.slug}' 未配置 image_model"
+            )
+
+        url = f"{self.base_url}/images/generations"
 
         payload = {
-            "model": kwargs.get("model", "doubao-seedream-4-5-251128"),
+            "model": self.image_model,
             "prompt": prompt,
             "size": size or "1920x1920",
             "n": kwargs.get("n", 1),
@@ -316,7 +325,13 @@ class DoubaoProvider(BaseAIProvider):
         官方 Ark API: POST /api/v3/contents/generations/tasks
         提交任务后轮询状态，成功则下载视频并 base64 编码
         """
-        create_url = f"{self.api_base}/contents/generations/tasks"
+        if not self.video_model:
+            return AIResponse(
+                success=False, content="", raw_response={},
+                error=f"provider '{self.slug}' 未配置 video_model"
+            )
+
+        create_url = f"{self.base_url}/contents/generations/tasks"
 
         # 构建 content 数组（支持多图）
         images = kwargs.get("images")
@@ -332,7 +347,7 @@ class DoubaoProvider(BaseAIProvider):
 
         # 构建 payload - 默认 watermark=False，且不允许 kwargs 覆盖为 True
         payload = {
-            "model": kwargs.get("model", "doubao-seedance-1-5-pro-251215"),
+            "model": self.video_model,
             "content": content,
             "watermark": False,
         }
@@ -375,7 +390,7 @@ class DoubaoProvider(BaseAIProvider):
                 )
 
             # 第二步：轮询任务状态
-            poll_url = f"{self.api_base}/contents/generations/tasks/{task_id}"
+            poll_url = f"{self.base_url}/contents/generations/tasks/{task_id}"
             max_polls = kwargs.get("max_polls", 60)
             poll_interval = kwargs.get("poll_interval", 5)
 
@@ -473,7 +488,7 @@ class DoubaoProvider(BaseAIProvider):
         调用豆包声音复刻接口
         上传音频文件，返回 voice_id
         """
-        url = f"{self.api_base}/audio/cloning"
+        url = f"{self.base_url}/audio/cloning"
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",

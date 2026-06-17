@@ -13,8 +13,6 @@ class DeepSeekProvider(BaseAIProvider):
 
     def __init__(self, **config):
         super().__init__(**config)
-        self.api_base = self.api_base or "https://api.deepseek.com/v1"
-        self.model = self.model or "deepseek-v4-flash"
 
     async def generate_text(
         self,
@@ -26,24 +24,25 @@ class DeepSeekProvider(BaseAIProvider):
         调用 DeepSeek 大模型生成文本
         支持 thinking 模式：设置 thinking=True 启用深度思考
         """
-        url = f"{self.api_base}/chat/completions"
+        if not self.text_model:
+            return AIResponse(
+                success=False, content="", raw_response={},
+                error=f"provider '{self.slug}' 未配置 text_model"
+            )
+
+        url = f"{self.base_url}/chat/completions"
 
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        # 思考模式：使用 deepseek-v4-pro 模型并启用 thinking
+        # 思考模式：thinking=True 时启用 extra_body 中的 thinking 配置（不再切换 model）
         thinking = kwargs.pop("thinking", False)
-        model = kwargs.get("model", self.model)
-        extra_body = None
-
-        if thinking:
-            model = "deepseek-v4-pro"
-            extra_body = {"thinking": {"type": "enabled"}}
+        extra_body = {"thinking": {"type": "enabled"}} if thinking else None
 
         payload = {
-            "model": model,
+            "model": self.text_model,
             "messages": messages,
             "temperature": kwargs.get("temperature", 0.7),
             "max_tokens": kwargs.get("max_tokens", 2048),

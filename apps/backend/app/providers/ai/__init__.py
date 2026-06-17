@@ -43,10 +43,15 @@ class AIProviderFactory:
     async def get_provider_from_db(cls, db, slug: str) -> BaseAIProvider:
         """
         从数据库获取 AI Provider 配置并创建实例
+
+        所有必填配置（api_key、base_url）由 BaseAIProvider.__init__ 校验并抛 ConfigurationError；
+        本方法不再做字段补默认或校验。
+
         :param db: 数据库会话（异步）
-        :param slug: 提供商标识（如 deepseek, zhipu）
+        :param slug: 提供商标识
         :return: BaseAIProvider 实例
-        :raises ValueError: 如果提供商不存在或 api_key 未配置
+        :raises ValueError: 如果提供商在 DB 中不存在
+        :raises ConfigurationError: 如果必填配置项缺失
         """
         from sqlalchemy import select
         from app.models.system import AiProvider
@@ -57,21 +62,18 @@ class AIProviderFactory:
         if not provider:
             raise ValueError(f"AI provider '{slug}' not found in database")
 
-        # 解密数据库中可能已加密的 api_key
         config = dict(provider.config or {})
-        api_key = config.get("api_key", "")
+
+        # 解密数据库中可能已加密的 api_key（解密失败按明文处理）
+        api_key = config.get("api_key")
         if api_key:
             try:
                 config["api_key"] = aes_decrypt(api_key)
             except Exception:
-                # 解密失败说明是明文存储，直接使用
                 pass
 
-        # 验证 api_key 已配置
-        if not config.get("api_key"):
-            raise ValueError(
-                f"AI provider '{slug}' api_key 未配置，请在管理后台 → AI提供商管理中设置"
-            )
+        # slug 注入用于异常信息
+        config["slug"] = provider.slug
 
         return cls.get_provider(provider.slug, **config)
 

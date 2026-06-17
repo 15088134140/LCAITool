@@ -8,6 +8,7 @@ import json
 import base64
 from unittest.mock import patch
 
+from app.core.exceptions import ConfigurationError
 from app.providers.ai import (
     AIProviderFactory,
     DoubaoProvider,
@@ -17,6 +18,63 @@ from app.providers.ai import (
     AIResponse,
     BaseAIProvider
 )
+
+
+# 测试用 provider 工厂 ---------------------------------------------------------
+
+DOUBAO_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
+ZHIPU_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
+DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
+DIFY_BASE_URL = "https://api.dify.ai/v1"
+
+
+def _doubao(api_key: str = "test_key", **overrides) -> DoubaoProvider:
+    config = dict(
+        api_key=api_key,
+        base_url=DOUBAO_BASE_URL,
+        text_model="test-text-model",
+        image_model="test-image-model",
+        video_model="test-video-model",
+        slug="volcano",
+    )
+    config.update(overrides)
+    return DoubaoProvider(**config)
+
+
+def _zhipu(api_key: str = "test_key", **overrides) -> ZhipuProvider:
+    config = dict(
+        api_key=api_key,
+        base_url=ZHIPU_BASE_URL,
+        text_model="GLM-4-Flash",
+        image_model="glm-image",
+        audio_model="glm-tts",
+        slug="zhipu",
+    )
+    config.update(overrides)
+    return ZhipuProvider(**config)
+
+
+def _deepseek(api_key: str = "test_key", **overrides) -> DeepSeekProvider:
+    config = dict(
+        api_key=api_key,
+        base_url=DEEPSEEK_BASE_URL,
+        text_model="deepseek-v4-flash",
+        slug="deepseek",
+    )
+    config.update(overrides)
+    return DeepSeekProvider(**config)
+
+
+def _dify(api_key: str = "test_key", workflow_id: str = "", **overrides) -> DifyProvider:
+    config = dict(
+        api_key=api_key,
+        base_url=DIFY_BASE_URL,
+        slug="dify",
+    )
+    if workflow_id:
+        config["workflow_id"] = workflow_id
+    config.update(overrides)
+    return DifyProvider(**config)
 
 
 # ============ AIResponse Tests ============
@@ -52,14 +110,18 @@ def test_ai_response_error():
 
 def test_factory_get_doubao_provider():
     """测试工厂获取豆包提供商"""
-    provider = AIProviderFactory.get_provider("volcano", api_key="test_key")
+    provider = AIProviderFactory.get_provider(
+        "volcano", api_key="test_key", base_url=DOUBAO_BASE_URL
+    )
     assert isinstance(provider, DoubaoProvider)
     assert provider.api_key == "test_key"
 
 
 def test_factory_get_dify_provider():
     """测试工厂获取 Dify 提供商"""
-    provider = AIProviderFactory.get_provider("dify", api_key="test_key", workflow_id="test_workflow")
+    provider = AIProviderFactory.get_provider(
+        "dify", api_key="test_key", base_url=DIFY_BASE_URL, workflow_id="test_workflow"
+    )
     assert isinstance(provider, DifyProvider)
     assert provider.api_key == "test_key"
     assert provider.workflow_id == "test_workflow"
@@ -74,8 +136,12 @@ def test_factory_unsupported_provider():
 
 def test_factory_case_insensitive():
     """测试提供商名称大小写不敏感"""
-    provider1 = AIProviderFactory.get_provider("DOUBAO", api_key="test")
-    provider2 = AIProviderFactory.get_provider("Doubao", api_key="test")
+    provider1 = AIProviderFactory.get_provider(
+        "DOUBAO", api_key="test", base_url=DOUBAO_BASE_URL
+    )
+    provider2 = AIProviderFactory.get_provider(
+        "Doubao", api_key="test", base_url=DOUBAO_BASE_URL
+    )
     assert isinstance(provider1, DoubaoProvider)
     assert isinstance(provider2, DoubaoProvider)
 
@@ -93,7 +159,9 @@ def test_factory_register_provider():
             return AIResponse(success=True, content="test", raw_response={})
 
     AIProviderFactory.register_provider("test", TestProvider)
-    provider = AIProviderFactory.get_provider("test", api_key="test_key")
+    provider = AIProviderFactory.get_provider(
+        "test", api_key="test_key", base_url="https://example.com"
+    )
     assert isinstance(provider, TestProvider)
 
 
@@ -127,7 +195,7 @@ async def test_doubao_generate_text_success(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_text("你好，请介绍一下自己")
 
     assert response.success is True
@@ -136,7 +204,7 @@ async def test_doubao_generate_text_success(httpx_mock):
     assert response.error is None
 
     request_payload = json.loads(httpx_mock.get_requests()[0].content)
-    assert request_payload["model"] == "deepseek-v4-flash-260425"
+    assert request_payload["model"] == "test-text-model"
     assert request_payload["thinking"] == {"type": "disabled"}
 
 
@@ -152,7 +220,7 @@ async def test_doubao_generate_text_with_system_prompt(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_text(
         prompt="你好",
         system_prompt="你是一个专业的助手"
@@ -163,8 +231,8 @@ async def test_doubao_generate_text_with_system_prompt(httpx_mock):
 
 
 @pytest.mark.asyncio
-async def test_doubao_generate_text_thinking_uses_pro_model(httpx_mock):
-    """测试豆包文本生成开启深度思考模式"""
+async def test_doubao_generate_text_thinking_enables_reasoning(httpx_mock):
+    """测试豆包文本生成开启深度思考模式：thinking 仅控制 reasoning，不切换 model"""
     mock_response = {
         "choices": [
             {"message": {"content": "深度思考后的回复", "reasoning_content": "思考过程"}}
@@ -174,14 +242,14 @@ async def test_doubao_generate_text_thinking_uses_pro_model(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_text(prompt="分析这个问题", thinking=True)
 
     assert response.success is True
     assert response.content == "深度思考后的回复"
 
     request_payload = json.loads(httpx_mock.get_requests()[0].content)
-    assert request_payload["model"] == "deepseek-v4-pro-260425"
+    assert request_payload["model"] == "test-text-model"
     assert request_payload["thinking"] == {"type": "enabled"}
     assert request_payload["reasoning_effort"] == "max"
 
@@ -192,7 +260,7 @@ async def test_doubao_generate_text_timeout(httpx_mock):
     import httpx
     httpx_mock.add_exception(httpx.TimeoutException("Timeout"))
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_text("你好")
 
     assert response.success is False
@@ -204,7 +272,7 @@ async def test_doubao_generate_text_http_error(httpx_mock):
     """测试豆包文本生成HTTP错误"""
     httpx_mock.add_response(status_code=401, text="Unauthorized")
 
-    provider = DoubaoProvider(api_key="invalid_key")
+    provider = _doubao(api_key="invalid_key")
     response = await provider.generate_text("你好")
 
     assert response.success is False
@@ -219,7 +287,7 @@ async def test_doubao_generate_image_success(httpx_mock):
         json={"data": [{"b64_json": mock_b64, "revised_prompt": ""}]}
     )
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_image("一只可爱的猫")
 
     assert response.success is True
@@ -237,7 +305,7 @@ async def test_doubao_generate_image_url_fallback(httpx_mock):
     # 第二步：下载图片
     httpx_mock.add_response(content=b"fake_image_bytes")
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_image("一只可爱的猫")
 
     assert response.success is True
@@ -252,7 +320,7 @@ async def test_doubao_generate_image_api_error(httpx_mock):
     """测试豆包图片生成 API 错误"""
     httpx_mock.add_response(status_code=400, text="Bad Request")
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_image("一只猫")
 
     assert response.success is False
@@ -276,7 +344,7 @@ async def test_doubao_generate_video_builds_official_seedance_payload(httpx_mock
     # 3. 下载视频
     httpx_mock.add_response(content=b"fake_video_bytes")
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_video(
         prompt="小猫对着镜头打哈欠",
         duration=-1,
@@ -302,7 +370,7 @@ async def test_doubao_generate_video_builds_official_seedance_payload(httpx_mock
 
     # 验证请求 payload
     request_payload = json.loads(httpx_mock.get_requests()[0].content)
-    assert request_payload["model"] == "doubao-seedance-1-5-pro-251215"
+    assert request_payload["model"] == "test-video-model"
     assert request_payload["watermark"] is False
     assert request_payload["resolution"] == "1080p"
     assert request_payload["ratio"] == "adaptive"
@@ -341,7 +409,7 @@ async def test_doubao_generate_video_text_only_omits_optional_none_fields(httpx_
     # 3. 下载视频
     httpx_mock.add_response(content=b"fake_video_bytes")
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_video(
         prompt="城市夜景延时摄影",
         duration=6,
@@ -386,7 +454,7 @@ async def test_doubao_generate_video_success(httpx_mock):
     # 4. 下载视频
     httpx_mock.add_response(content=b"fake_video_bytes")
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_video(
         "一只猫在跑步",
         duration=10,
@@ -415,7 +483,7 @@ async def test_doubao_generate_video_failed(httpx_mock):
         }
     )
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_video(
         "一只猫在跑步",
         poll_interval=0.001,
@@ -446,7 +514,7 @@ async def test_doubao_generate_video_task_inner_structure(httpx_mock):
     # 3. 下载视频
     httpx_mock.add_response(content=b"fake_video_bytes")
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_video(
         prompt="测试视频",
         poll_interval=0.001,
@@ -480,7 +548,7 @@ async def test_doubao_generate_video_task_output_video_url(httpx_mock):
     # 3. 下载视频
     httpx_mock.add_response(content=b"fake_video_bytes")
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_video(
         prompt="测试视频",
         poll_interval=0.001,
@@ -507,7 +575,7 @@ async def test_doubao_generate_video_task_error_message(httpx_mock):
         }
     )
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_video(
         prompt="测试视频",
         poll_interval=0.001,
@@ -521,7 +589,7 @@ async def test_doubao_generate_video_task_error_message(httpx_mock):
 @pytest.mark.asyncio
 async def test_doubao_generate_video_empty_prompt_no_images(httpx_mock):
     """测试豆包 Seedance 空 prompt 且无图片返回空 content，触发错误"""
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_video(
         prompt="",
         images=[]
@@ -533,7 +601,7 @@ async def test_doubao_generate_video_empty_prompt_no_images(httpx_mock):
 
 def test_doubao_build_video_content_edge_cases():
     """测试 _build_video_content 边界情况"""
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
 
     # 空 prompt + 无图片 = 空 list
     result = provider._build_video_content("", None)
@@ -575,7 +643,7 @@ async def test_doubao_clone_voice_success(httpx_mock):
         json={"voice_id": "voice_abc123", "message": "success"}
     )
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.clone_voice(
         audio_data=b"fake_audio_bytes",
         voice_name="my_voice"
@@ -591,7 +659,7 @@ async def test_doubao_clone_voice_failure(httpx_mock):
     """测试豆包声音复刻失败（无 voice_id）"""
     httpx_mock.add_response(json={"message": "ok"})
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.clone_voice(
         audio_data=b"fake_audio_bytes"
     )
@@ -610,7 +678,7 @@ async def test_doubao_generate_audio_success(httpx_mock):
         headers={"content-type": "audio/mpeg"}
     )
 
-    provider = DoubaoProvider(api_key="test_key")
+    provider = _doubao()
     response = await provider.generate_audio("你好，世界")
 
     assert response.success is True
@@ -639,7 +707,7 @@ async def test_dify_run_workflow_success(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DifyProvider(api_key="test_key", workflow_id="test_workflow_id")
+    provider = _dify(workflow_id="test_workflow_id")
     response = await provider.run_workflow({"prompt": "生成一个故事"})
 
     assert response.success is True
@@ -659,7 +727,7 @@ async def test_dify_run_workflow_succeeded_status(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DifyProvider(api_key="test_key", workflow_id="test_workflow_id")
+    provider = _dify(workflow_id="test_workflow_id")
     response = await provider.run_workflow({"prompt": "测试"})
 
     assert response.success is True
@@ -669,7 +737,7 @@ async def test_dify_run_workflow_succeeded_status(httpx_mock):
 @pytest.mark.asyncio
 async def test_dify_run_workflow_no_workflow_id():
     """测试 Dify 工作流没有 workflow_id"""
-    provider = DifyProvider(api_key="test_key")
+    provider = _dify()
     response = await provider.run_workflow({"prompt": "测试"})
     assert response.success is False
     assert "workflow_id is required" in response.error
@@ -685,7 +753,7 @@ async def test_dify_run_workflow_failed(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DifyProvider(api_key="test_key", workflow_id="test_workflow")
+    provider = _dify(workflow_id="test_workflow")
     response = await provider.run_workflow({"prompt": "测试"})
 
     assert response.success is False
@@ -702,7 +770,7 @@ async def test_dify_generate_text(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DifyProvider(api_key="test_key", workflow_id="text_workflow")
+    provider = _dify(workflow_id="text_workflow")
     response = await provider.generate_text("写一首诗")
 
     assert response.success is True
@@ -719,7 +787,7 @@ async def test_dify_generate_image(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DifyProvider(api_key="test_key", workflow_id="image_workflow")
+    provider = _dify(workflow_id="image_workflow")
     response = await provider.generate_image("一只可爱的猫", size="1024x1024")
 
     assert response.success is True
@@ -735,7 +803,7 @@ async def test_dify_generate_audio(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DifyProvider(api_key="test_key", workflow_id="audio_workflow")
+    provider = _dify(workflow_id="audio_workflow")
     response = await provider.generate_audio("你好，世界", voice="female")
 
     assert response.success is True
@@ -751,7 +819,7 @@ async def test_dify_generate_video(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DifyProvider(api_key="test_key", workflow_id="video_workflow")
+    provider = _dify(workflow_id="video_workflow")
     response = await provider.generate_video("一只猫在跑步", duration=10)
 
     assert response.success is True
@@ -763,7 +831,7 @@ async def test_dify_workflow_timeout(httpx_mock):
     import httpx
     httpx_mock.add_exception(httpx.TimeoutException("Timeout"))
 
-    provider = DifyProvider(api_key="test_key", workflow_id="test")
+    provider = _dify(workflow_id="test")
     response = await provider.run_workflow({"prompt": "test"})
 
     assert response.success is False
@@ -773,7 +841,7 @@ async def test_dify_workflow_timeout(httpx_mock):
 @pytest.mark.asyncio
 async def test_dify_workflow_exception():
     """测试 Dify 工作流异常"""
-    provider = DifyProvider(api_key="test_key", workflow_id="test")
+    provider = _dify(workflow_id="test")
 
     # 模拟API调用时的异常
     with patch('httpx.AsyncClient.post') as mock_post:
@@ -795,7 +863,7 @@ async def test_dify_workflow_http_error(httpx_mock):
     """测试 Dify 工作流HTTP错误"""
     httpx_mock.add_response(status_code=500, text="Internal Server Error")
 
-    provider = DifyProvider(api_key="test_key", workflow_id="test_workflow")
+    provider = _dify(workflow_id="test_workflow")
     response = await provider.run_workflow({"prompt": "测试"})
 
     assert response.success is False
@@ -803,31 +871,6 @@ async def test_dify_workflow_http_error(httpx_mock):
 
 
 # ============ Integration Tests ============
-
-def test_provider_config_merge():
-    """测试配置合并（环境变量 + 传入参数）"""
-    import os
-
-    # 设置环境变量
-    os.environ["VOLCANO_API_KEY"] = "env_key"
-    os.environ["VOLCANO_API_BASE"] = "https://env.api.com"
-    os.environ["VOLCANO_MODEL"] = "env_model"
-
-    # 不传配置，使用环境变量
-    provider1 = AIProviderFactory.get_provider("volcano")
-    assert provider1.api_key == "env_key"
-    assert provider1.api_base == "https://env.api.com"
-    assert provider1.model == "env_model"
-
-    # 传入配置覆盖环境变量
-    provider2 = AIProviderFactory.get_provider("volcano", api_key="custom_key")
-    assert provider2.api_key == "custom_key"  # 传入的优先级更高
-    assert provider2.api_base == "https://env.api.com"  # 环境变量的值
-
-    # 清理环境变量
-    del os.environ["DOUBAO_API_KEY"]
-    del os.environ["DOUBAO_API_BASE"]
-    del os.environ["DOUBAO_MODEL"]
 
 
 # ============ DeepSeekProvider Tests ============
@@ -851,7 +894,7 @@ async def test_deepseek_generate_text_success(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DeepSeekProvider(api_key="test_key")
+    provider = _deepseek()
     response = await provider.generate_text("你好，请介绍一下自己")
 
     assert response.success is True
@@ -875,16 +918,16 @@ async def test_deepseek_generate_text_thinking_mode(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = DeepSeekProvider(api_key="test_key")
+    provider = _deepseek()
     response = await provider.generate_text("复杂推理问题", thinking=True)
 
     assert response.success is True
     assert response.content == "思考后的回复"
 
-    # 验证请求中使用了正确的模型和 extra_body
+    # 验证请求中使用了配置的 text_model 与 thinking 配置
     request = httpx_mock.get_request()
     body = request.content.decode()
-    assert "deepseek-v4-pro" in body
+    assert "deepseek-v4-flash" in body
     assert "thinking" in body
     assert "enabled" in body
 
@@ -894,7 +937,7 @@ async def test_deepseek_generate_text_http_error(httpx_mock):
     """测试 DeepSeek 文本生成 HTTP 错误"""
     httpx_mock.add_response(status_code=401, text="Unauthorized")
 
-    provider = DeepSeekProvider(api_key="invalid_key")
+    provider = _deepseek(api_key="invalid_key")
     response = await provider.generate_text("你好")
 
     assert response.success is False
@@ -907,7 +950,7 @@ async def test_deepseek_generate_text_timeout(httpx_mock):
     import httpx
     httpx_mock.add_exception(httpx.TimeoutException("Timeout"))
 
-    provider = DeepSeekProvider(api_key="test_key")
+    provider = _deepseek()
     response = await provider.generate_text("你好")
 
     assert response.success is False
@@ -917,7 +960,7 @@ async def test_deepseek_generate_text_timeout(httpx_mock):
 @pytest.mark.asyncio
 async def test_deepseek_unsupported_methods():
     """测试 DeepSeek 不支持的生成方法"""
-    provider = DeepSeekProvider(api_key="test_key")
+    provider = _deepseek()
 
     # 图片生成
     img_response = await provider.generate_image("一只猫")
@@ -956,7 +999,7 @@ async def test_zhipu_generate_text_success(httpx_mock):
 
     httpx_mock.add_response(json=mock_response)
 
-    provider = ZhipuProvider(api_key="test_key")
+    provider = _zhipu()
     response = await provider.generate_text("你好，请介绍一下自己")
 
     assert response.success is True
@@ -975,7 +1018,7 @@ async def test_zhipu_generate_image_success(httpx_mock):
     # 第二步：下载图片
     httpx_mock.add_response(content=b"fake_image_bytes")
 
-    provider = ZhipuProvider(api_key="test_key")
+    provider = _zhipu()
     response = await provider.generate_image("一只可爱的猫")
 
     assert response.success is True
@@ -996,7 +1039,7 @@ async def test_zhipu_generate_audio_success(httpx_mock):
         headers={"content-type": "audio/mpeg"}
     )
 
-    provider = ZhipuProvider(api_key="test_key")
+    provider = _zhipu()
     response = await provider.generate_audio("你好，世界")
 
     assert response.success is True
@@ -1009,7 +1052,7 @@ async def test_zhipu_generate_audio_success(httpx_mock):
 @pytest.mark.asyncio
 async def test_zhipu_generate_video_not_supported():
     """测试智谱视频生成未实现"""
-    provider = ZhipuProvider(api_key="test_key")
+    provider = _zhipu()
     response = await provider.generate_video("一只猫在跑步")
 
     assert response.success is False
@@ -1026,8 +1069,89 @@ async def test_zhipu_generate_image_download_failure(httpx_mock):
     # 第二步：下载图片时返回 404
     httpx_mock.add_response(status_code=404, text="Not Found")
 
-    provider = ZhipuProvider(api_key="test_key")
+    provider = _zhipu()
     response = await provider.generate_image("一只猫")
 
     assert response.success is False
     assert "404" in response.error
+
+
+# ============ ConfigurationError Tests ============
+
+
+def test_doubao_provider_init_raises_when_api_key_missing():
+    """缺失 api_key 时抛 ConfigurationError"""
+    with pytest.raises(ConfigurationError, match="api_key"):
+        DoubaoProvider(base_url="https://example.com", slug="volcano")
+
+
+def test_doubao_provider_init_raises_when_base_url_missing():
+    """缺失 base_url 时抛 ConfigurationError"""
+    with pytest.raises(ConfigurationError, match="base_url"):
+        DoubaoProvider(api_key="test_key", slug="volcano")
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_text_returns_error_when_text_model_missing():
+    provider = DoubaoProvider(
+        api_key="test_key",
+        base_url="https://example.com",
+        slug="volcano",
+    )
+    response = await provider.generate_text("hi")
+    assert response.success is False
+    assert "text_model" in response.error
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_image_returns_error_when_image_model_missing():
+    provider = DoubaoProvider(
+        api_key="test_key",
+        base_url="https://example.com",
+        slug="volcano",
+    )
+    response = await provider.generate_image("一只猫")
+    assert response.success is False
+    assert "image_model" in response.error
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_video_returns_error_when_video_model_missing():
+    provider = DoubaoProvider(
+        api_key="test_key",
+        base_url="https://example.com",
+        slug="volcano",
+    )
+    response = await provider.generate_video("一只猫")
+    assert response.success is False
+    assert "video_model" in response.error
+
+
+@pytest.mark.asyncio
+async def test_doubao_ignores_caller_model_kwarg(httpx_mock):
+    """调用方传 model=xxx 被静默忽略，payload 仍走 DB.video_model"""
+    httpx_mock.add_response(json={"id": "task_xx"})
+    httpx_mock.add_response(
+        json={
+            "id": "task_xx",
+            "status": "succeeded",
+            "content": {"video_url": "https://example.com/v.mp4"},
+        }
+    )
+    httpx_mock.add_response(content=b"video", headers={"content-type": "video/mp4"})
+
+    provider = DoubaoProvider(
+        api_key="test_key",
+        base_url="https://ark.cn-beijing.volces.com/api/v3",
+        video_model="db-video-model",
+        slug="volcano",
+    )
+    response = await provider.generate_video(
+        prompt="x",
+        model="caller-attempt-override",
+        poll_interval=0.001,
+        max_polls=2,
+    )
+    assert response.success is True
+    payload = json.loads(httpx_mock.get_requests()[0].content)
+    assert payload["model"] == "db-video-model"

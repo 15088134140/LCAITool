@@ -14,7 +14,6 @@ class DifyProvider(BaseAIProvider):
 
     def __init__(self, **config):
         super().__init__(**config)
-        self.api_base = self.api_base or "https://api.dify.ai/v1"
         self.workflow_id = config.get("workflow_id", "")
 
     async def generate_text(
@@ -114,7 +113,7 @@ class DifyProvider(BaseAIProvider):
                 error="workflow_id is required"
             )
 
-        url = f"{self.api_base}/workflows/run"
+        url = f"{self.base_url}/workflows/run"
 
         payload = {
             "workflow_id": workflow_id,

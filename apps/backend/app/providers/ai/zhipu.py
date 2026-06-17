@@ -22,8 +22,6 @@ class ZhipuProvider(BaseAIProvider):
 
     def __init__(self, **config):
         super().__init__(**config)
-        self.api_base = self.api_base or "https://open.bigmodel.cn/api/paas/v4"
-        self.model = self.model or "GLM-4-Flash"
 
     async def generate_text(
         self,
@@ -34,7 +32,13 @@ class ZhipuProvider(BaseAIProvider):
         """
         调用智谱 GLM 大模型生成文本
         """
-        url = f"{self.api_base}/chat/completions"
+        if not self.text_model:
+            return AIResponse(
+                success=False, content="", raw_response={},
+                error=f"provider '{self.slug}' 未配置 text_model"
+            )
+
+        url = f"{self.base_url}/chat/completions"
 
         messages = []
         if system_prompt:
@@ -42,7 +46,7 @@ class ZhipuProvider(BaseAIProvider):
         messages.append({"role": "user", "content": prompt})
 
         payload = {
-            "model": kwargs.get("model", self.model),
+            "model": self.text_model,
             "messages": messages,
             "temperature": kwargs.get("temperature", 0.7),
             "max_tokens": kwargs.get("max_tokens", 2048),
@@ -133,10 +137,16 @@ class ZhipuProvider(BaseAIProvider):
                     error=f"图片尺寸格式错误 '{size}'，宽高必须为数字"
                 )
 
-        url = f"{self.api_base}/images/generations"
+        if not self.image_model:
+            return AIResponse(
+                success=False, content="", raw_response={},
+                error=f"provider '{self.slug}' 未配置 image_model"
+            )
+
+        url = f"{self.base_url}/images/generations"
 
         payload = {
-            "model": kwargs.get("model", "glm-image"),
+            "model": self.image_model,
             "prompt": prompt,
             "size": size or "1024x1024",
             "n": kwargs.get("n", 1)
@@ -254,10 +264,16 @@ class ZhipuProvider(BaseAIProvider):
                 error=f"不支持的音频格式 '{response_format}'，智谱支持: {', '.join(self.SUPPORTED_RESPONSE_FORMATS)}"
             )
 
-        url = f"{self.api_base}/audio/speech"
+        if not self.audio_model:
+            return AIResponse(
+                success=False, content="", raw_response={},
+                error=f"provider '{self.slug}' 未配置 audio_model"
+            )
+
+        url = f"{self.base_url}/audio/speech"
 
         payload = {
-            "model": kwargs.get("model", "glm-tts"),
+            "model": self.audio_model,
             "input": text,
             "voice": voice or "tongtong",
             "response_format": response_format or "wav"

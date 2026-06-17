@@ -599,7 +599,7 @@ const SettingsPage = () => {
                       // Allow invalid JSON while typing
                     }
                   }}
-                  placeholder='{"api_key": "...", "model": "gpt-4"}'
+                  placeholder='{"api_key": "...", "base_url": "https://...", "text_model": "..."}'
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none resize-y text-sm font-mono"
                 />

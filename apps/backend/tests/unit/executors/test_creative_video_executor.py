@@ -318,7 +318,6 @@ class TestCreativeVideoExecutor:
         mock_provider.generate_video.assert_awaited_once_with(
             prompt="猫打哈欠",
             duration=-1,
-            model="doubao-seedance-1-5-pro-251215",
             images=[first_image],
             resolution="1080p",
             ratio="adaptive",

@@ -45,9 +45,10 @@ def _get_mime_type(ext: str) -> str:
 
 async def _resolve_provider(db: AsyncSession, provider_slug: str):
     """根据 provider slug 获取 AI 提供商实例。"""
+    from app.core.exceptions import ConfigurationError
     try:
         return await AIProviderFactory.get_provider_from_db(db, provider_slug)
-    except ValueError as e:
+    except (ValueError, ConfigurationError) as e:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
 

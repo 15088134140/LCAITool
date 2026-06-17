@@ -23,15 +23,30 @@ class BaseAIProvider(ABC):
     def __init__(self, **config):
         """
         初始化提供商
-        :param config: 配置参数（api_key, api_base, model, timeout等）
+        :param config: 配置参数（必填: api_key, base_url；可选: text_model, image_model, video_model, audio_model, *_timeout, slug）
+        :raises ConfigurationError: 当 api_key 或 base_url 缺失时
         """
+        from app.core.exceptions import ConfigurationError
+
+        slug = config.get("slug", "<unknown>")
+        api_key = config.get("api_key")
+        base_url = config.get("base_url")
+        if not api_key:
+            raise ConfigurationError(f"ai provider 未配置 api_key: {slug}")
+        if not base_url:
+            raise ConfigurationError(f"ai provider 未配置 base_url: {slug}")
+
         self.config = config
-        self.api_key = config.get("api_key", "")
-        self.api_base = config.get("api_base", "")
-        self.model = config.get("model", "")
-        self.timeout = config.get("timeout", 120)                # 文本/音频/克隆
-        self.image_timeout = config.get("image_timeout", 300)    # 图片生成
-        self.video_timeout = config.get("video_timeout", 600)    # 视频生成
+        self.slug = slug
+        self.api_key = api_key
+        self.base_url = base_url.rstrip("/")
+        self.text_model = config.get("text_model")
+        self.image_model = config.get("image_model")
+        self.video_model = config.get("video_model")
+        self.audio_model = config.get("audio_model")
+        self.timeout = config.get("timeout", 120)
+        self.image_timeout = config.get("image_timeout", 300)
+        self.video_timeout = config.get("video_timeout", 600)
 
     @abstractmethod
     async def generate_text(

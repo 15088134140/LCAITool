@@ -322,7 +322,6 @@ class CreativeVideoExecutor(BaseToolExecutor):
         response = await self.doubao_provider.generate_video(
             prompt=normalized["prompt"],
             duration=normalized["duration"],
-            model="doubao-seedance-1-5-pro-251215",
             images=images,
             resolution=normalized["resolution"],
             ratio=normalized["ratio"],
