@@ -58,9 +58,10 @@ P0 实现以下能力：
 6. 支持分辨率选择：`480p`、`720p`、`1080p`。本地 API 文档确认 Seedance 1.5 Pro 支持 1080p。
 7. 支持视频时长：按秒数 4–12 秒，默认 6 秒；支持智能时长。
 8. 支持输出声音开关，默认开启。
-9. 保留样片速览入口。
-10. 生成数量字段 P0 显示但锁定为 1，多条生成后置。
-11. 固定费用计费闭环：预估费用 = 实际费用 = `base_fee`。
+9. 视频生成必须关闭水印：Ark payload 固定传 `watermark=false`，P0 不暴露水印配置。
+10. 保留样片速览入口。
+11. 生成数量字段 P0 显示但锁定为 1，多条生成后置。
+12. 固定费用计费闭环：预估费用 = 实际费用 = `base_fee`。
 
 P0 不做：
 
@@ -181,6 +182,10 @@ Provider 内部构造 Ark payload，示意如下：
 - `generate_audio=false`：模型输出无声视频。
 
 P0 直接透传用户选择。
+
+### 6.4 水印策略
+
+P0 必须关闭水印：`DoubaoProvider.generate_video()` 构造 Ark payload 时固定传 `watermark=false`。该字段不进入 P0 表单，也不作为 P1 高级参数开放，避免用户误开水印影响交付质量。
 
 ## 7. 数据流
 
@@ -390,8 +395,9 @@ P0 `param_schema` 核心结构：
 
 - `seed`
 - `camera_fixed`
-- `watermark`
 - `return_last_frame`
+
+`watermark` 不开放配置，保持固定 `false`。
 
 ### 12.3 P2：提示词模板 / 样片画廊 / 迭代
 
@@ -425,6 +431,7 @@ P0 `param_schema` 核心结构：
    - `ratio=adaptive` 时传 `ratio="adaptive"`。
    - `duration_mode=smart` 时传 `duration=-1`。
    - `generate_audio` 原样透传布尔值。
+   - `watermark` 固定传 `false`。
    - `resolution=1080p` 原样传。
    - 首帧图片传 `role="first_frame"`。
    - 尾帧图片传 `role="last_frame"`。
@@ -484,4 +491,4 @@ P0 `param_schema` 核心结构：
 - 前端动态表单是否已支持 `type=action`，或是否需要 P0 降级为静态按钮/链接。
 - 成果页是否支持 `file_type="video"` 展示或下载。
 - `TaskService` 创建任务时是否优先使用 `PricingService`，确认 fixed pricing_schema 与 executor estimate_cost 一致。
-- Seedance payload 按本地 API 文档落地：图片使用 `type=image_url` + `image_url.url` + `role`，声音使用 `generate_audio`，智能比例使用 `adaptive`，智能时长使用 `duration=-1`。
+- Seedance payload 按本地 API 文档落地：图片使用 `type=image_url` + `image_url.url` + `role`，声音使用 `generate_audio`，智能比例使用 `adaptive`，智能时长使用 `duration=-1`，水印固定 `watermark=false`。
