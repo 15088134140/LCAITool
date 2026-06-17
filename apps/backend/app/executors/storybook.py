@@ -265,7 +265,7 @@ class StorybookExecutor(BaseToolExecutor):
 
         await self._record_llm_interaction(
             step_name="故事大纲生成",
-            model="deepseek-v4-pro",
+            model=self.doubao_provider.text_model,
             prompt=user_prompt,
             system_prompt=system_prompt,
             response=response,
@@ -331,7 +331,7 @@ class StorybookExecutor(BaseToolExecutor):
 
         await self._record_llm_interaction(
             step_name="插画提示词生成",
-            model="deepseek-v4-flash",
+            model=self.doubao_provider.text_model,
             prompt=user_prompt,
             system_prompt=system_prompt,
             response=response,
@@ -391,7 +391,7 @@ class StorybookExecutor(BaseToolExecutor):
 
                     await self._record_llm_interaction(
                         step_name="批量插画生成",
-                        model="doubao-seedream-4.5",
+                        model=self.doubao_provider.image_model,
                         prompt=prompt,
                         response=response,
                         response_type="image",
@@ -470,7 +470,7 @@ class StorybookExecutor(BaseToolExecutor):
 
                     await self._record_llm_interaction(
                         step_name="语音合成",
-                        model="zhipu-glm-tts",
+                        model=self.zhipu_provider.audio_model,
                         prompt=text,
                         response=response,
                         response_type="audio",
