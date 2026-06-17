@@ -12,7 +12,7 @@
 
 ## 2. 外部文档与事实依据
 
-已读取本地技术文档 [火山创建视频生成任务 API.md](../../火山创建视频生成任务%20API.md)，确认以下官方信息：
+已读取本地技术文档 [火山创建视频生成任务 API.md](../../api-docs/火山创建视频生成任务%20API.md)，确认以下官方信息：
 
 - 创建视频生成任务 API：`POST https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks`。
 - 查询视频生成任务 API：`GET https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks/{id}`。
