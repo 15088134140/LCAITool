@@ -260,22 +260,127 @@ async def test_doubao_generate_image_api_error(httpx_mock):
 
 
 @pytest.mark.asyncio
-async def test_doubao_generate_video_success(httpx_mock):
-    """测试豆包 Seedance 视频生成成功（提交 -> 轮询 -> 下载）"""
+async def test_doubao_generate_video_builds_official_seedance_payload(httpx_mock):
+    """测试豆包 Seedance 官方 Ark API payload 构建（包含多图、分辨率、比例等）"""
     # 1. 提交任务
     httpx_mock.add_response(json={"id": "task_123"})
-    # 2. 第一次轮询 - 运行中
-    httpx_mock.add_response(
-        json={"task": {"id": "task_123", "status": "running"}}
-    )
-    # 3. 第二次轮询 - 成功
+    # 2. 轮询 - 成功（官方 Ark API 顶层结构）
     httpx_mock.add_response(
         json={
-            "task": {
-                "id": "task_123",
-                "status": "succeeded",
-                "output": {"video_url": "https://example.com/video.mp4"}
-            }
+            "id": "task_123",
+            "status": "succeeded",
+            "content": {"video_url": "https://example.com/video.mp4"},
+            "usage": {"total_tokens": 123}
+        }
+    )
+    # 3. 下载视频
+    httpx_mock.add_response(content=b"fake_video_bytes")
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_video(
+        prompt="小猫对着镜头打哈欠",
+        duration=-1,
+        model="doubao-seedance-1-5-pro-251215",
+        images=[
+            {"role": "first_frame", "url": "data:image/png;base64,AAA"},
+            {"role": "last_frame", "url": "data:image/png;base64,BBB"}
+        ],
+        resolution="1080p",
+        ratio="adaptive",
+        generate_audio=False,
+        return_last_frame=True,
+        seed=123,
+        camera_fixed=False,
+        poll_interval=0.001,
+        max_polls=2
+    )
+
+    assert response.success is True
+    decoded = base64.b64decode(response.content)
+    assert decoded == b"fake_video_bytes"
+    assert response.usage["total_tokens"] == 123
+
+    # 验证请求 payload
+    request_payload = json.loads(httpx_mock.get_requests()[0].content)
+    assert request_payload["model"] == "doubao-seedance-1-5-pro-251215"
+    assert request_payload["watermark"] is False
+    assert request_payload["resolution"] == "1080p"
+    assert request_payload["ratio"] == "adaptive"
+    assert request_payload["duration"] == -1
+    assert request_payload["generate_audio"] is False
+    assert request_payload["return_last_frame"] is True
+    assert request_payload["seed"] == 123
+    assert request_payload["camera_fixed"] is False  # 原样透传，不被 bool() 转换
+
+    # 验证 content 结构：text + image_url，role 保留
+    content = request_payload["content"]
+    assert content[0]["type"] == "text"
+    assert content[0]["text"] == "小猫对着镜头打哈欠"
+    assert content[1]["type"] == "image_url"
+    assert content[1]["image_url"]["url"] == "data:image/png;base64,AAA"
+    assert content[1]["role"] == "first_frame"
+    assert content[2]["type"] == "image_url"
+    assert content[2]["image_url"]["url"] == "data:image/png;base64,BBB"
+    assert content[2]["role"] == "last_frame"
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_video_text_only_omits_optional_none_fields(httpx_mock):
+    """测试豆包 Seedance 纯文本调用时省略 None 的可选字段，且不包含 ratio"""
+    # 1. 提交任务
+    httpx_mock.add_response(json={"id": "task_123"})
+    # 2. 轮询 - 成功
+    httpx_mock.add_response(
+        json={
+            "id": "task_123",
+            "status": "succeeded",
+            "content": {"video_url": "https://example.com/video.mp4"},
+            "usage": {"video_duration": 6}
+        }
+    )
+    # 3. 下载视频
+    httpx_mock.add_response(content=b"fake_video_bytes")
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_video(
+        prompt="城市夜景延时摄影",
+        duration=6,
+        resolution="720p",
+        generate_audio=True,
+        poll_interval=0.001,
+        max_polls=2
+    )
+
+    assert response.success is True
+
+    # 验证请求 payload - 只有 text，没有 image，没有 ratio
+    request_payload = json.loads(httpx_mock.get_requests()[0].content)
+    assert len(request_payload["content"]) == 1
+    assert request_payload["content"][0]["type"] == "text"
+    assert request_payload["content"][0]["text"] == "城市夜景延时摄影"
+    assert request_payload["resolution"] == "720p"
+    assert request_payload["duration"] == 6
+    assert request_payload["generate_audio"] is True
+    assert request_payload["watermark"] is False
+    assert "ratio" not in request_payload
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_video_success(httpx_mock):
+    """测试豆包 Seedance 视频生成成功（官方 Ark API 顶层结构）"""
+    # 1. 提交任务 - 返回顶层 id
+    httpx_mock.add_response(json={"id": "task_123"})
+    # 2. 第一次轮询 - 运行中（顶层 status）
+    httpx_mock.add_response(
+        json={"id": "task_123", "status": "running"}
+    )
+    # 3. 第二次轮询 - 成功（顶层 status/content/usage）
+    httpx_mock.add_response(
+        json={
+            "id": "task_123",
+            "status": "succeeded",
+            "content": {"video_url": "https://example.com/video.mp4"},
+            "usage": {"video_duration": 10}
         }
     )
     # 4. 下载视频
@@ -286,7 +391,7 @@ async def test_doubao_generate_video_success(httpx_mock):
         "一只猫在跑步",
         duration=10,
         poll_interval=0.001,
-        max_polls=10
+        max_polls=3
     )
 
     assert response.success is True
@@ -298,17 +403,15 @@ async def test_doubao_generate_video_success(httpx_mock):
 
 @pytest.mark.asyncio
 async def test_doubao_generate_video_failed(httpx_mock):
-    """测试豆包 Seedance 视频生成失败（提交 -> 轮询 -> 失败）"""
+    """测试豆包 Seedance 视频生成失败（官方 Ark API 顶层 error 结构）"""
     # 1. 提交任务
     httpx_mock.add_response(json={"id": "task_123"})
-    # 2. 轮询 - 失败
+    # 2. 轮询 - 失败（顶层 error 对象）
     httpx_mock.add_response(
         json={
-            "task": {
-                "id": "task_123",
-                "status": "failed",
-                "error": "Model inference error"
-            }
+            "id": "task_123",
+            "status": "failed",
+            "error": {"message": "Model inference error"}
         }
     )
 
@@ -316,11 +419,153 @@ async def test_doubao_generate_video_failed(httpx_mock):
     response = await provider.generate_video(
         "一只猫在跑步",
         poll_interval=0.001,
-        max_polls=10
+        max_polls=2
     )
 
     assert response.success is False
     assert "Model inference error" in response.error
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_video_task_inner_structure(httpx_mock):
+    """测试豆包 Seedance 兼容 task.content 和 task.error 结构"""
+    # 1. 提交任务
+    httpx_mock.add_response(json={"id": "task_123"})
+    # 2. 轮询 - 成功（嵌套 task.content.video_url）
+    httpx_mock.add_response(
+        json={
+            "id": "task_123",
+            "status": "succeeded",
+            "task": {
+                "content": {"video_url": "https://example.com/video.mp4"},
+                "status": "succeeded"
+            },
+            "usage": {"total_tokens": 123}
+        }
+    )
+    # 3. 下载视频
+    httpx_mock.add_response(content=b"fake_video_bytes")
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_video(
+        prompt="测试视频",
+        poll_interval=0.001,
+        max_polls=2
+    )
+
+    assert response.success is True
+    # 验证 raw_response 保留完整 poll_result
+    assert response.raw_response["id"] == "task_123"
+    assert response.raw_response["task"]["content"]["video_url"] == "https://example.com/video.mp4"
+    assert "_download" in response.raw_response
+    assert response.raw_response["_download"]["size"] == 16
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_video_task_output_video_url(httpx_mock):
+    """测试豆包 Seedance 兼容 task.output.video_url 结构"""
+    # 1. 提交任务
+    httpx_mock.add_response(json={"id": "task_123"})
+    # 2. 轮询 - 成功（嵌套 task.output.video_url）
+    httpx_mock.add_response(
+        json={
+            "id": "task_123",
+            "status": "succeeded",
+            "task": {
+                "output": {"video_url": "https://example.com/video.mp4"},
+                "status": "succeeded"
+            }
+        }
+    )
+    # 3. 下载视频
+    httpx_mock.add_response(content=b"fake_video_bytes")
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_video(
+        prompt="测试视频",
+        poll_interval=0.001,
+        max_polls=2
+    )
+
+    assert response.success is True
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_video_task_error_message(httpx_mock):
+    """测试豆包 Seedance 兼容 task.error 结构"""
+    # 1. 提交任务
+    httpx_mock.add_response(json={"id": "task_123"})
+    # 2. 轮询 - 失败（嵌套 task.error）
+    httpx_mock.add_response(
+        json={
+            "id": "task_123",
+            "status": "failed",
+            "task": {
+                "error": {"message": "Task inner error"},
+                "status": "failed"
+            }
+        }
+    )
+
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_video(
+        prompt="测试视频",
+        poll_interval=0.001,
+        max_polls=2
+    )
+
+    assert response.success is False
+    assert "Task inner error" in response.error
+
+
+@pytest.mark.asyncio
+async def test_doubao_generate_video_empty_prompt_no_images(httpx_mock):
+    """测试豆包 Seedance 空 prompt 且无图片返回空 content，触发错误"""
+    provider = DoubaoProvider(api_key="test_key")
+    response = await provider.generate_video(
+        prompt="",
+        images=[]
+    )
+
+    assert response.success is False
+    assert "Seedance video content is empty" in response.error
+
+
+def test_doubao_build_video_content_edge_cases():
+    """测试 _build_video_content 边界情况"""
+    provider = DoubaoProvider(api_key="test_key")
+
+    # 空 prompt + 无图片 = 空 list
+    result = provider._build_video_content("", None)
+    assert result == []
+
+    # 空 prompt + 空图片列表 = 空 list
+    result = provider._build_video_content("", [])
+    assert result == []
+
+    # 空 prompt + 无效图片（无 url） = 空 list
+    result = provider._build_video_content("", [{"role": "first_frame"}])
+    assert result == []
+
+    # 有 prompt + 无图片 = 只有 text 项
+    result = provider._build_video_content("测试 prompt", None)
+    assert result == [{"type": "text", "text": "测试 prompt"}]
+
+    # 验证图片结构是 object 内嵌套 url，不是直接字符串
+    result = provider._build_video_content("", [{"role": "first_frame", "url": "data:image/png;base64,AAA"}])
+    assert result[0]["type"] == "image_url"
+    assert result[0]["image_url"] == {"url": "data:image/png;base64,AAA"}
+    assert result[0]["role"] == "first_frame"
+
+    # 非 dict 项应跳过，避免 .get() 崩溃
+    result = provider._build_video_content("", [
+        "not_a_dict",
+        None,
+        123,
+        {"role": "first_frame", "url": "data:image/png;base64,AAA"}
+    ])
+    assert len(result) == 1  # 只有有效 dict 项被保留
+    assert result[0]["role"] == "first_frame"
 
 
 @pytest.mark.asyncio

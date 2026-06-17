@@ -229,6 +229,82 @@ class DoubaoProvider(BaseAIProvider):
             error="Audio generation not implemented for Doubao provider"
         )
 
+    def _build_video_content(
+        self,
+        prompt: str,
+        images: Optional[list] = None
+    ) -> list:
+        """
+        构建 Seedance 视频生成的 content 数组
+        返回 [{type:text, text:prompt}] + images 的 {type:image_url, image_url: {url: ...}, role?}
+        prompt 为空且无有效图片时返回空 list
+        """
+        content = []
+
+        if prompt:
+            content.append({"type": "text", "text": prompt})
+
+        if images:
+            for img in images:
+                # 跳过非 dict 项，避免 .get() 崩溃
+                if not isinstance(img, dict):
+                    continue
+                image_url = img.get("url") or img.get("data", "")
+                if image_url:
+                    item = {"type": "image_url", "image_url": {"url": image_url}}
+                    if img.get("role"):
+                        item["role"] = img["role"]
+                    content.append(item)
+
+        return content
+
+    def _extract_video_url(self, task_result: Dict[str, Any]) -> str:
+        """
+        从任务结果中提取视频 URL
+        优先顶层 content.video_url，兼容 task.content 或 task.output 中的 video_url
+        """
+        # 优先顶层 content.video_url (官方 Ark API)
+        content = task_result.get("content", {})
+        if isinstance(content, dict) and "video_url" in content:
+            return content["video_url"]
+
+        # 兼容旧格式：task.content 或 task.output
+        task = task_result.get("task") or {}
+        task_content = task.get("content", {})
+        if isinstance(task_content, dict) and "video_url" in task_content:
+            return task_content["video_url"]
+
+        task_output = task.get("output", {})
+        if isinstance(task_output, dict) and "video_url" in task_output:
+            return task_output["video_url"]
+
+        # 兼容顶层 output 或 video_url
+        output = task_result.get("output", {})
+        if isinstance(output, dict) and "video_url" in output:
+            return output["video_url"]
+
+        return task_result.get("video_url", "")
+
+    def _extract_error_message(self, task_result: Dict[str, Any]) -> str:
+        """
+        从任务结果中提取错误消息
+        兼容顶层 error 字典/字符串 与 task.error 字典/字符串
+        """
+        # 优先顶层 error
+        error = task_result.get("error")
+
+        # 兼容 task.error
+        if error is None:
+            task = task_result.get("task") or {}
+            error = task.get("error", "Video generation failed")
+
+        if isinstance(error, dict):
+            return error.get("message", str(error))
+        elif isinstance(error, str):
+            return error
+        else:
+            return str(error)
+
     async def generate_video(
         self,
         prompt: str,
@@ -237,22 +313,45 @@ class DoubaoProvider(BaseAIProvider):
     ) -> AIResponse:
         """
         调用豆包 Seedance 生成视频（异步任务轮询模式）
-        API 文档: POST /api/v3/contents/generations/tasks
+        官方 Ark API: POST /api/v3/contents/generations/tasks
         提交任务后轮询状态，成功则下载视频并 base64 编码
         """
         create_url = f"{self.api_base}/contents/generations/tasks"
 
-        # 构建文本内容（duration 通过 --dur 参数传入）
-        text = prompt
-        if duration:
-            text += f" --dur {duration}"
+        # 构建 content 数组（支持多图）
+        images = kwargs.get("images")
+        content = self._build_video_content(prompt, images)
 
+        if not content:
+            return AIResponse(
+                success=False,
+                content="",
+                raw_response={},
+                error="Seedance video content is empty"
+            )
+
+        # 构建 payload - 默认 watermark=False，且不允许 kwargs 覆盖为 True
         payload = {
             "model": kwargs.get("model", "doubao-seedance-1-5-pro-251215"),
-            "content": [
-                {"type": "text", "text": text}
-            ],
+            "content": content,
+            "watermark": False,
         }
+
+        # 可选字段：有值时才加入
+        if duration is not None:
+            payload["duration"] = duration
+        if kwargs.get("resolution"):
+            payload["resolution"] = kwargs["resolution"]
+        if kwargs.get("ratio"):
+            payload["ratio"] = kwargs["ratio"]
+        if "generate_audio" in kwargs:
+            payload["generate_audio"] = bool(kwargs["generate_audio"])
+        if "return_last_frame" in kwargs:
+            payload["return_last_frame"] = bool(kwargs["return_last_frame"])
+        if kwargs.get("seed") is not None:
+            payload["seed"] = kwargs["seed"]
+        if kwargs.get("camera_fixed") is not None:
+            payload["camera_fixed"] = kwargs["camera_fixed"]
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -288,10 +387,13 @@ class DoubaoProvider(BaseAIProvider):
                     poll_response.raise_for_status()
                     poll_result = poll_response.json()
 
+                # 兼容顶层 status 或 task.status
                 status = poll_result.get("status", "")
+                if not status and "task" in poll_result:
+                    status = poll_result["task"].get("status", "")
 
                 if status == "succeeded":
-                    video_url = poll_result.get("content", {}).get("video_url", "")
+                    video_url = self._extract_video_url(poll_result)
                     if not video_url:
                         return AIResponse(
                             success=False,
@@ -307,19 +409,22 @@ class DoubaoProvider(BaseAIProvider):
 
                     video_base64 = base64.b64encode(video_bytes).decode("utf-8")
 
+                    # 返回完整 poll_result，确保 content.video_url 存在
+                    raw_response = poll_result.copy()
+                    # 额外补充下载元数据
+                    raw_response["_download"] = {
+                        "content_type": video_response.headers.get("content-type", ""),
+                        "size": len(video_bytes)
+                    }
                     return AIResponse(
                         success=True,
                         content=video_base64,
-                        raw_response={
-                            "video_url": video_url,
-                            "content_type": video_response.headers.get("content-type", ""),
-                            "size": len(video_bytes)
-                        },
+                        raw_response=raw_response,
                         usage=poll_result.get("usage", {})
                     )
 
-                elif status == "failed":
-                    error_msg = poll_result.get("error", "Video generation failed")
+                elif status in ("failed", "expired"):
+                    error_msg = self._extract_error_message(poll_result)
                     return AIResponse(
                         success=False,
                         content="",
