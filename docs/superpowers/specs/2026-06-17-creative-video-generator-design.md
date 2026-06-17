@@ -12,23 +12,27 @@
 
 ## 2. 外部文档与事实依据
 
-已通过火山引擎联网搜索读取到以下官方信息：
+已读取本地技术文档 [火山创建视频生成任务 API.md](../../火山创建视频生成任务%20API.md)，确认以下官方信息：
 
 - 创建视频生成任务 API：`POST https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks`。
 - 查询视频生成任务 API：`GET https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks/{id}`。
-- Seedance 1.5 pro model id：`doubao-seedance-1-5-pro-251215`。
-- 官方推荐参数写法是在 request body 中直接传入：`model`、`content`、`resolution`、`ratio`、`duration`、`seed`、`camera_fixed`、`watermark` 等。
-- Seedance 1.5 pro 支持文生视频、图生视频-首帧、图生视频-首尾帧，以及音视频联合生成。
+- Seedance 1.5 Pro model id：`doubao-seedance-1-5-pro-251215`。
+- 本接口仅支持 API Key 鉴权。
+- 官方推荐参数写法是在 request body 中直接传入：`model`、`content`、`resolution`、`ratio`、`duration`、`seed`、`camera_fixed`、`watermark`、`generate_audio`、`return_last_frame` 等。
+- Seedance 1.5 Pro 支持文生视频、图生视频-首帧、图生视频-首尾帧，以及有声/无声视频。
+- 图片内容结构已确认：`content.type="image_url"`，`content.image_url.url` 支持公网 URL、Base64 data URL、素材 ID；首帧/尾帧通过 `content.role="first_frame"` / `"last_frame"` 指定。
+- 图生视频-首帧：传 1 个 `image_url` 对象，`role` 可为 `first_frame` 或不填；P0 统一传 `first_frame`。
+- 图生视频-首尾帧：传 2 个 `image_url` 对象，且 `role` 必填，分别为 `first_frame`、`last_frame`。
+- `generate_audio` 已确认：`true` 输出同步音频，`false` 输出无声视频；仅 Seedance 2.0 系列和 Seedance 1.5 Pro 支持。
+- `ratio` 支持 `adaptive`，Seedance 1.5 Pro 默认值也是 `adaptive`。
+- `duration` 支持整数秒；Seedance 1.5 Pro 支持 `[4,12]` 或 `-1`，其中 `-1` 表示智能指定时长。
+- `resolution` 支持 `480p`、`720p`、`1080p`；文档仅说明 Seedance 2.0 Fast 不支持 `1080p`，因此 P0 可对 Seedance 1.5 Pro 透传 `1080p`。
+- `frames` 对 Seedance 1.5 Pro 暂不支持；P0 不使用 `frames`。
 - 查询任务结果中的 `content.video_url` 为 mp4 下载地址，视频 URL 有 24 小时有效期，需要及时转存。
 - 查询任务结果可能返回 `content.last_frame_url`，需在创建任务时设置 `return_last_frame=true`。
 - 官方体验页显示有声视频价格 0.016 元/千 tokens，无声视频价格 0.008 元/千 tokens；P0 暂不使用该价格做精细计费。
 
-尚需在实现前通过官方文档或小调用确认的字段：
-
-- 首帧/尾帧图片在 `content` 中的精确结构。
-- `generate_audio` / 无声输出的精确 API 字段或请求方式。
-
-这些不确定点必须隔离在 provider 层，不能散落到 executor 和表单逻辑中。
+实现仍需把 Ark payload 构造集中在 provider 层，避免 executor 直接拼接第三方 API 细节。
 
 ## 3. 项目现状
 
@@ -51,7 +55,7 @@ P0 实现以下能力：
 3. 支持首帧参考图、尾帧参考图两个上传位。
 4. 支持提示词输入。
 5. 支持视频比例选择：`smart`、`21:9`、`16:9`、`4:3`、`1:1`、`3:4`、`9:16`。
-6. 支持分辨率选择：`480p`、`720p`、`1080p`。P0 允许 1080p，若官方 API 拒绝则任务失败并展示错误。
+6. 支持分辨率选择：`480p`、`720p`、`1080p`。本地 API 文档确认 Seedance 1.5 Pro 支持 1080p。
 7. 支持视频时长：按秒数 4–12 秒，默认 6 秒；支持智能时长。
 8. 支持输出声音开关，默认开启。
 9. 保留样片速览入口。
@@ -77,10 +81,10 @@ P0 不做：
 | 首帧参考图 | `first_frame` | file/image | 选填。上传后进入图生视频-首帧或首尾帧模式 |
 | 尾帧参考图 | `last_frame` | file/image | 选填。只有首帧存在时才参与首尾帧；若仅传尾帧，前后端均拒绝提交 |
 | 创意描述 | `prompt` | textarea | 选填；但文生视频模式下必填 |
-| 视频比例 | `ratio` | radio/card | 默认 `smart`；`smart` 时不向 Ark 传 `ratio` |
+| 视频比例 | `ratio` | radio/card | 默认 `adaptive`；UI 文案显示“智能”，请求传 `ratio="adaptive"` |
 | 分辨率 | `resolution` | radio/segmented | 默认 `480p`；允许 `480p`、`720p`、`1080p` |
 | 视频时长模式 | `duration_mode` | radio/segmented | `seconds` / `smart`；默认 `seconds` |
-| 秒数 | `duration` | range | 4–12 秒，默认 6；`duration_mode=smart` 时不传 |
+| 秒数 | `duration` | range | 4–12 秒，默认 6；`duration_mode=smart` 时传 `duration=-1` |
 | 生成数量 | `quantity` | range | P0 锁定为 1，提示“多条生成即将上线” |
 | 输出声音 | `generate_audio` | boolean | 默认 true |
 | 样片速览 | `sample_preview` | action/button | 打开样片入口，不影响请求参数 |
@@ -96,10 +100,11 @@ P0 不做：
 
 ### 5.3 智能项映射
 
-- `ratio=smart`：请求体不传 `ratio`。
-- `duration_mode=smart`：请求体不传 `duration` / `frames`。
+本地技术文档已确认官方智能值：
 
-这样避免猜测官方未明确给出的 `auto` / `adaptive` 枚举值。
+- 智能比例：使用 `ratio="adaptive"`。UI 可显示“智能”，表单值直接存 `adaptive`。
+- 智能时长：使用 `duration=-1`。`duration_mode=smart` 时请求体传 `duration=-1`，不传 `frames`。
+- P0 不使用 `frames`，因为文档明确 Seedance 1.5 Pro 暂不支持 `frames`。
 
 ## 6. 推荐架构
 
@@ -154,26 +159,28 @@ Provider 内部构造 Ark payload，示意如下：
   "model": "doubao-seedance-1-5-pro-251215",
   "content": [
     { "type": "text", "text": "提示词" },
-    { "type": "image_url", "image_url": { "url": "..." }, "role": "first_frame" },
-    { "type": "image_url", "image_url": { "url": "..." }, "role": "last_frame" }
+    { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." }, "role": "first_frame" },
+    { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." }, "role": "last_frame" }
   ],
   "resolution": "720p",
   "ratio": "16:9",
   "duration": 6,
+  "generate_audio": true,
   "return_last_frame": true,
   "watermark": false
 }
 ```
 
-图片 content 的最终字段结构由 provider 内的 `_build_video_content()` 负责适配。实现前必须确认官方字段，executor 不直接拼 Ark payload。
+图片 content 的字段结构已由本地技术文档确认：`type="image_url"`，`image_url.url` 可传公网 URL、Base64 data URL 或素材 ID；首尾帧通过 `role="first_frame"` / `role="last_frame"` 指定。实现仍应由 provider 内的 `_build_video_content()` 统一构造，executor 不直接拼 Ark payload。
 
 ### 6.3 输出声音映射
 
-`generate_audio` 是用户侧参数。Provider 内部按官方 API 适配：
+`generate_audio` 是官方字段，Seedance 1.5 Pro 支持：
 
-- 若官方存在显式音频字段，按字段传。
-- 若官方通过模型或服务层区分有声/无声，Provider 内映射。
-- 若实现前仍无法确认无声字段，则 P0 只允许 `generate_audio=true` 实际调用；`generate_audio=false` 返回明确错误：“当前暂不支持无声输出，请开启输出声音”。
+- `generate_audio=true`：模型输出包含同步音频的视频。
+- `generate_audio=false`：模型输出无声视频。
+
+P0 直接透传用户选择。
 
 ## 7. 数据流
 
@@ -321,7 +328,7 @@ P0 `param_schema` 核心结构：
     "key": "ratio",
     "label": "视频比例",
     "type": "radio",
-    "defaultValue": "smart",
+    "defaultValue": "adaptive",
     "uiHint": "compact-card",
     "options": [
       { "label": "21:9", "value": "21:9" },
@@ -330,7 +337,7 @@ P0 `param_schema` 核心结构：
       { "label": "1:1", "value": "1:1" },
       { "label": "3:4", "value": "3:4" },
       { "label": "9:16", "value": "9:16" },
-      { "label": "智能", "value": "smart" }
+      { "label": "智能", "value": "adaptive" }
     ],
     "order": 11
   },
@@ -397,7 +404,7 @@ P0 `param_schema` 核心结构：
 - 缺少 prompt 且未上传首帧/尾帧：前端阻止，后端返回参数错误。
 - 只传尾帧：前端阻止，后端返回参数错误。
 - 上传文件不存在或不属于当前用户：后端拒绝。
-- Ark 返回不支持 1080p、无声或某参数：任务失败，记录原始错误摘要，退还冻结积分。
+- Ark 返回参数错误或模型侧生成失败：任务失败，记录原始错误摘要，退还冻结积分。
 - 轮询超时：任务失败或 timeout，退还冻结积分。
 - 视频 URL 24 小时过期风险：执行器成功后立即下载并转存到 `works` 目录。
 
@@ -415,9 +422,12 @@ P0 `param_schema` 核心结构：
    - 合法首帧通过。
    - 合法首尾帧通过。
 3. 请求 payload 构造：
-   - `ratio=smart` 不传 `ratio`。
-   - `duration_mode=smart` 不传 `duration`。
+   - `ratio=adaptive` 时传 `ratio="adaptive"`。
+   - `duration_mode=smart` 时传 `duration=-1`。
+   - `generate_audio` 原样透传布尔值。
    - `resolution=1080p` 原样传。
+   - 首帧图片传 `role="first_frame"`。
+   - 尾帧图片传 `role="last_frame"`。
    - `quantity` P0 强制为 1。
 4. WorkFile 创建：
    - 成功后存在 video 类型文件。
@@ -451,11 +461,11 @@ P0 `param_schema` 核心结构：
 
 ### 15.1 风险
 
-1. 图片 content 字段结构未完全确认。处理：隔离在 provider `_build_video_content()`。
-2. 输出声音开关字段未完全确认。处理：默认有声；无声无法确认时返回明确错误。
-3. 1080p 可能被官方拒绝。处理：P0 透传，失败时展示 Ark 错误并退费。
-4. 成果页 video 展示能力未知。处理：P0 至少保证 WorkFile 可下载；必要时补前端 video 渲染。
-5. 外部生成耗时长。处理：轮询日志、可配置超时、失败退费。
+1. 成果页 video 展示能力未知。处理：P0 至少保证 WorkFile 可下载；必要时补前端 video 渲染。
+2. 外部生成耗时长。处理：轮询日志、可配置超时、失败退费。
+3. Base64 上传图片会放大请求体，官方限制请求体不超过 64 MB、单张图片小于 30 MB。处理：P0 前端/后端限制上传文件大小；大文件后续改为公网 URL 或素材存储方式。
+4. 官方对图片尺寸和比例有约束：单图宽高比 `(0.4, 2.5)`、宽高长度 `(300, 6000)`。处理：P0 后端先做 MIME/大小校验，尺寸校验可作为 P1；若 Ark 返回尺寸错误，任务失败并退费。
+5. Seedance 1.5 Pro 支持 `1080p`，但高分辨率可能成本和耗时更高。处理：P0 固定计费仅用于跑通流程，上线运营前需完成精细计价。
 
 ### 15.2 回滚
 
@@ -474,4 +484,4 @@ P0 `param_schema` 核心结构：
 - 前端动态表单是否已支持 `type=action`，或是否需要 P0 降级为静态按钮/链接。
 - 成果页是否支持 `file_type="video"` 展示或下载。
 - `TaskService` 创建任务时是否优先使用 `PricingService`，确认 fixed pricing_schema 与 executor estimate_cost 一致。
-- Seedance 图片 content 字段结构和输出声音字段是否通过官方文档或小调用确认。
+- Seedance payload 按本地 API 文档落地：图片使用 `type=image_url` + `image_url.url` + `role`，声音使用 `generate_audio`，智能比例使用 `adaptive`，智能时长使用 `duration=-1`。
