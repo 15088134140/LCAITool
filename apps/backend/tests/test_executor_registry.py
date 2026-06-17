@@ -42,5 +42,15 @@ def test_list_executors_excludes_executor_class():
         "storybook-generator",
         "ecommerce-detail",
         "product-description",
+        "creative-video-generator",
     }
     assert all("class" not in item for item in executors)
+
+
+def test_get_executor_class_creative_video_generator():
+    """creative-video-generator 执行器类正确注册"""
+    from app.executors.registry import get_executor_class, resolve_executor_key
+    from app.executors.creative_video import CreativeVideoExecutor
+
+    assert resolve_executor_key("creative-video-generator") == "creative-video-generator"
+    assert get_executor_class("creative-video-generator") is CreativeVideoExecutor

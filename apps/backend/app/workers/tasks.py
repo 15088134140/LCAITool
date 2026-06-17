@@ -22,6 +22,7 @@ from app.executors import (
     StorybookExecutor,
     EcommerceExecutor,
     MarketingExecutor,
+    CreativeVideoExecutor,
 )
 from app.services.task_service import TaskService
 from app.workers.celery_app import celery_app
@@ -72,6 +73,7 @@ EXECUTOR_MAP: Dict[str, type[BaseToolExecutor]] = {
     'storybook-generator': StorybookExecutor,
     'ecommerce-detail': EcommerceExecutor,
     'product-description': MarketingExecutor,
+    'creative-video-generator': CreativeVideoExecutor,
 }
 
 

@@ -8,6 +8,7 @@ from .base import BaseToolExecutor
 from .storybook import StorybookExecutor
 from .ecommerce import EcommerceExecutor
 from .marketing import MarketingExecutor
+from .creative_video import CreativeVideoExecutor
 
 
 EXECUTOR_REGISTRY: Dict[str, dict] = {
@@ -31,6 +32,13 @@ EXECUTOR_REGISTRY: Dict[str, dict] = {
         "description": "生成商品/营销文案",
         "class": MarketingExecutor,
         "aliases": ["marketing"],
+    },
+    "creative-video-generator": {
+        "key": "creative-video-generator",
+        "name": "创意视频生成器执行器",
+        "description": "调用 Seedance 1.5 Pro 生成单条创意视频",
+        "class": CreativeVideoExecutor,
+        "aliases": [],
     },
 }
 

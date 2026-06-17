@@ -151,6 +151,7 @@ async def seed_tools(db: AsyncSession):
     cat_img = uuid.UUID("10000001-0000-0000-0000-000000000003")
     cat_copy = uuid.UUID("10000001-0000-0000-0000-000000000004")
     cat_audio = uuid.UUID("10000001-0000-0000-0000-000000000005")
+    cat_video = uuid.UUID("10000001-0000-0000-0000-000000000006")
 
     tools = [
         Tool(
@@ -348,6 +349,48 @@ async def seed_tools(db: AsyncSession):
                 {"key": "voice_type", "label": "音色", "type": "text", "order": 2},
                 {"key": "speed", "label": "语速", "type": "number", "order": 3},
                 {"key": "pitch", "label": "音调", "type": "number", "order": 4},
+            ]),
+        ),
+        Tool(
+            id=uuid.UUID("20000001-0000-0000-0000-000000000006"),
+            slug="creative-video-generator", name="创意视频生成器",
+            description="基于 Doubao Seedance 1.5 Pro 生成创意视频，支持文生视频、首帧参考图、首尾帧参考图、智能比例、智能时长和同步音频输出。",
+            short_desc="用提示词和首尾帧参考图生成有声创意视频",
+            category_id=cat_video, category="视频创作",
+            tags=json.dumps(["视频", "Seedance", "首尾帧", "有声视频", "创意生成"]),
+            base_fee=10, image_fee=0, audio_fee=0, token_fee=0,
+            status=1, use_count=0, favorite_count=0, rating_count=0, rating_avg=0.0,
+            is_featured=True, usage_modes=["form"],
+            executor_key="creative-video-generator",
+            pricing_schema=json.dumps({
+                "version": 1, "currency": "credits", "rounding": "ceil",
+                "items": [
+                    {"key": "base", "type": "fixed", "label": "创意视频生成基础费", "amount_ref": "base_fee"}
+                ],
+                "display": {"show_breakdown": True, "total_label": "预计消耗", "unit_label": "积分"}
+            }),
+            param_schema=json.dumps([
+                {"key": "_section_media", "type": "section", "label": "参考素材", "order": 1},
+                {"key": "first_frame", "label": "首帧参考图", "type": "file", "accept": "image/*", "required": False, "order": 2},
+                {"key": "last_frame", "label": "尾帧参考图", "type": "file", "accept": "image/*", "required": False, "order": 3},
+                {"key": "prompt", "label": "创意描述", "type": "textarea", "placeholder": "结合图片，输入创意描述（文生视频必填）", "required": False, "order": 4},
+                {"key": "_section_video", "type": "section", "label": "视频参数", "order": 10},
+                {"key": "ratio", "label": "视频比例", "type": "radio", "defaultValue": "adaptive", "uiHint": "compact-card", "options": [
+                    {"label": "21:9", "value": "21:9"}, {"label": "16:9", "value": "16:9"},
+                    {"label": "4:3", "value": "4:3"}, {"label": "1:1", "value": "1:1"},
+                    {"label": "3:4", "value": "3:4"}, {"label": "9:16", "value": "9:16"},
+                    {"label": "智能", "value": "adaptive"}
+                ], "order": 11},
+                {"key": "resolution", "label": "分辨率", "type": "radio", "defaultValue": "480p", "uiHint": "segmented", "options": [
+                    {"label": "480p", "value": "480p"}, {"label": "720p", "value": "720p"}, {"label": "1080p", "value": "1080p"}
+                ], "order": 12},
+                {"key": "duration_mode", "label": "视频时长", "type": "radio", "defaultValue": "seconds", "uiHint": "segmented", "options": [
+                    {"label": "按秒数", "value": "seconds"}, {"label": "智能时长", "value": "smart"}
+                ], "order": 13},
+                {"key": "duration", "label": "秒数", "type": "range", "min": 4, "max": 12, "defaultValue": 6, "order": 14},
+                {"key": "quantity", "label": "选择生成数量", "type": "range", "min": 1, "max": 1, "defaultValue": 1, "helpText": "多条生成即将上线", "order": 15},
+                {"key": "generate_audio", "label": "输出声音", "type": "boolean", "defaultValue": True, "order": 16},
+                {"key": "sample_preview", "label": "样片速览", "type": "action", "action": "open_demo_preview", "order": 17}
             ]),
         ),
     ]
