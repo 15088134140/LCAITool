@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { DialogMode } from './DialogMode';
+import { DynamicToolForm } from './DynamicToolForm';
 import type { Tool } from '@/types';
 
 interface ToolCreationFormProps {
@@ -19,7 +20,9 @@ export function ToolCreationForm({ tool }: ToolCreationFormProps) {
     return <ToolCreationFormWithTabs tool={tool} />;
   }
 
-  // Default: form mode (show "under development")
+  if (usageModes.includes('form') && tool.param_schema && tool.param_schema.length > 0) {
+    return <DynamicToolForm tool={tool} />;
+  }
   return (
     <section id="start-creation" className="py-20 bg-[#F8FAFC]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -72,9 +75,13 @@ function ToolCreationFormWithTabs({ tool }: { tool: Tool }) {
           </div>
         </div>
         {mode === 'form' ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">该工具的表单模式正在开发中...</p>
-          </div>
+          tool.param_schema && tool.param_schema.length > 0 ? (
+            <DynamicToolForm tool={tool} />
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">该工具的表单模式正在开发中...</p>
+            </div>
+          )
         ) : (
           <DialogMode tool={tool} />
         )}
