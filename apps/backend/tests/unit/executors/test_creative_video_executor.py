@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.executors.creative_video import CreativeVideoExecutor
+from app.providers.ai.base import AIResponse
 
 
 @pytest.fixture
@@ -240,3 +241,275 @@ class TestCreativeVideoExecutor:
             result = await executor._get_upload(upload_id, "first_frame")
 
             assert result == mock_upload
+
+    @pytest.mark.asyncio
+    async def test_build_video_images_resolves_first_and_last_uploads(self, executor):
+        """测试 _build_video_images：解析首帧和尾帧并转换为 data URL"""
+        first_upload = MagicMock()
+        last_upload = MagicMock()
+
+        async def mock_get_upload(upload_id, field_key):
+            if upload_id == "first-id":
+                return first_upload
+            elif upload_id == "last-id":
+                return last_upload
+            raise ValueError(f"Unknown upload: {upload_id}")
+
+        def mock_upload_to_data_url(upload):
+            if upload == first_upload:
+                return "data:image/png;base64,first"
+            elif upload == last_upload:
+                return "data:image/png;base64,last"
+            return ""
+
+        with patch.object(executor, "_get_upload", side_effect=mock_get_upload):
+            with patch.object(executor, "_upload_to_data_url", side_effect=mock_upload_to_data_url):
+                result = await executor._build_video_images({
+                    "first_frame": "first-id",
+                    "last_frame": "last-id"
+                })
+
+        assert len(result) == 2
+        assert result[0]["role"] == "first_frame"
+        assert result[0]["url"] == "data:image/png;base64,first"
+        assert result[1]["role"] == "last_frame"
+        assert result[1]["url"] == "data:image/png;base64,last"
+
+    @pytest.mark.asyncio
+    async def test_execute_calls_provider_with_seedance_p0_arguments(self, executor, tmp_path):
+        """测试 execute 调用 provider 时传递正确的 Seedance P0 参数"""
+        # Setup mock provider
+        mock_provider = AsyncMock()
+        mock_provider.generate_video.return_value = AIResponse(
+            success=True,
+            content=base64.b64encode(b"fake_video").decode("utf-8"),
+            raw_response={"content": {"video_url": "https://example.com/video.mp4"}},
+            usage={"total_tokens": 10}
+        )
+        executor.doubao_provider = mock_provider
+
+        first_image = {"role": "first_frame", "url": "data:image/png;base64,abc"}
+
+        with patch.object(executor, "get_works_dir", return_value=str(tmp_path)):
+            with patch.object(executor, "_init_providers", new_callable=AsyncMock):
+                with patch.object(executor, "_build_video_images", return_value=[first_image], new_callable=AsyncMock):
+                    with patch.object(executor, "_create_work_record", return_value=MagicMock(id=uuid.uuid4()), new_callable=AsyncMock):
+                        with patch.object(executor, "update_progress", new_callable=AsyncMock):
+                            with patch.object(executor, "add_log", new_callable=AsyncMock):
+                                result = await executor.execute({
+                                    "prompt": "猫打哈欠",
+                                    "first_frame": "first-id",
+                                    "ratio": "adaptive",
+                                    "resolution": "1080p",
+                                    "duration_mode": "smart",
+                                    "quantity": 1,
+                                    "generate_audio": False
+                                })
+
+        # 验证返回结果
+        assert result["success"] is True
+
+        # 验证视频文件已写入
+        video_file = tmp_path / "videos" / "creative_video.mp4"
+        assert video_file.exists()
+        assert video_file.read_bytes() == b"fake_video"
+
+        # 验证 provider 调用参数
+        mock_provider.generate_video.assert_awaited_once_with(
+            prompt="猫打哈欠",
+            duration=-1,
+            model="doubao-seedance-1-5-pro-251215",
+            images=[first_image],
+            resolution="1080p",
+            ratio="adaptive",
+            generate_audio=False,
+            return_last_frame=True,
+            watermark=False,
+            max_polls=120,
+            poll_interval=5
+        )
+
+    @pytest.mark.asyncio
+    async def test_execute_result_data_contains_normalized_nested(self, executor, tmp_path):
+        """测试 execute 传递给 _create_work_record 的 result_data 包含嵌套的 normalized 字段"""
+        # Setup mock provider
+        mock_provider = AsyncMock()
+        mock_provider.generate_video.return_value = AIResponse(
+            success=True,
+            content=base64.b64encode(b"fake_video").decode("utf-8"),
+            raw_response={"content": {"video_url": "https://example.com/video.mp4"}},
+            usage={"total_tokens": 10}
+        )
+        executor.doubao_provider = mock_provider
+
+        first_image = {"role": "first_frame", "url": "data:image/png;base64,abc"}
+        mock_work = MagicMock(id=uuid.uuid4())
+
+        with patch.object(executor, "get_works_dir", return_value=str(tmp_path)):
+            with patch.object(executor, "_init_providers", new_callable=AsyncMock):
+                with patch.object(executor, "_build_video_images", return_value=[first_image], new_callable=AsyncMock):
+                    with patch.object(executor, "_create_work_record", return_value=mock_work, new_callable=AsyncMock) as mock_create_work:
+                        with patch.object(executor, "update_progress", new_callable=AsyncMock):
+                            with patch.object(executor, "add_log", new_callable=AsyncMock):
+                                await executor.execute({
+                                    "prompt": "猫打哈欠",
+                                    "first_frame": "first-id",
+                                    "ratio": "adaptive",
+                                    "resolution": "1080p",
+                                    "duration_mode": "smart",
+                                    "quantity": 1,
+                                    "generate_audio": False
+                                })
+
+        # 验证 _create_work_record 被调用时第二个参数包含 normalized 嵌套结构
+        call_args = mock_create_work.await_args
+        assert call_args is not None
+        result_data = call_args[0][1]  # 第二个参数是 result_data
+
+        # 验证 nested structure - 这是本次修复的核心验证点
+        assert "normalized" in result_data
+        assert result_data["normalized"]["duration"] == -1
+        assert result_data["normalized"]["prompt"] == "猫打哈欠"
+
+        # 验证其他顶级字段保留
+        assert "video_path" in result_data
+        assert "video_size" in result_data
+        assert "provider_raw_response" in result_data
+        assert "usage" in result_data
+
+    @pytest.mark.asyncio
+    async def test_execute_raises_when_provider_fails(self, executor):
+        """测试 execute：provider 返回失败时抛出 RuntimeError"""
+        mock_provider = AsyncMock()
+        mock_provider.generate_video.return_value = AIResponse(
+            success=False,
+            content="",
+            raw_response={},
+            error="Ark error"
+        )
+        executor.doubao_provider = mock_provider
+
+        with patch.object(executor, "_init_providers", new_callable=AsyncMock):
+            with patch.object(executor, "_build_video_images", return_value=[], new_callable=AsyncMock):
+                with patch.object(executor, "update_progress", new_callable=AsyncMock):
+                    with pytest.raises(RuntimeError, match="Ark error"):
+                        await executor.execute({"prompt": "猫", "quantity": 1})
+
+    @pytest.mark.asyncio
+    async def test_execute_raises_when_base64_decode_fails(self, executor, tmp_path):
+        """测试 execute：provider 返回无效 base64 时抛出 RuntimeError 包含中文错误"""
+        # Setup mock provider 返回无效 base64 内容
+        mock_provider = AsyncMock()
+        mock_provider.generate_video.return_value = AIResponse(
+            success=True,
+            content="invalid-base64!!!",  # 无效的 base64
+            raw_response={},
+            usage={}
+        )
+        executor.doubao_provider = mock_provider
+
+        with patch.object(executor, "get_works_dir", return_value=str(tmp_path)):
+            with patch.object(executor, "_init_providers", new_callable=AsyncMock):
+                with patch.object(executor, "_build_video_images", return_value=[], new_callable=AsyncMock):
+                    with patch.object(executor, "update_progress", new_callable=AsyncMock):
+                        with pytest.raises(RuntimeError, match="视频数据解码失败"):
+                            await executor.execute({"prompt": "猫", "quantity": 1})
+
+    @pytest.mark.asyncio
+    async def test_create_work_record_creates_work_and_file_correctly(self, executor, mock_db):
+        """测试 _create_work_record：验证 Work 创建参数、WorkFile 添加、task 预览更新和事务操作"""
+        user_id = uuid.uuid4()
+        tool_id = uuid.uuid4()
+        work_id = uuid.uuid4()
+
+        # 模拟 task
+        mock_task = MagicMock()
+        mock_task.user_id = user_id
+        mock_task.tool_id = tool_id
+        mock_task.result_preview = None
+
+        # 模拟 TaskService.get_by_id 返回 task
+        with patch("app.services.task_service.TaskService.get_by_id", return_value=mock_task, new_callable=AsyncMock):
+            # 模拟 WorkService.create_work 返回带 id 的 work
+            mock_work = MagicMock()
+            mock_work.id = work_id
+            with patch("app.services.work_service.WorkService.create_work", return_value=mock_work, new_callable=AsyncMock) as mock_create_work:
+                params = {}
+                result_data = {
+                    "normalized": {
+                        "prompt": "一只可爱的猫咪在阳光下打哈欠",
+                        "mode": "text_to_video",
+                        "ratio": "16:9",
+                        "resolution": "1080p",
+                        "duration": 6,
+                        "generate_audio": True
+                    },
+                    "video_size": 123456
+                }
+
+                result = await executor._create_work_record(params, result_data)
+
+        # 验证 WorkService.create_work 被调用且参数正确
+        mock_create_work.assert_awaited_once()
+        work_create_call = mock_create_work.await_args[0][1]  # WorkCreate 参数
+        assert work_create_call.user_id == user_id
+        assert work_create_call.task_id == executor.task_id
+        assert work_create_call.tool_id == tool_id
+        assert work_create_call.status == "published"
+        assert work_create_call.is_public is False
+        assert work_create_call.title == "一只可爱的猫咪在阳光下打哈欠"
+        assert work_create_call.version == 1
+
+        # 验证 db.add 被调用添加 WorkFile 且字段正确
+        mock_db.add.assert_called_once()
+        added_work_file = mock_db.add.call_args[0][0]
+        assert added_work_file.file_type == "video"
+        assert added_work_file.file_name == "creative_video.mp4"
+        assert added_work_file.file_url == "videos/creative_video.mp4"
+        assert added_work_file.file_size == 123456
+        assert added_work_file.mime_type == "video/mp4"
+        assert added_work_file.is_preview is True
+
+        # 验证 task.result_preview 被设置为 work.id
+        assert mock_task.result_preview == str(work_id)
+
+        # 验证 flush/commit/refresh 被调用
+        mock_db.flush.assert_awaited_once()
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once_with(mock_work)
+
+        assert result == mock_work
+
+    @pytest.mark.asyncio
+    async def test_create_work_record_default_title_when_prompt_empty(self, executor, mock_db):
+        """测试 _create_work_record：prompt 为空时 title 为"创意视频生成" """
+        user_id = uuid.uuid4()
+        tool_id = uuid.uuid4()
+        work_id = uuid.uuid4()
+
+        mock_task = MagicMock()
+        mock_task.user_id = user_id
+        mock_task.tool_id = tool_id
+        mock_task.result_preview = None
+
+        with patch("app.services.task_service.TaskService.get_by_id", return_value=mock_task, new_callable=AsyncMock):
+            mock_work = MagicMock()
+            mock_work.id = work_id
+            with patch("app.services.work_service.WorkService.create_work", return_value=mock_work, new_callable=AsyncMock) as mock_create_work:
+                result_data = {
+                    "normalized": {
+                        "prompt": "",  # prompt 为空
+                        "mode": "text_to_video",
+                        "ratio": "16:9",
+                        "resolution": "1080p",
+                        "duration": 6,
+                        "generate_audio": True
+                    },
+                    "video_size": 123456
+                }
+
+                await executor._create_work_record({}, result_data)
+
+        # 验证 title 为默认值
+        work_create_call = mock_create_work.await_args[0][1]
+        assert work_create_call.title == "创意视频生成"

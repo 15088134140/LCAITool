@@ -3,6 +3,7 @@
 P0 跑通 Seedance 1.5 Pro 单条视频生成流程。
 """
 import base64
+import binascii
 import os
 import uuid
 from typing import Dict, Any, Optional
@@ -12,7 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .base import BaseToolExecutor
 from app.core.config import settings
+from app.models.task import WorkFile
 from app.models.user_upload import UserUpload
+from app.providers.ai import AIProviderFactory
+from app.schemas.task import WorkCreate, WorkFileCreate
+from app.services.task_service import TaskService
+from app.services.work_service import WorkService
 
 
 class CreativeVideoExecutor(BaseToolExecutor):
@@ -185,10 +191,185 @@ class CreativeVideoExecutor(BaseToolExecutor):
         encoded = base64.b64encode(file_bytes).decode("utf-8")
         return f"data:{mime_type};base64,{encoded}"
 
+    async def _init_providers(self) -> None:
+        """
+        初始化 AI Provider（懒加载）
+        """
+        if self.doubao_provider is None:
+            self.doubao_provider = await AIProviderFactory.get_provider_from_db(self.db, "volcano")
+
+    async def _build_video_images(self, normalized: Dict[str, Any]) -> list:
+        """
+        构建视频生成的参考图片列表
+        :param normalized: 规范化后的参数
+        :return: 图片列表，每项包含 role 和 url
+        """
+        images = []
+        if normalized.get("first_frame"):
+            first_upload = await self._get_upload(normalized["first_frame"], "first_frame")
+            first_data_url = self._upload_to_data_url(first_upload)
+            images.append({"role": "first_frame", "url": first_data_url})
+
+        if normalized.get("last_frame"):
+            last_upload = await self._get_upload(normalized["last_frame"], "last_frame")
+            last_data_url = self._upload_to_data_url(last_upload)
+            images.append({"role": "last_frame", "url": last_data_url})
+
+        return images
+
+    async def _create_work_record(self, params: Dict[str, Any], result_data: Dict[str, Any]):
+        """
+        创建成果记录和关联的视频文件
+        :param params: 原始参数
+        :param result_data: 执行结果数据
+        :return: 创建的 Work 实例
+        """
+        task = await TaskService.get_by_id(self.db, self.task_id)
+        if not task:
+            raise RuntimeError("任务不存在")
+
+        normalized = result_data["normalized"]
+
+        # 构建标题：取 prompt 前20个字符，或默认值
+        prompt_text = normalized.get("prompt") or ""
+        if prompt_text:
+            title = prompt_text[:20]
+            if len(prompt_text) > 20:
+                title += "..."
+        else:
+            title = "创意视频生成"
+
+        # 构建描述
+        mode_desc = {
+            "text_to_video": "文生视频",
+            "first_frame": "首帧参考",
+            "first_last_frame": "首尾帧参考"
+        }.get(normalized["mode"], normalized["mode"])
+
+        duration_text = "智能" if normalized["duration"] == -1 else f"{normalized['duration']}秒"
+        description_parts = [
+            f"模式: {mode_desc}",
+            f"比例: {normalized['ratio']}",
+            f"分辨率: {normalized['resolution']}",
+            f"时长: {duration_text}",
+            f"音频: {'是' if normalized['generate_audio'] else '否'}"
+        ]
+        description = " | ".join(description_parts)
+
+        # 创建成果
+        work = await WorkService.create_work(
+            self.db,
+            WorkCreate(
+                user_id=task.user_id,
+                task_id=self.task_id,
+                tool_id=task.tool_id,
+                title=title,
+                description=description,
+                status="published",
+                is_public=False,
+                version=1
+            )
+        )
+
+        # 添加成果文件
+        self.db.add(WorkFile(
+            **WorkFileCreate(
+                work_id=work.id,
+                file_type="video",
+                file_name="creative_video.mp4",
+                file_url="videos/creative_video.mp4",
+                file_size=result_data.get("video_size", 0),
+                mime_type="video/mp4",
+                is_preview=True
+            ).model_dump()
+        ))
+
+        # 更新任务预览
+        task.result_preview = str(work.id)
+
+        # 一次 flush/commit 确保事务一致性
+        await self.db.flush()
+        await self.db.commit()
+        await self.db.refresh(work)
+        return work
+
     async def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行视频生成任务（P0 未实现）
+        执行视频生成任务
         :param params: 工具参数
-        :return: 执行结果
+        :return: 执行结果，包含 work_id 和文件信息
         """
-        raise NotImplementedError("P0 阶段仅实现参数校验和上传辅助方法")
+        await self._init_providers()
+
+        # 参数校验
+        normalized = self._validate_params(params)
+
+        # 准备工作目录
+        works_dir = self.get_works_dir()
+        videos_dir = os.path.join(works_dir, "videos")
+        os.makedirs(videos_dir, exist_ok=True)
+
+        # 进度更新：校验素材
+        await self.update_progress(5, "校验素材")
+
+        # 构建参考图片
+        images = await self._build_video_images(normalized)
+
+        # 进度更新：提交 Seedance
+        await self.update_progress(15, "提交 Seedance 视频生成")
+
+        # 调用 Provider 生成视频
+        response = await self.doubao_provider.generate_video(
+            prompt=normalized["prompt"],
+            duration=normalized["duration"],
+            model="doubao-seedance-1-5-pro-251215",
+            images=images,
+            resolution=normalized["resolution"],
+            ratio=normalized["ratio"],
+            generate_audio=normalized["generate_audio"],
+            return_last_frame=True,
+            watermark=False,
+            max_polls=120,
+            poll_interval=5
+        )
+
+        if not response.success:
+            raise RuntimeError(response.error or "Seedance 视频生成失败")
+
+        # 进度更新：保存视频
+        await self.update_progress(90, "保存视频")
+
+        # 解码并保存视频
+        try:
+            video_bytes = base64.b64decode(response.content)
+        except (binascii.Error, ValueError) as e:
+            raise RuntimeError(f"视频数据解码失败: {str(e)}")
+
+        video_path = os.path.join(videos_dir, "creative_video.mp4")
+        with open(video_path, "wb") as f:
+            f.write(video_bytes)
+
+        video_size = len(video_bytes)
+
+        result_data = {
+            "normalized": normalized,
+            "video_path": video_path,
+            "video_size": video_size,
+            "provider_raw_response": response.raw_response,
+            "usage": response.usage
+        }
+
+        # 创建成果记录
+        work = await self._create_work_record(params, result_data)
+
+        # 进度更新：完成
+        await self.update_progress(100, "完成")
+        await self.add_log("info", f"创意视频生成完成，成果 ID: {work.id}")
+
+        return {
+            "success": True,
+            "work_id": str(work.id),
+            "files": {
+                "video": "videos/creative_video.mp4"
+            }
+        }
