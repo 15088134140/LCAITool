@@ -188,3 +188,13 @@ class AlreadyVotedException(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="您已经对该创意投过票了",
         )
+
+
+class ConfigurationError(Exception):
+    """AI Provider 必需配置项缺失。
+
+    与 BusinessException 不同，本异常不被 FastAPI 全局 handler 当作业务异常处理；
+    让它原样冒泡到调用栈（external API 的 _resolve_provider / Celery worker），
+    各调用点自行决定 502 / task failed 等表现。
+    """
+    pass
