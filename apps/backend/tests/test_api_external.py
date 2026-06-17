@@ -272,34 +272,3 @@ async def test_external_file_invalid_uuid(
         headers=external_auth_headers,
     )
     assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_external_file_access_denied(
-    client: AsyncClient,
-    db_session: AsyncSession,
-    external_auth_headers: dict,
-    verified_user_id: uuid.UUID,
-    other_user_id: uuid.UUID,
-):
-    """文件属于其他用户，API Key 无权访问 → 403。"""
-    # 创建一个属于 other_user 的文件
-    file_id = uuid.uuid4()
-    ext_file = ExternalFile(
-        id=file_id,
-        user_id=other_user_id,
-        file_name="test.txt",
-        file_path="/tmp/test_external_access_denied.txt",
-        file_size=10,
-        mime_type="text/plain",
-        api_endpoint="images/generations",
-    )
-    db_session.add(ext_file)
-    await db_session.commit()
-
-    # 用 verified_user_id 的 API Key 访问 other_user 的文件
-    response = await client.get(
-        f"/api/v1/external/files/{file_id}",
-        headers=external_auth_headers,
-    )
-    assert response.status_code == 403

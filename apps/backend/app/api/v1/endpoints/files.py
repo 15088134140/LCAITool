@@ -13,6 +13,7 @@ from app.api.deps import get_db, get_current_active_user
 from app.core.config import settings
 from app.models.user import User
 from app.models.user_upload import UserUpload
+from app.models.task import Work, WorkFile
 
 router = APIRouter()
 
@@ -137,4 +138,36 @@ async def get_upload_file(
         path=full_path,
         media_type=str(upload.mime_type or "application/octet-stream"),
         filename=str(upload.file_name),
+    )
+
+
+@router.get("/works/{file_id}", summary="获取成果文件")
+async def get_work_file(
+    file_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    下载/预览成果文件（图片、视频、音频等）。
+
+    - 不做权限校验，前端 <img>/<video> 等标签可直接引用。
+    - 文件路径 = WORKS_DIR / {task_id} / {file_url}（file_url 为相对路径）。
+    """
+    result = await db.execute(
+        select(WorkFile, Work)
+        .join(Work, Work.id == WorkFile.work_id)
+        .where(WorkFile.id == file_id)
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    work_file, work = row
+    full_path = os.path.join(settings.WORKS_DIR, str(work.task_id), str(work_file.file_url))
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=404, detail="文件不存在或已被清理")
+
+    return FileResponse(
+        path=full_path,
+        media_type=str(work_file.mime_type or "application/octet-stream"),
+        filename=str(work_file.file_name),
     )
