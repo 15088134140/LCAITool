@@ -141,16 +141,20 @@ async def get_upload_file(
     )
 
 
-@router.get("/works/{file_id}", summary="获取成果文件")
+@router.get("/works/{file_id}", summary="获取/预览成果文件")
 async def get_work_file(
     file_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    下载/预览成果文件（图片、视频、音频等）。
+    返回 WorkFile 对应的二进制（图片/音频/视频/PDF/文本等）。
 
-    - 不做权限校验，前端 <img>/<video> 等标签可直接引用。
-    - 文件路径 = WORKS_DIR / {task_id} / {file_url}（file_url 为相对路径）。
+    供 <img src>、<audio src>、<video src>、浏览器直接预览使用，**不要求 Bearer Token**。
+    访问者必须先拿到具体 WorkFile.id（UUID v4），UUID 充当能力凭证。
+    需要受控访问的能力（私密成果、付费成果）走 /works/{work_id}/download。
+
+    实际磁盘路径：WORKS_DIR / {task_id} / {file_url}
+    file_url 在 DB 中是相对 task 目录的路径，如 "images/page_001.png" / "storybook.pdf"。
     """
     result = await db.execute(
         select(WorkFile, Work)
@@ -164,7 +168,7 @@ async def get_work_file(
     work_file, work = row
     full_path = os.path.join(settings.WORKS_DIR, str(work.task_id), str(work_file.file_url))
     if not os.path.exists(full_path):
-        raise HTTPException(status_code=404, detail="文件不存在或已被清理")
+        raise HTTPException(status_code=404, detail="文件已被清理")
 
     return FileResponse(
         path=full_path,

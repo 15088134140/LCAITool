@@ -25,8 +25,8 @@ class IdeaSubmissionResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     title: str
-    description: Optional[str]
-    category: Optional[str]
+    description: Optional[str] = None
+    category: Optional[str] = None
     tags: Optional[List[str]]
     cover_image: Optional[str] = None
     vote_count: int

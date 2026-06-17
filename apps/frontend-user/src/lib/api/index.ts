@@ -18,6 +18,7 @@ export * from './modules/idea';
 export * from './modules/chat';
 export * from './modules/feedback';
 export * from './modules/file';
+export * from './modules/upload';
 
 // 按命名空间导出，方便使用
 import { authApi, userApi } from './modules/user';
@@ -29,6 +30,7 @@ import { ideaApi } from './modules/idea';
 import { chatApi } from './modules/chat';
 import { feedbackApi } from './modules/feedback';
 import { fileApi } from './modules/file';
+import { uploadApi } from './modules/upload';
 
 export const apiModules = {
   auth: { ...authApi },
@@ -42,6 +44,7 @@ export const apiModules = {
   chat: { ...chatApi },
   feedback: { ...feedbackApi },
   file: { ...fileApi },
+  upload: { ...uploadApi },
 };
 
 export default apiModules;

@@ -97,9 +97,7 @@ class User(UserInDBBase):
 class UserInDB(UserInDBBase):
     """用户信息（数据库）"""
     password_hash: str
-    id_card_number_encrypted: Optional[str]
-
-
+    id_card_number_encrypted: Optional[str] = None
 class RoleBase(BaseModel):
     name: str = Field(..., max_length=50, description="角色名称")
     description: Optional[str] = Field(None, max_length=255, description="角色描述")

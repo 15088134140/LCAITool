@@ -38,6 +38,10 @@ function mapApiTool(apiItem: any): Tool {
     isHot: apiItem.is_hot ?? apiItem.isHot ?? false,
     tags,
     usage_modes: apiItem.usage_modes || ['form'],
+    // 动态表单 schema（Task 14 新增）
+    param_schema: apiItem.param_schema ?? null,
+    pricing_schema: apiItem.pricing_schema ?? null,
+    executor_key: apiItem.executor_key ?? null,
     // 扁平 fee 字段（供表单组件直接读取）
     base_fee: apiItem.base_fee ?? 0,
     image_fee: apiItem.image_fee ?? 0,

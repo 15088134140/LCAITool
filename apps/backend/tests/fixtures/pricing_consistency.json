@@ -1,0 +1,153 @@
+{
+  "description": "前后端计价一致性测试共享 Fixtures — 用于后端 PricingService 和前端 useToolCostEstimate 对齐",
+  "version": 1,
+  "fixtures": [
+    {
+      "tool_slug": "storybook-generator",
+      "pricing_schema": {
+        "version": 1,
+        "currency": "credits",
+        "rounding": "ceil",
+        "items": [
+          { "key": "base", "type": "fixed", "label": "绘本生成基础费", "amount_ref": "base_fee" },
+          { "key": "page_images", "type": "per_unit", "label": "插画生成费",
+            "field": "page_count", "unit_amount_ref": "image_fee",
+            "default_quantity": 1, "min_quantity": 1, "max_quantity": 30 },
+          { "key": "page_audio", "type": "per_unit", "label": "语音合成费",
+            "field": "page_count", "unit_amount_ref": "audio_fee",
+            "default_quantity": 1, "min_quantity": 1, "max_quantity": 30,
+            "when": { "field": "voiceType", "operator": "ne", "value": "none" } }
+        ],
+        "display": { "show_breakdown": true, "total_label": "预计消耗", "unit_label": "积分" }
+      },
+      "tool_prices": { "base_fee": 20, "image_fee": 2, "audio_fee": 3, "token_fee": 0 },
+      "cases": [
+        {
+          "label": "默认值提交（theme模式 + 配音）",
+          "input_params": {
+            "inputMode": "theme", "theme": "小蝌蚪找妈妈",
+            "art_style": "cartoon", "target_age": "3-6",
+            "smart_page_count": false, "page_count": 1,
+            "voiceType": "tongtong",
+            "hasBackgroundMusic": false, "hasSoundEffects": false
+          },
+          "expected_total": 25,
+          "expected_breakdown_keys": ["base", "page_images", "page_audio"]
+        },
+        {
+          "label": "配音关闭（voiceType=none）",
+          "input_params": {
+            "inputMode": "theme", "theme": "小熊环游记",
+            "art_style": "oil", "target_age": "6-9",
+            "smart_page_count": false, "page_count": 5,
+            "voiceType": "none",
+            "hasBackgroundMusic": false, "hasSoundEffects": false
+          },
+          "expected_total": 30,
+          "expected_breakdown_keys": ["base", "page_images"]
+        },
+        {
+          "label": "智能页数启用（page_count=null → default_quantity=1）",
+          "input_params": {
+            "inputMode": "storyContent", "storyContent": "测试故事",
+            "art_style": "cartoon", "target_age": "3-6",
+            "smart_page_count": true,
+            "voiceType": "tongtong",
+            "hasBackgroundMusic": true, "hasSoundEffects": true
+          },
+          "expected_total": 25,
+          "expected_breakdown_keys": ["base", "page_images", "page_audio"],
+          "expected_warning": "page_count"
+        },
+        {
+          "label": "自定义艺术风格（allowCustom）",
+          "input_params": {
+            "inputMode": "theme", "theme": "海底世界",
+            "art_style": "手绘中国风",
+            "target_age": "3-6",
+            "smart_page_count": false, "page_count": 3,
+            "voiceType": "luodo",
+            "hasBackgroundMusic": false, "hasSoundEffects": false
+          },
+          "expected_total": 35,
+          "expected_breakdown_keys": ["base", "page_images", "page_audio"]
+        }
+      ]
+    },
+    {
+      "tool_slug": "ecommerce-detail",
+      "pricing_schema": {
+        "version": 1,
+        "currency": "credits",
+        "rounding": "ceil",
+        "items": [
+          { "key": "base", "type": "fixed", "label": "电商详情页基础费", "amount_ref": "base_fee" },
+          { "key": "main_images", "type": "per_unit", "label": "主图生成费",
+            "field": "mainImageCount", "unit_amount_ref": "image_fee",
+            "default_quantity": 3, "min_quantity": 1, "max_quantity": 5 },
+          { "key": "detail_images", "type": "per_unit", "label": "详情图生成费",
+            "field": "detailImageCount", "unit_amount_ref": "image_fee",
+            "default_quantity": 3, "min_quantity": 2, "max_quantity": 10 }
+        ],
+        "display": { "show_breakdown": true, "total_label": "预计消耗", "unit_label": "积分" }
+      },
+      "tool_prices": { "base_fee": 12, "image_fee": 1, "audio_fee": 1, "token_fee": 0 },
+      "cases": [
+        {
+          "label": "默认值提交（3主图+3详情图）",
+          "input_params": {
+            "productName": "测试商品", "productCategory": "electronics",
+            "productFeatures": "高品质，值得信赖",
+            "targetAudience": "科技爱好者",
+            "imageStyle": "professional",
+            "mainImageCount": 3, "detailImageCount": 3,
+            "includePsd": true
+          },
+          "expected_total": 18,
+          "expected_breakdown_keys": ["base", "main_images", "detail_images"]
+        },
+        {
+          "label": "主图5+详情图8",
+          "input_params": {
+            "productName": "高端护肤品", "productCategory": "beauty",
+            "productFeatures": "深层保湿、抗衰老",
+            "targetAudience": "25-40岁女性",
+            "imageStyle": "lifestyle",
+            "mainImageCount": 5, "detailImageCount": 8,
+            "includePsd": true
+          },
+          "expected_total": 25,
+          "expected_breakdown_keys": ["base", "main_images", "detail_images"]
+        }
+      ]
+    },
+    {
+      "tool_slug": "product-description",
+      "pricing_schema": {
+        "version": 1,
+        "currency": "credits",
+        "rounding": "ceil",
+        "items": [
+          { "key": "base", "type": "fixed", "label": "营销文案基础费", "amount_ref": "base_fee" }
+        ],
+        "display": { "show_breakdown": true, "total_label": "预计消耗", "unit_label": "积分" }
+      },
+      "tool_prices": { "base_fee": 5, "image_fee": 0, "audio_fee": 0, "token_fee": 0 },
+      "cases": [
+        {
+          "label": "默认基础费用",
+          "input_params": {
+            "productOrBrand": "测试品牌",
+            "keySellingPoints": "好用、实惠",
+            "targetPlatform": "all",
+            "toneStyle": "professional",
+            "copyLength": "medium",
+            "platformCount": 3
+          },
+          "expected_total": 5,
+          "expected_breakdown_keys": ["base"]
+        }
+      ]
+    }
+  ]
+}

@@ -1,684 +1,615 @@
+/**
+ * DynamicToolForm - 共享动态表单组件
+ *
+ * 通用工具页面和独立定制工具页面都使用此组件渲染表单主体。
+ *
+ * 职责：
+ *  - 字段渲染（11 类字段：text/textarea/number/select/radio/radioCard/checkbox/boolean/date/file/range/section/hidden）
+ *  - 默认值初始化
+ *  - 条件显示/禁用（condition）
+ *  - allowCustom 自定义选项（select/radio/radioCard）
+ *  - 校验（required/min/max/maxSizeMB/maxFiles）
+ *  - 文件上传（提交前完成）
+ *  - 组装 normalized input_params 并调用 onSubmit
+ *
+ * 不负责：
+ *  - 调用 taskApi.createTask（交给 useToolGeneration）
+ *  - ProgressModal 维护
+ *  - 工具页面外壳
+ */
+
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { ProgressModal } from '@/components/tool-detail/ProgressModal';
-import { toast } from '@/lib/toast';
-import { fileApi } from '@/lib/api/modules/file';
-import { taskApi } from '@/lib/api/modules/task';
-import type { Tool, ToolParamField, ToolParamCondition } from '@/types';
+import { useState, useEffect, useMemo, useCallback, type FormEvent } from 'react';
+import { uploadApi } from '@/lib/api/modules/upload';
+import type {
+  ToolParamField,
+  ToolParamCondition,
+  UploadedFileMeta,
+} from '@/lib/api/types';
+
+const CUSTOM_VALUE = '__custom__';
 
 interface DynamicToolFormProps {
-  tool: Tool;
+  paramSchema: ToolParamField[];
+  toolId?: string;
+  onSubmit: (inputParams: Record<string, any>) => void | Promise<void>;
+  /** 提交按钮文案 */
+  submitLabel?: string;
+  /** 外部传入的额外按钮（如价格展示、余额面板） */
+  rightSlot?: React.ReactNode;
+  /** 整体禁用（提交中或外部状态） */
+  disabled?: boolean;
+  /** 值变化回调（用于价格预估实时更新） */
+  onValuesChange?: (values: Record<string, any>) => void;
+  className?: string;
 }
 
-interface FormState {
-  [key: string]: any;
+interface CustomState {
+  [key: string]: { isCustom: boolean; customValue: string };
 }
 
-interface FieldErrors {
-  [key: string]: string;
-}
-
-interface UploadingFiles {
-  [key: string]: boolean;
-}
-
-function evaluateCondition(
-  condition: ToolParamCondition,
-  formState: FormState
-): boolean {
-  const { when } = condition;
-  const fieldValue = formState[when.field];
-
-  switch (when.operator) {
-    case 'eq':
-      return fieldValue === when.value;
-    case 'ne':
-      return fieldValue !== when.value;
-    case 'gt':
-      return fieldValue > when.value;
-    case 'gte':
-      return fieldValue >= when.value;
-    case 'lt':
-      return fieldValue < when.value;
-    case 'lte':
-      return fieldValue <= when.value;
-    case 'in':
-      return Array.isArray(when.value) && when.value.includes(fieldValue);
-    case 'not_in':
-      return Array.isArray(when.value) && !when.value.includes(fieldValue);
-    case 'truthy':
-      return !!fieldValue;
-    case 'falsy':
-      return !fieldValue;
-    default:
-      return true;
-  }
-}
-
-function shouldShowField(
-  field: ToolParamField,
-  formState: FormState
-): boolean {
-  if (!field.condition) return true;
-  if (field.condition.effect === 'hide') {
-    return !evaluateCondition(field.condition, formState);
-  }
-  return evaluateCondition(field.condition, formState);
-}
-
-function shouldDisableField(
-  field: ToolParamField,
-  formState: FormState
-): boolean {
-  if (!field.condition) return false;
-  if (field.condition.effect === 'disable') {
-    return evaluateCondition(field.condition, formState);
-  }
-  if (field.condition.effect === 'enable') {
-    return !evaluateCondition(field.condition, formState);
-  }
-  return false;
-}
-
-function validateCreativeVideoForm(formState: FormState): FieldErrors {
-  const errors: FieldErrors = {};
-
-  const prompt = String(formState['prompt'] || '').trim();
-  const firstFrame = formState['first_frame'];
-  const lastFrame = formState['last_frame'];
-  const quantity = Number(formState['quantity'] ?? 1);
-  const durationMode = formState['duration_mode'] || 'seconds';
-  const duration = Number(formState['duration'] ?? 6);
-
-  if (!firstFrame && !lastFrame && !prompt) {
-    errors['prompt'] = '文生视频模式下请输入创意描述';
-  }
-  if (lastFrame && !firstFrame) {
-    errors['last_frame'] = '不能只上传尾帧，请先上传首帧参考图';
-  }
-  if (quantity !== 1) {
-    errors['quantity'] = 'P0 仅支持生成 1 条视频';
-  }
-  if (durationMode === 'seconds' && (duration < 4 || duration > 12)) {
-    errors['duration'] = '视频时长必须在 4-12 秒之间';
-  }
-
-  return errors;
-}
-
-export function DynamicToolForm({ tool }: DynamicToolFormProps) {
-  const router = useRouter();
-  const [formState, setFormState] = useState<FormState>({});
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [uploadingFiles, setUploadingFiles] = useState<UploadingFiles>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
-  const [taskId, setTaskId] = useState<string | null>(null);
-
+export function DynamicToolForm({
+  paramSchema,
+  toolId,
+  onSubmit,
+  submitLabel = '开始生成',
+  rightSlot,
+  disabled = false,
+  onValuesChange,
+  className = '',
+}: DynamicToolFormProps) {
   const sortedFields = useMemo(() => {
-    return [...(tool.param_schema || [])].sort(
-      (a, b) => (a.order || 0) - (b.order || 0)
-    );
-  }, [tool.param_schema]);
+    return [...paramSchema].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  }, [paramSchema]);
 
-  const visibleFields = useMemo(() => {
-    return sortedFields.filter((field) => shouldShowField(field, formState));
-  }, [sortedFields, formState]);
-
-  const handleFieldChange = useCallback(
-    (key: string, value: any) => {
-      setFormState((prev) => ({ ...prev, [key]: value }));
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      });
-    },
-    []
-  );
-
-  const handleFileChange = useCallback(
-    async (field: ToolParamField, event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      setUploadingFiles((prev) => ({ ...prev, [field.key]: true }));
-
-      try {
-        const result = await fileApi.uploadFile(file, {
-          toolId: tool.id,
-          fieldKey: field.key,
-        });
-        handleFieldChange(field.key, result.id);
-        toast.success('文件上传成功');
-      } catch (error) {
-        console.error('文件上传失败:', error);
-        toast.error('文件上传失败，请重试');
-      } finally {
-        setUploadingFiles((prev) => ({ ...prev, [field.key]: false }));
-      }
-    },
-    [tool.id, handleFieldChange]
-  );
-
-  const handleAction = useCallback(
-    (action: string | undefined) => {
-      if (action === 'open_demo_preview') {
-        const demosElement = document.getElementById('demos');
-        if (demosElement) {
-          demosElement.scrollIntoView({ behavior: 'smooth' });
-        }
+  // 初始化默认值
+  const buildInitialValues = useCallback((): Record<string, any> => {
+    const initial: Record<string, any> = {};
+    for (const f of paramSchema) {
+      if (f.type === 'section') continue;
+      if (f.defaultValue !== undefined) {
+        initial[f.key] = f.defaultValue;
+      } else if (f.type === 'checkbox') {
+        initial[f.key] = [];
+      } else if (f.type === 'boolean') {
+        initial[f.key] = false;
+      } else if (f.type === 'file') {
+        initial[f.key] = f.multiple ? [] : null;
       } else {
-        toast.info('该功能即将上线，敬请期待');
+        initial[f.key] = '';
       }
-    },
-    []
-  );
+    }
+    return initial;
+  }, [paramSchema]);
 
-  const handleSubmit = useCallback(
-    async (event: React.FormEvent) => {
-      event.preventDefault();
+  const [values, setValues] = useState<Record<string, any>>(buildInitialValues);
+  const [customState, setCustomState] = useState<CustomState>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  // 文件字段的本地 File 对象（提交前才上传）
+  const [pendingFiles, setPendingFiles] = useState<Record<string, File[]>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMsg, setSubmitMsg] = useState<string>('');
 
-      // Basic validation for required fields
-      const newErrors: FieldErrors = {};
-      visibleFields.forEach((field) => {
-        if (
-          field.required &&
-          field.type !== 'section' &&
-          field.type !== 'action' &&
-          field.type !== 'hidden'
-        ) {
-          const value = formState[field.key];
-          if (value === undefined || value === null || value === '') {
-            newErrors[field.key] = `${field.label}为必填项`;
-          }
-        }
+  // 当 paramSchema 变化时重置（例如切换工具）
+  useEffect(() => {
+    setValues(buildInitialValues());
+    setCustomState({});
+    setErrors({});
+    setPendingFiles({});
+  }, [buildInitialValues]);
+
+  // 值变化对外通知
+  useEffect(() => {
+    onValuesChange?.(values);
+  }, [values, onValuesChange]);
+
+  // 条件评估
+  const evalCondition = useCallback((cond: ToolParamCondition | undefined): { show: boolean; enabled: boolean } => {
+    if (!cond) return { show: true, enabled: true };
+    const fv = values[cond.when.field];
+    let matched = false;
+    switch (cond.when.operator) {
+      case 'eq': matched = fv === cond.when.value; break;
+      case 'neq': matched = fv !== cond.when.value; break;
+      case 'in': matched = Array.isArray(cond.when.value) && cond.when.value.includes(fv); break;
+      case 'nin': matched = Array.isArray(cond.when.value) && !cond.when.value.includes(fv); break;
+    }
+    switch (cond.effect) {
+      case 'show': return { show: matched, enabled: true };
+      case 'hide': return { show: !matched, enabled: true };
+      case 'enable': return { show: true, enabled: matched };
+      case 'disable': return { show: true, enabled: !matched };
+    }
+  }, [values]);
+
+  const setValue = (key: string, val: any) => {
+    setValues((prev) => ({ ...prev, [key]: val }));
+    if (errors[key]) {
+      setErrors((prev) => {
+        const { [key]: _ignored, ...rest } = prev;
+        return rest;
       });
-
-      // Creative video specific validation
-      if (tool.slug === 'creative-video-generator') {
-        const creativeErrors = validateCreativeVideoForm(formState);
-        Object.assign(newErrors, creativeErrors);
-      }
-
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        const firstErrorMessage = Object.values(newErrors)[0];
-        if (firstErrorMessage) {
-          toast.error(firstErrorMessage);
-        }
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      try {
-        const task = await taskApi.createTask({
-          tool_id: tool.id,
-          task_type: tool.executor_key || tool.slug || '',
-          estimated_cost: tool.base_fee ?? tool.pricing?.baseFee ?? 0,
-          input_params: formState,
-        });
-
-        setTaskId(task.id);
-        setShowProgress(true);
-      } catch (error) {
-        console.error('创建任务失败:', error);
-        toast.error('创建任务失败，请稍后重试');
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [visibleFields, formState, tool]
-  );
-
-  const handleProgressComplete = useCallback(
-    (workId: string) => {
-      setShowProgress(false);
-      setTaskId(null);
-      router.push(`/works/detail/${workId}`);
-    },
-    [router]
-  );
-
-  const handleProgressClose = useCallback(() => {
-    setShowProgress(false);
-    setTaskId(null);
-  }, []);
-
-  const renderField = (field: ToolParamField) => {
-    const hasError = !!errors[field.key];
-    const errorMessage = errors[field.key];
-    const isUploading = uploadingFiles[field.key];
-    const isDisabled = shouldDisableField(field, formState);
-
-    switch (field.type) {
-      case 'section':
-        return (
-          <div key={field.key} className="mb-8">
-            <h3 className="text-lg font-semibold text-brand-dark mb-2">
-              {field.label}
-            </h3>
-            {field.helpText && (
-              <p className="text-sm text-gray-500">{field.helpText}</p>
-            )}
-          </div>
-        );
-
-      case 'text':
-        return (
-          <div key={field.key} className={`mb-6 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <input
-              type="text"
-              disabled={isDisabled}
-              className={`w-full px-4 py-3 rounded-xl border ${
-                hasError
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-200 focus:ring-[#1E3A5F]'
-              } focus:outline-none focus:ring-2 transition-all disabled:bg-gray-100`}
-              placeholder={field.placeholder || ''}
-              value={formState[field.key] || ''}
-              onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            />
-            {field.helpText && (
-              <p className="mt-2 text-sm text-gray-500">{field.helpText}</p>
-            )}
-            {hasError && (
-              <p className="mt-1 text-sm text-red-500">{errorMessage}</p>
-            )}
-          </div>
-        );
-
-      case 'textarea':
-        return (
-          <div key={field.key} className={`mb-6 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <textarea
-              disabled={isDisabled}
-              className={`w-full px-4 py-3 rounded-xl border ${
-                hasError
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-200 focus:ring-[#1E3A5F]'
-              } focus:outline-none focus:ring-2 transition-all resize-none disabled:bg-gray-100`}
-              rows={5}
-              placeholder={field.placeholder || ''}
-              value={formState[field.key] || ''}
-              onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            />
-            {field.helpText && (
-              <p className="mt-2 text-sm text-gray-500">{field.helpText}</p>
-            )}
-            {hasError && (
-              <p className="mt-1 text-sm text-red-500">{errorMessage}</p>
-            )}
-          </div>
-        );
-
-      case 'number':
-        return (
-          <div key={field.key} className={`mb-6 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <input
-              type="number"
-              disabled={isDisabled}
-              className={`w-full px-4 py-3 rounded-xl border ${
-                hasError
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-200 focus:ring-[#1E3A5F]'
-              } focus:outline-none focus:ring-2 transition-all disabled:bg-gray-100`}
-              placeholder={field.placeholder || ''}
-              min={field.min}
-              max={field.max}
-              value={formState[field.key] || ''}
-              onChange={(e) =>
-                handleFieldChange(
-                  field.key,
-                  e.target.value === '' ? '' : Number(e.target.value)
-                )
-              }
-            />
-            {field.helpText && (
-              <p className="mt-2 text-sm text-gray-500">{field.helpText}</p>
-            )}
-            {hasError && (
-              <p className="mt-1 text-sm text-red-500">{errorMessage}</p>
-            )}
-          </div>
-        );
-
-      case 'radio':
-        return (
-          <div key={field.key} className={`mb-6 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <label className="block text-sm font-medium text-brand-dark mb-3">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <div className="space-y-2">
-              {(field.options || []).map((option) => (
-                <label
-                  key={String(option.value)}
-                  className={`flex items-center p-4 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50 transition-all ${isDisabled ? 'pointer-events-none' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name={field.key}
-                    value={String(option.value)}
-                    checked={formState[field.key] === option.value}
-                    onChange={() => handleFieldChange(field.key, option.value)}
-                    disabled={isDisabled}
-                    className="w-4 h-4 text-[#1E3A5F] focus:ring-[#1E3A5F]"
-                  />
-                  <div className="ml-3 flex-1">
-                    <div className="font-medium text-brand-dark flex items-center gap-2">
-                      {option.icon && <span>{option.icon}</span>}
-                      {option.label}
-                    </div>
-                    {option.desc && (
-                      <p className="text-sm text-gray-500 mt-1">{option.desc}</p>
-                    )}
-                  </div>
-                </label>
-              ))}
-            </div>
-            {hasError && (
-              <p className="mt-2 text-sm text-red-500">{errorMessage}</p>
-            )}
-          </div>
-        );
-
-      case 'select':
-        return (
-          <div key={field.key} className={`mb-6 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <select
-              disabled={isDisabled}
-              className={`w-full px-4 py-3 rounded-xl border ${
-                hasError
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-200 focus:ring-[#1E3A5F]'
-              } focus:outline-none focus:ring-2 transition-all bg-white disabled:bg-gray-100`}
-              value={formState[field.key] || ''}
-              onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            >
-              <option value="">请选择</option>
-              {(field.options || []).map((option) => (
-                <option key={String(option.value)} value={String(option.value)}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {field.helpText && (
-              <p className="mt-2 text-sm text-gray-500">{field.helpText}</p>
-            )}
-            {hasError && (
-              <p className="mt-1 text-sm text-red-500">{errorMessage}</p>
-            )}
-          </div>
-        );
-
-      case 'range':
-        const rangeValue = formState[field.key] ?? field.defaultValue ?? field.min ?? 0;
-        return (
-          <div key={field.key} className={`mb-6 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <div className="flex items-center gap-4">
-              <input
-                type="range"
-                disabled={isDisabled}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:cursor-not-allowed"
-                min={field.min ?? 0}
-                max={field.max ?? 100}
-                value={rangeValue}
-                onChange={(e) =>
-                  handleFieldChange(field.key, Number(e.target.value))
-                }
-              />
-              <span className="w-16 text-center font-medium text-brand-dark">
-                {rangeValue}
-              </span>
-            </div>
-            {field.helpText && (
-              <p className="mt-2 text-sm text-gray-500">{field.helpText}</p>
-            )}
-            {hasError && (
-              <p className="mt-1 text-sm text-red-500">{errorMessage}</p>
-            )}
-          </div>
-        );
-
-      case 'boolean':
-        return (
-          <div key={field.key} className={`mb-6 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <label className={`flex items-center cursor-pointer ${isDisabled ? 'pointer-events-none' : ''}`}>
-              <input
-                type="checkbox"
-                disabled={isDisabled}
-                className="w-5 h-5 text-[#1E3A5F] rounded border-gray-300 focus:ring-[#1E3A5F]"
-                checked={!!formState[field.key]}
-                onChange={(e) => handleFieldChange(field.key, e.target.checked)}
-              />
-              <span className="ml-3 text-sm font-medium text-brand-dark">
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </span>
-            </label>
-            {field.helpText && (
-              <p className="mt-2 text-sm text-gray-500">{field.helpText}</p>
-            )}
-            {hasError && (
-              <p className="mt-1 text-sm text-red-500">{errorMessage}</p>
-            )}
-          </div>
-        );
-
-      case 'file':
-        const hasValue = !!formState[field.key];
-        return (
-          <div key={field.key} className={`mb-6 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <div
-              className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-                hasValue
-                  ? 'border-green-400 bg-green-50'
-                  : isDisabled
-                  ? 'border-gray-200 bg-gray-50'
-                  : 'border-gray-200 hover:border-[#1E3A5F] hover:bg-gray-50'
-              }`}
-            >
-              {isUploading ? (
-                <div className="py-4">
-                  <div className="w-8 h-8 border-2 border-[#1E3A5F] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">上传中...</p>
-                </div>
-              ) : hasValue ? (
-                <div>
-                  <svg
-                    className="w-12 h-12 mx-auto text-green-500 mb-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <p className="text-sm font-medium text-green-600 mb-2">
-                    文件已上传
-                  </p>
-                  {!isDisabled && (
-                    <label className="inline-block px-4 py-2 text-sm text-[#1E3A5F] border border-[#1E3A5F] rounded-lg cursor-pointer hover:bg-[#1E3A5F] hover:text-white transition-all">
-                      重新选择
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept={field.accept || 'image/*'}
-                        onChange={(e) => handleFileChange(field, e)}
-                      />
-                    </label>
-                  )}
-                </div>
-              ) : isDisabled ? (
-                <div>
-                  <svg
-                    className="w-12 h-12 mx-auto text-gray-400 mb-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                  <p className="text-sm font-medium text-gray-500 mb-1">
-                    文件上传已禁用
-                  </p>
-                </div>
-              ) : (
-                <label className="cursor-pointer block">
-                  <svg
-                    className="w-12 h-12 mx-auto text-gray-400 mb-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                  <p className="text-sm font-medium text-brand-dark mb-1">
-                    点击上传文件
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {field.accept === 'video/*'
-                      ? '支持 MP4, MOV 等视频格式'
-                      : field.accept === 'image/*' || !field.accept
-                      ? '支持 JPG, PNG, WEBP 等图片格式'
-                      : '点击选择文件'}
-                  </p>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept={field.accept || 'image/*'}
-                    onChange={(e) => handleFileChange(field, e)}
-                  />
-                </label>
-              )}
-            </div>
-            {field.helpText && (
-              <p className="mt-2 text-sm text-gray-500">{field.helpText}</p>
-            )}
-            {hasError && (
-              <p className="mt-1 text-sm text-red-500">{errorMessage}</p>
-            )}
-          </div>
-        );
-
-      case 'action':
-        return (
-          <div key={field.key} className={`mb-6 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <button
-              type="button"
-              disabled={isDisabled}
-              className="w-full px-6 py-3 bg-white border border-gray-200 text-brand-dark rounded-xl font-medium hover:bg-gray-50 transition-all disabled:bg-gray-100"
-              onClick={() => handleAction(field.action)}
-            >
-              {field.label}
-            </button>
-            {field.helpText && (
-              <p className="mt-2 text-sm text-gray-500">{field.helpText}</p>
-            )}
-          </div>
-        );
-
-      case 'hidden':
-        return null;
-
-      default:
-        return null;
     }
   };
 
-  return (
-    <section id="start-creation" className="py-16 bg-[#F8FAFC]">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-brand-dark mb-2">
-              开始创作
-            </h2>
-            <p className="text-gray-500">填写以下参数，AI 将为您生成专属内容</p>
-          </div>
+  const handleFileChange = (field: ToolParamField, files: FileList | null) => {
+    if (!files || files.length === 0) {
+      setPendingFiles((prev) => ({ ...prev, [field.key]: [] }));
+      return;
+    }
+    const arr = Array.from(files);
+    // 前端粗校验
+    if (field.maxSizeMB) {
+      const maxBytes = field.maxSizeMB * 1024 * 1024;
+      const tooBig = arr.find((f) => f.size > maxBytes);
+      if (tooBig) {
+        setErrors((prev) => ({ ...prev, [field.key]: `文件 ${tooBig.name} 超过 ${field.maxSizeMB}MB 限制` }));
+        return;
+      }
+    }
+    if (field.maxFiles && arr.length > field.maxFiles) {
+      setErrors((prev) => ({ ...prev, [field.key]: `最多上传 ${field.maxFiles} 个文件` }));
+      return;
+    }
+    setPendingFiles((prev) => ({ ...prev, [field.key]: arr }));
+    if (errors[field.key]) {
+      setErrors((prev) => {
+        const { [field.key]: _ignored, ...rest } = prev;
+        return rest;
+      });
+    }
+  };
 
-          <form onSubmit={handleSubmit}>
-            {visibleFields.map(renderField)}
+  // 表单校验
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    for (const field of paramSchema) {
+      if (field.type === 'section') continue;
+      const { show, enabled } = evalCondition(field.condition);
+      if (!show || !enabled) continue;
 
-            <div className="mt-8 pt-6 border-t border-gray-100">
-              <div className="text-center mb-6">
-                <p className="text-sm text-gray-500">
-                  预计消耗积分：
-                  <span className="font-semibold text-[#1E3A5F]">
-                    {tool.base_fee ?? tool.pricing?.baseFee ?? 0}
-                  </span>
-                </p>
-              </div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-4 px-6 bg-gradient-to-r from-[#1E3A5F] to-[#2D4A6F] text-white rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    创建任务中...
-                  </span>
-                ) : (
-                  '开始生成'
-                )}
-              </button>
+      // required
+      if (field.required) {
+        if (field.type === 'file') {
+          const files = pendingFiles[field.key] || [];
+          if (files.length === 0) {
+            newErrors[field.key] = `${field.label}为必填`;
+            continue;
+          }
+        } else {
+          const v = values[field.key];
+          if (v === '' || v === null || v === undefined || (Array.isArray(v) && v.length === 0)) {
+            newErrors[field.key] = `${field.label}为必填`;
+            continue;
+          }
+        }
+      }
+
+      // allowCustom 校验：选中自定义时必须输入值
+      if (field.allowCustom && values[field.key] === CUSTOM_VALUE) {
+        const cv = customState[field.key]?.customValue?.trim();
+        if (!cv) {
+          newErrors[field.key] = `请输入自定义${field.label}`;
+          continue;
+        }
+      }
+
+      // number / range min/max
+      if ((field.type === 'number' || field.type === 'range') && values[field.key] !== '' && values[field.key] !== null) {
+        const n = Number(values[field.key]);
+        if (isNaN(n)) {
+          newErrors[field.key] = `${field.label}必须为数字`;
+          continue;
+        }
+        if (field.min !== undefined && n < field.min) {
+          newErrors[field.key] = `${field.label}不能小于 ${field.min}`;
+          continue;
+        }
+        if (field.max !== undefined && n > field.max) {
+          newErrors[field.key] = `${field.label}不能大于 ${field.max}`;
+          continue;
+        }
+      }
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // 构造 normalized input_params
+  const buildSubmitParams = async (): Promise<Record<string, any>> => {
+    const params: Record<string, any> = {};
+
+    for (const field of paramSchema) {
+      if (field.type === 'section') continue;
+      const { show, enabled } = evalCondition(field.condition);
+
+      // hidden 字段始终提交 defaultValue（如果有）
+      if (field.type === 'hidden') {
+        if (field.defaultValue !== undefined) {
+          params[field.key] = field.defaultValue;
+        }
+        continue;
+      }
+
+      // 隐藏字段不提交（除非 enabled=false 但 show=true 的 disable 情况，按隐藏处理也不提交）
+      if (!show) continue;
+
+      // disabled 字段不提交
+      if (!enabled) continue;
+
+      // allowCustom: 用户选中自定义时把自定义值赋给 key
+      if (field.allowCustom && values[field.key] === CUSTOM_VALUE) {
+        params[field.key] = customState[field.key]?.customValue ?? '';
+        continue;
+      }
+
+      // 文件上传
+      if (field.type === 'file') {
+        const files = pendingFiles[field.key] || [];
+        if (files.length === 0) {
+          // 未上传，跳过（如果 required，已在 validate 阻止）
+          continue;
+        }
+        setSubmitMsg(`正在上传 ${field.label}...`);
+        const uploaded: UploadedFileMeta[] = [];
+        for (const f of files) {
+          const meta = await uploadApi.uploadFile(f, {
+            ...(toolId ? { toolId } : {}),
+            fieldKey: field.key,
+          });
+          uploaded.push({
+            id: meta.id,
+            file_name: meta.file_name,
+            ...(typeof meta.file_size === 'number' ? { file_size: meta.file_size } : {}),
+            ...(meta.mime_type ? { mime_type: meta.mime_type } : {}),
+            url: meta.url,
+          });
+        }
+        const wrappedFiles = uploaded.map((u) => ({
+          file_id: u.id,
+          file_name: u.file_name,
+          file_size: u.file_size,
+          mime_type: u.mime_type,
+          url: u.url,
+        }));
+        params[field.key] = field.multiple ? wrappedFiles : wrappedFiles[0];
+        continue;
+      }
+
+      // number / range: 转 number
+      if (field.type === 'number' || field.type === 'range') {
+        const raw = values[field.key];
+        if (raw === '' || raw === null || raw === undefined) {
+          if (field.defaultValue !== undefined) params[field.key] = Number(field.defaultValue);
+          continue;
+        }
+        params[field.key] = Number(raw);
+        continue;
+      }
+
+      params[field.key] = values[field.key];
+    }
+
+    return params;
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (submitting || disabled) return;
+    if (!validate()) return;
+
+    setSubmitting(true);
+    setSubmitMsg('');
+    try {
+      const params = await buildSubmitParams();
+      setSubmitMsg('正在创建任务...');
+      await onSubmit(params);
+    } catch (err: any) {
+      setSubmitMsg('');
+      setErrors((prev) => ({ ...prev, __form__: err?.message || '提交失败' }));
+    } finally {
+      setSubmitting(false);
+      setSubmitMsg('');
+    <form onSubmit={handleSubmit} className={`space-y-6 ${className}`}>
+      {sortedFields.map((field) => {
+        const { show, enabled } = evalCondition(field.condition);
+        if (!show && field.type !== 'hidden') return null;
+
+        if (field.type === 'section') {
+          return (
+            <div key={field.key} className="border-b border-gray-200 pb-2 mt-6">
+              <h3 className="text-lg font-semibold text-[#1E3A5F]">{field.label}</h3>
             </div>
-          </form>
-        </div>
-      </div>
+          );
+        }
 
-      <ProgressModal
-        isOpen={showProgress}
-        taskId={taskId}
-        toolName={tool.name}
-        onClose={handleProgressClose}
-        onComplete={handleProgressComplete}
-      />
-    </section>
+        if (field.type === 'hidden') return null;
+
+        const fieldDisabled = !enabled || disabled || submitting;
+        const err = errors[field.key];
+
+        return (
+          <div key={field.key} className={fieldDisabled ? 'opacity-60' : ''}>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {field.helpText && (
+              <p className="text-xs text-gray-500 mb-2">{field.helpText}</p>
+            )}
+
+            {renderField(field, values, customState, setValue, setCustomState, handleFileChange, pendingFiles, fieldDisabled)}
+
+            {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+          </div>
+        );
+      })}
+
+      {errors['__form__'] && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+          {errors['__form__']}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-4 pt-4">
+        {rightSlot}
+        <button
+          type="submit"
+          disabled={submitting || disabled}
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-[#1E3A5F] to-[#2563EB] text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submitting ? (submitMsg || '处理中...') : submitLabel}
+        </button>
+      </div>
+    </form>
   );
+}
+
+// ============== 字段渲染 ==============
+
+function renderField(
+  field: ToolParamField,
+  values: Record<string, any>,
+  customState: CustomState,
+  setValue: (k: string, v: any) => void,
+  setCustomState: React.Dispatch<React.SetStateAction<CustomState>>,
+  handleFileChange: (f: ToolParamField, files: FileList | null) => void,
+  pendingFiles: Record<string, File[]>,
+  disabled: boolean,
+) {
+  const v = values[field.key];
+  const baseInputClass = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:border-transparent outline-none transition';
+
+  switch (field.type) {
+    case 'text':
+      return (
+        <input
+          type="text"
+          value={v ?? ''}
+          onChange={(e) => setValue(field.key, e.target.value)}
+          placeholder={field.placeholder}
+          disabled={disabled}
+          className={baseInputClass}
+        />
+      );
+
+    case 'textarea':
+      return (
+        <textarea
+          value={v ?? ''}
+          onChange={(e) => setValue(field.key, e.target.value)}
+          placeholder={field.placeholder}
+          disabled={disabled}
+          rows={4}
+          className={baseInputClass}
+        />
+      );
+
+    case 'number':
+      return (
+        <input
+          type="number"
+          value={v ?? ''}
+          min={field.min}
+          max={field.max}
+          step={field.step}
+          onChange={(e) => setValue(field.key, e.target.value === '' ? '' : Number(e.target.value))}
+          placeholder={field.placeholder}
+          disabled={disabled}
+          className={baseInputClass}
+        />
+      );
+
+    case 'range':
+      return (
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            value={v ?? field.min ?? 0}
+            min={field.min}
+            max={field.max}
+            step={field.step ?? 1}
+            onChange={(e) => setValue(field.key, Number(e.target.value))}
+            disabled={disabled}
+            className="flex-1"
+          />
+          <span className="w-12 text-center font-medium text-[#1E3A5F]">{v ?? field.min ?? 0}</span>
+        </div>
+      );
+
+    case 'select': {
+      const options = field.allowCustom
+        ? [...(field.options || []), { label: '✏️ 自定义', value: CUSTOM_VALUE }]
+        : field.options || [];
+      const isCustom = v === CUSTOM_VALUE;
+      return (
+        <>
+          <select
+            value={v ?? ''}
+            onChange={(e) => setValue(field.key, e.target.value)}
+            disabled={disabled}
+            className={baseInputClass}
+          >
+            <option value="">请选择...</option>
+            {options.map((opt) => (
+              <option key={String(opt.value)} value={String(opt.value)}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          {isCustom && (
+            <input
+              type="text"
+              value={customState[field.key]?.customValue ?? ''}
+              onChange={(e) => setCustomState((prev) => ({ ...prev, [field.key]: { isCustom: true, customValue: e.target.value } }))}
+              placeholder={`请输入自定义${field.label}`}
+              disabled={disabled}
+              className={`${baseInputClass} mt-2`}
+            />
+          )}
+        </>
+      );
+    }
+
+    case 'radio':
+    case 'radioCard': {
+      const options = field.allowCustom
+        ? [...(field.options || []), { label: '自定义', value: CUSTOM_VALUE, icon: '✏️' }]
+        : field.options || [];
+      const isCustom = v === CUSTOM_VALUE;
+      const isCard = field.type === 'radioCard' || field.uiHint === 'card';
+      return (
+        <>
+          <div className={isCard ? 'grid grid-cols-2 md:grid-cols-3 gap-3' : 'flex flex-wrap gap-3'}>
+            {options.map((opt) => {
+              const selected = String(v) === String(opt.value);
+              if (isCard) {
+                return (
+                  <button
+                    key={String(opt.value)}
+                    type="button"
+                    onClick={() => !disabled && setValue(field.key, opt.value)}
+                    disabled={disabled}
+                    className={`p-4 border-2 rounded-xl text-left transition-all ${
+                      selected ? 'border-[#2563EB] bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                    } ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    {opt.icon && <div className="text-2xl mb-1">{opt.icon}</div>}
+                    <div className="font-medium text-[#1E3A5F]">{opt.label}</div>
+                    {opt.desc && <div className="text-xs text-gray-500 mt-1">{opt.desc}</div>}
+                  </button>
+                );
+              }
+              return (
+                <label key={String(opt.value)} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={field.key}
+                    value={String(opt.value)}
+                    checked={selected}
+                    onChange={() => setValue(field.key, opt.value)}
+                    disabled={disabled}
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              );
+            })}
+          </div>
+          {isCustom && (
+            <input
+              type="text"
+              value={customState[field.key]?.customValue ?? ''}
+              onChange={(e) => setCustomState((prev) => ({ ...prev, [field.key]: { isCustom: true, customValue: e.target.value } }))}
+              placeholder={`请输入自定义${field.label}`}
+              disabled={disabled}
+              className={`${baseInputClass} mt-3`}
+            />
+          )}
+        </>
+      );
+    }
+
+    case 'checkbox': {
+      const selected: any[] = Array.isArray(v) ? v : [];
+      return (
+        <div className="flex flex-wrap gap-3">
+          {(field.options || []).map((opt) => {
+            const checked = selected.includes(opt.value);
+            return (
+              <label key={String(opt.value)} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => {
+                    const next = checked ? selected.filter((x) => x !== opt.value) : [...selected, opt.value];
+                    setValue(field.key, next);
+                  }}
+                  disabled={disabled}
+                />
+                <span>{opt.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      );
+    }
+
+    case 'boolean':
+      return (
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={Boolean(v)}
+            onChange={(e) => setValue(field.key, e.target.checked)}
+            disabled={disabled}
+          />
+          <span className="text-sm text-gray-700">{field.placeholder || '启用'}</span>
+        </label>
+      );
+
+    case 'date':
+      return (
+        <input
+          type="date"
+          value={v ?? ''}
+          onChange={(e) => setValue(field.key, e.target.value)}
+          disabled={disabled}
+          className={baseInputClass}
+        />
+      );
+
+    case 'file': {
+      const files = pendingFiles[field.key] || [];
+      return (
+        <>
+          <input
+            type="file"
+            accept={field.accept}
+            multiple={field.multiple}
+            onChange={(e) => handleFileChange(field, e.target.files)}
+            disabled={disabled}
+            className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#1E3A5F] file:text-white hover:file:bg-[#2563EB] cursor-pointer"
+          />
+          {files.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs text-gray-600">
+              {files.map((f, idx) => (
+                <li key={idx}>📎 {f.name} ({(f.size / 1024).toFixed(1)} KB)</li>
+              ))}
+            </ul>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            {field.accept && `允许类型: ${field.accept}`}
+            {field.maxSizeMB && ` · 最大 ${field.maxSizeMB}MB`}
+            {field.multiple && field.maxFiles && ` · 最多 ${field.maxFiles} 个`}
+          </p>
+        </>
+      );
+    }
+
+    default:
+      return null;
+  }
 }
 
 export default DynamicToolForm;

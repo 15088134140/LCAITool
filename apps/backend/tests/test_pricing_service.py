@@ -286,15 +286,15 @@ class TestBenchmarkToolPricing:
             "items": [
                 {"key": "base", "type": "fixed", "label": "电商详情页基础费", "amount_ref": "base_fee"},
                 {"key": "main_images", "type": "per_unit", "label": "主图生成费",
-                 "field": "main_image_count", "unit_amount_ref": "image_fee",
+                 "field": "mainImageCount", "unit_amount_ref": "image_fee",
                  "default_quantity": 3, "min_quantity": 1, "max_quantity": 5},
                 {"key": "detail_images", "type": "per_unit", "label": "详情图生成费",
-                 "field": "detail_image_count", "unit_amount_ref": "image_fee",
+                 "field": "detailImageCount", "unit_amount_ref": "image_fee",
                  "default_quantity": 3, "min_quantity": 2, "max_quantity": 10}
             ]
         }
         tool = _make_tool(base_fee=12, image_fee=1, pricing_schema=schema)
-        result = PricingService.estimate_tool_cost(tool, {"main_image_count": 3, "detail_image_count": 5})
+        result = PricingService.estimate_tool_cost(tool, {"mainImageCount": 3, "detailImageCount": 5})
         assert result.total == 20  # 12 + 3*1 + 5*1
 
     def test_product_description(self):

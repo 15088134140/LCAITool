@@ -95,9 +95,10 @@ export interface Tool {
   image_fee?: number;
   audio_fee?: number;
   token_fee?: number;
-  param_schema?: ToolParamField[];
-  executor_key?: string;
-  pricing_schema?: Record<string, any>;
+  // 动态表单 / 计价 / 执行器配置（与后端 Tool 模型保持一致）
+  param_schema?: import('@/lib/api/types').ToolParamField[] | null;
+  pricing_schema?: import('@/lib/api/types').PricingSchema | null;
+  executor_key?: string | null;
 }
 
 /**

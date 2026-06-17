@@ -21,23 +21,35 @@ class TestStorybookCostEstimate:
             'image_fee': 2,
             'audio_fee': 1,
         }
-        params = {'page_count': 5, 'include_audio': True}
+        params = {'page_count': 5, 'voiceType': 'tongtong'}
         cost = executor.estimate_cost(params)
         # base_fee(20) + image_fee(2) * 5 + audio_fee(1) * 5 = 35
         assert cost == 35
 
     def test_storybook_cost_estimate_no_audio(self):
-        """不含音频"""
+        """voiceType 为 none 时不含音频"""
         executor = StorybookExecutor.__new__(StorybookExecutor)
         executor._tool_config = {
             'base_fee': 20,
             'image_fee': 2,
             'audio_fee': 1,
         }
-        params = {'page_count': 5, 'include_audio': False}
+        params = {'page_count': 5, 'voiceType': 'none'}
         cost = executor.estimate_cost(params)
         # base_fee(20) + image_fee(2) * 5 = 30
         assert cost == 30
+
+    def test_storybook_cost_estimate_ignores_legacy_include_audio(self):
+        """include_audio 不再控制费用，音频由 voiceType 决定"""
+        executor = StorybookExecutor.__new__(StorybookExecutor)
+        executor._tool_config = {
+            'base_fee': 20,
+            'image_fee': 2,
+            'audio_fee': 1,
+        }
+        params = {'page_count': 5, 'voiceType': 'tongtong', 'include_audio': False}
+        cost = executor.estimate_cost(params)
+        assert cost == 35
 
     def test_storybook_cost_estimate_more_pages(self):
         """更多页数"""
@@ -47,7 +59,7 @@ class TestStorybookCostEstimate:
             'image_fee': 2,
             'audio_fee': 1,
         }
-        params = {'page_count': 10, 'include_audio': True}
+        params = {'page_count': 10, 'voiceType': 'tongtong'}
         cost = executor.estimate_cost(params)
         # base_fee(20) + image_fee(2) * 10 + audio_fee(1) * 10 = 50
         assert cost == 50
@@ -60,7 +72,7 @@ class TestStorybookCostEstimate:
             'image_fee': 3,
             'audio_fee': 2,
         }
-        params = {'page_count': 8, 'include_audio': True}
+        params = {'page_count': 8, 'voiceType': 'tongtong'}
         cost = executor.estimate_cost(params)
         # base_fee(50) + image_fee(3) * 8 + audio_fee(2) * 8 = 90
         assert cost == 90
@@ -76,7 +88,7 @@ class TestEcommerceCostEstimate:
             'base_fee': 12,
             'image_fee': 2,
         }
-        params = {'main_image_count': 3, 'detail_image_count': 3}
+        params = {'mainImageCount': 3, 'detailImageCount': 3}
         cost = executor.estimate_cost(params)
         # base_fee(12) + (3+3) * image_fee(2) = 24
         assert cost == 24
@@ -88,7 +100,7 @@ class TestEcommerceCostEstimate:
             'base_fee': 12,
             'image_fee': 2,
         }
-        params = {'main_image_count': 5, 'detail_image_count': 5}
+        params = {'mainImageCount': 5, 'detailImageCount': 5}
         cost = executor.estimate_cost(params)
         # base_fee(12) + (5+5) * image_fee(2) = 32
         assert cost == 32
@@ -100,10 +112,22 @@ class TestEcommerceCostEstimate:
             'base_fee': 12,
             'image_fee': 2,
         }
-        params = {'main_image_count': 1, 'detail_image_count': 0}
+        params = {'mainImageCount': 1, 'detailImageCount': 0}
         cost = executor.estimate_cost(params)
         # base_fee(12) + (1+0) * image_fee(2) = 14
         assert cost == 14
+
+    def test_ecommerce_cost_estimate_ignores_legacy_snake_case_counts(self):
+        """旧下划线字段不再参与费用计算"""
+        executor = EcommerceExecutor.__new__(EcommerceExecutor)
+        executor._tool_config = {
+            'base_fee': 12,
+            'image_fee': 2,
+        }
+        params = {'main_image_count': 5, 'detail_image_count': 5}
+        cost = executor.estimate_cost(params)
+        # 使用新驼峰字段默认值 3 + 3
+        assert cost == 24
 
 
 class TestMarketingCostEstimate:
@@ -173,28 +197,28 @@ class TestCostEdgeCases:
             'image_fee': 0,
             'audio_fee': 0,
         }
-        params = {'page_count': 5, 'include_audio': True}
+        params = {'page_count': 5, 'voiceType': 'tongtong'}
         cost = executor.estimate_cost(params)
         assert cost == 0
 
     def test_cost_with_zero_page_count(self):
-        """页数为0"""
+        """页数为0时按1页兜底预估"""
         executor = StorybookExecutor.__new__(StorybookExecutor)
         executor._tool_config = {
             'base_fee': 20,
             'image_fee': 2,
             'audio_fee': 1,
         }
-        params = {'page_count': 0, 'include_audio': True}
+        params = {'page_count': 0, 'voiceType': 'tongtong'}
         cost = executor.estimate_cost(params)
-        # base_fee(20) + image_fee(2) * 0 + audio_fee(1) * 0 = 20
-        assert cost == 20
+        # base_fee(20) + image_fee(2) * 1 + audio_fee(1) * 1 = 23
+        assert cost == 23
 
     def test_cost_with_null_fees(self):
         """费用配置为 None 时使用默认值"""
         executor = StorybookExecutor.__new__(StorybookExecutor)
         executor._tool_config = {}
-        params = {'page_count': 5, 'include_audio': True}
+        params = {'page_count': 5, 'voiceType': 'tongtong'}
         cost = executor.estimate_cost(params)
         # defaults: base_fee(20) + image_fee(2)*5 + audio_fee(1)*5 = 35
         assert cost == 35
@@ -206,7 +230,7 @@ class TestCostEdgeCases:
             'base_fee': 12,
             'image_fee': 2,
         }
-        params = {'main_image_count': 0, 'detail_image_count': 0}
+        params = {'mainImageCount': 0, 'detailImageCount': 0}
         cost = executor.estimate_cost(params)
         # base_fee(12)
         assert cost == 12

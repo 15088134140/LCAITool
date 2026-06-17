@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Tool } from '@/types';
 import { chatApi, type ChatMessage } from '@/lib/api/modules/chat';
-import { taskApi } from '@/lib/api/modules/task';
 import { userApi } from '@/lib/api/modules/user';
 import { ProgressModal } from './ProgressModal';
-import { toast } from '@/lib/toast';
 import { useAuthStore } from '@/store';
+import { useToolGeneration } from './useToolGeneration';
 
 interface DialogModeProps {
   tool: Tool;
@@ -21,12 +20,11 @@ export function DialogMode({ tool }: DialogModeProps) {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [progressTaskId, setProgressTaskId] = useState<string | null>(null);
-  const [showProgressModal, setShowProgressModal] = useState(false);
   const [totalCost, setTotalCost] = useState(0);
   const [balance, setBalance] = useState(0);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const generation = useToolGeneration();
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -93,50 +91,22 @@ export function DialogMode({ tool }: DialogModeProps) {
 
   const handleStartGeneration = async () => {
     if (!sessionId) return;
-    // Collect conversation context for task params
     const conversationText = messages
       .filter(m => m.role === 'user')
       .map(m => m.content)
       .join('\n');
 
-    try {
-      // Use tool slug directly as task type
-      const taskType = tool.slug || '';
-
-      const task = await taskApi.createTask({
-        tool_id: tool.id,
-        task_type: taskType,
-        estimated_cost: totalCost || undefined,
-        input_params: {
-          conversationContext: conversationText,
-          source: 'dialog',
-          sessionId: sessionId,
-        },
-      } as any);
-      // Open ProgressModal instead of navigating to progress page
-      setProgressTaskId(task.id);
-      setShowProgressModal(true);
-    } catch (err: any) {
-      console.error('创建任务失败:', err);
-      const detail = err?.response?.data?.detail || '';
-      if (detail.includes('余额') || err?.response?.status === 400) {
-        toast.warning('积分余额不足，请先充值', { label: '去充值', onClick: () => router.push('/pricing') });
-      } else {
-        toast.error(detail || '创建任务失败，请稍后重试');
-      }
-    }
+    await generation.startGeneration({
+      tool,
+      inputParams: {
+        conversationContext: conversationText,
+        source: 'dialog',
+        sessionId,
+      },
+      ...(totalCost ? { estimatedCost: totalCost } : {}),
+      source: 'dialog',
+    });
   };
-
-  const handleProgressComplete = useCallback((workId: string) => {
-    setShowProgressModal(false);
-    setProgressTaskId(null);
-    router.push(`/works/detail/${workId}`);
-  }, [router]);
-
-  const handleProgressClose = useCallback(() => {
-    setShowProgressModal(false);
-    setProgressTaskId(null);
-  }, []);
 
   // Loading state
   if (isLoading) {
@@ -270,11 +240,11 @@ export function DialogMode({ tool }: DialogModeProps) {
     </section>
 
       <ProgressModal
-        isOpen={showProgressModal}
-        taskId={progressTaskId}
+        isOpen={generation.showProgressModal}
+        taskId={generation.progressTaskId}
         toolName={tool.name}
-        onClose={handleProgressClose}
-        onComplete={handleProgressComplete}
+        onClose={generation.closeProgressModal}
+        onComplete={generation.handleProgressComplete}
       />
     </>
   );

@@ -183,9 +183,11 @@ export default function WorkDetailPage() {
   const handleDownload = async (file: WorkFile) => {
     try {
       const token = tokenStorage.getToken();
+      // cache: 'no-store' 避免命中由 <img> 等 no-cors 请求污染的缓存条目
+      // （命中后浏览器会因缓存条目缺少 CORS 头而抛 TypeError: Failed to fetch）
       const response = await fetch(
         `${API_BASE_URL}/files/works/${file.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } }
       );
       if (!response.ok) throw new Error('下载失败');
 
@@ -215,7 +217,7 @@ export default function WorkDetailPage() {
       const token = tokenStorage.getToken();
       const response = await fetch(
         `${API_BASE_URL}/works/${workId}/download`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } }
       );
       if (!response.ok) throw new Error('下载失败');
       const blob = await response.blob();

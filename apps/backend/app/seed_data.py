@@ -175,7 +175,7 @@ async def seed_tools(db: AsyncSession):
                     {"key": "page_audio", "type": "per_unit", "label": "语音合成费",
                      "field": "page_count", "unit_amount_ref": "audio_fee",
                      "default_quantity": 1, "min_quantity": 1, "max_quantity": 30,
-                     "when": {"field": "include_audio", "operator": "eq", "value": True}}
+                     "when": {"field": "voiceType", "operator": "ne", "value": "none"}}
                 ],
                 "display": {"show_breakdown": True, "total_label": "预计消耗", "unit_label": "积分"}
             }),

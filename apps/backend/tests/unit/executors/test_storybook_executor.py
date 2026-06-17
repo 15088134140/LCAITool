@@ -39,19 +39,19 @@ class TestStorybookExecutor:
     def test_estimate_cost(self, executor):
         """测试费用预估"""
         # 基础测试：5页 + 音频
-        params = {'page_count': 5, 'include_audio': True}
+        params = {'page_count': 5, 'voiceType': 'tongtong'}
         cost = executor.estimate_cost(params)
         assert cost == 20 + (2 * 5) + (1 * 5)
         assert cost == 35
 
         # 不包含音频
-        params_no_audio = {'page_count': 5, 'include_audio': False}
+        params_no_audio = {'page_count': 5, 'voiceType': 'none'}
         cost_no_audio = executor.estimate_cost(params_no_audio)
         assert cost_no_audio == 20 + (2 * 5)
         assert cost_no_audio == 30
 
         # 不同页数
-        params_more_pages = {'page_count': 10, 'include_audio': True}
+        params_more_pages = {'page_count': 10, 'voiceType': 'tongtong'}
         cost_more = executor.estimate_cost(params_more_pages)
         assert cost_more == 20 + (2 * 10) + (1 * 10)
         assert cost_more == 50

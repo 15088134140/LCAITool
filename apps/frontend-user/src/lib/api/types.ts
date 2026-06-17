@@ -165,6 +165,131 @@ export interface ToolCategory {
   updated_at: Timestamp;
 }
 
+// ============== 动态表单 / 计价 schema ==============
+
+export type ToolParamFieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'select'
+  | 'radio'
+  | 'radioCard'
+  | 'checkbox'
+  | 'boolean'
+  | 'date'
+  | 'file'
+  | 'section'
+  | 'range'
+  | 'hidden';
+
+export interface ToolParamOption {
+  label: string;
+  value: string | number;
+  icon?: string;
+  desc?: string;
+}
+
+export interface ToolParamConditionWhen {
+  field: string;
+  operator: 'eq' | 'neq' | 'in' | 'nin';
+  value: any;
+}
+
+export interface ToolParamCondition {
+  when: ToolParamConditionWhen;
+  effect: 'show' | 'hide' | 'enable' | 'disable';
+}
+
+export interface ToolParamField {
+  key: string;
+  label: string;
+  type: ToolParamFieldType;
+  required?: boolean;
+  placeholder?: string;
+  helpText?: string;
+  defaultValue?: any;
+  options?: ToolParamOption[];
+  min?: number;
+  max?: number;
+  step?: number;
+  order?: number;
+  accept?: string;
+  multiple?: boolean;
+  maxSizeMB?: number;
+  maxFiles?: number;
+  allowCustom?: boolean;
+  condition?: ToolParamCondition;
+  uiHint?: 'card';
+}
+
+export type PricingItemType = 'fixed' | 'per_unit';
+
+export interface PricingWhenCondition {
+  field: string;
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'truthy' | 'falsy';
+  value?: any;
+}
+
+export interface PricingSchemaItem {
+  key: string;
+  type: PricingItemType;
+  label?: string;
+  // fixed
+  amount_ref?: string;
+  // per_unit
+  field?: string;
+  unit_amount_ref?: string;
+  default_quantity?: number;
+  min_quantity?: number;
+  max_quantity?: number;
+  unit_size?: number;
+  // conditional
+  when?: PricingWhenCondition;
+}
+
+export interface PricingDisplayConfig {
+  show_breakdown?: boolean;
+  total_label?: string;
+  unit_label?: string;
+}
+
+export interface PricingSchema {
+  version: number;
+  currency: string;
+  rounding?: 'ceil' | 'floor' | 'round';
+  min_total?: number;
+  max_total?: number | null;
+  items: PricingSchemaItem[];
+  display?: PricingDisplayConfig;
+}
+
+export interface PricingBreakdownItem {
+  key: string;
+  label: string;
+  amount: number;
+  quantity: number;
+  unit_amount: number;
+  amount_ref?: string;
+  unit_amount_ref?: string;
+}
+
+export interface PricingResult {
+  total: number;
+  currency: string;
+  breakdown: PricingBreakdownItem[];
+  warnings: string[];
+}
+
+// ============== 上传文件元数据 ==============
+
+export interface UploadedFileMeta {
+  id: string;
+  file_name: string;
+  file_size?: number;
+  mime_type?: string;
+  url: string;
+}
+
 export interface Tool {
   id: UUID;
   slug: string;
@@ -189,6 +314,9 @@ export interface Tool {
   rating_count: number;
   rating_avg: number;
   usage_modes?: string[];
+  param_schema?: ToolParamField[] | null;
+  pricing_schema?: PricingSchema | null;
+  executor_key?: string | null;
   created_at: Timestamp;
   updated_at: Timestamp;
 }
