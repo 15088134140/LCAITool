@@ -267,7 +267,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return error_response(
         code=exc.status_code,
         message=exc.detail,
-        error_code=f"HTTP_{exc.status_code}",
+        error_code=exc.headers.get("X-Error-Code") if exc.headers else f"HTTP_{exc.status_code}",
         request_id=request_id
     )
 

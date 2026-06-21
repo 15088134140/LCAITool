@@ -73,37 +73,78 @@ AI_PROVIDER_DEFAULTS = [
         "slug": "volcano",
         "name": "火山方舟",
         "provider_type": "volcano",
-        "config": {"model": "doubao-pro-32k"},
+        "config": {
+            "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+            "model": "doubao-seed-2-0-lite-260428",
+            "image_model": "doubao-seedream-4-5-251128",
+            "image_size": "1920x1920",
+            "video_model": "doubao-seedance-1-5-pro-251215",
+        },
         "sort_order": 1,
     },
     {
-        "slug": "dify",
-        "name": "Dify",
-        "provider_type": "dify",
-        "config": {},
+        "slug": "zhipu",
+        "name": "智谱AI",
+        "provider_type": "openai",
+        "config": {
+            "base_url": "https://open.bigmodel.cn/api/paas/v4",
+            "model": "GLM-4-Flash",
+            "image_model": "glm-image",
+            "audio_model": "glm-tts",
+        },
         "sort_order": 2,
     },
     {
         "slug": "deepseek",
         "name": "DeepSeek",
         "provider_type": "openai",
-        "config": {"model": "deepseek-chat"},
+        "config": {
+            "base_url": "https://api.deepseek.com/v1",
+            "model": "deepseek-chat",
+        },
         "sort_order": 3,
+    },
+    {
+        "slug": "dify",
+        "name": "Dify",
+        "provider_type": "dify",
+        "config": {
+            "base_url": "https://api.dify.ai/v1",
+            "workflow_id": "",
+        },
+        "sort_order": 4,
     },
 ]
 
 async def seed_ai_providers(db):
-    """插入默认 AI 提供商（幂等）"""
+    """插入或补齐默认 AI 提供商配置（幂等，保留已有密钥）。"""
     inserted = 0
+    updated = 0
     for p in AI_PROVIDER_DEFAULTS:
         result = await db.execute(
             select(AiProvider).where(AiProvider.slug == p["slug"])
         )
-        if not result.scalar_one_or_none():
-            db.add(AiProvider(**p))
-            inserted += 1
+        provider = result.scalar_one_or_none()
+        if provider:
+            changed = False
+            for field in ("name", "provider_type", "sort_order"):
+                if getattr(provider, field) != p[field]:
+                    setattr(provider, field, p[field])
+                    changed = True
+            config = dict(provider.config or {})
+            for key, value in p["config"].items():
+                if key not in config or config.get(key) is None:
+                    config[key] = value
+                    changed = True
+            if changed:
+                provider.config = config
+                updated += 1
+            continue
+
+        db.add(AiProvider(**p))
+        inserted += 1
     await db.commit()
-    print(f"  [AiProvider] {inserted} inserted ({len(AI_PROVIDER_DEFAULTS)} total defaults)")
+    print(f"  [AiProvider] {inserted} inserted, {updated} updated ({len(AI_PROVIDER_DEFAULTS)} total defaults)")
 
 
 # ---------------------------------------------------------------------------

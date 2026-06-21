@@ -41,8 +41,8 @@ async def seed_users(db: AsyncSession):
         User(
             id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
             nickname="系统用户",
-            phone="13800000000",
-            password_hash=get_password_hash("test123456"),
+            phone="15088134140",
+            password_hash=get_password_hash("123456"),
             balance=10000,
             status=1,
             roles=[admin_role],
@@ -723,46 +723,90 @@ async def seed_admin_role(db: AsyncSession):
 
 
 async def seed_ai_providers(db: AsyncSession):
-    """配置 AI 提供商信息"""
+    """配置 AI 提供商信息（幂等更新，保留已有密钥）。"""
     from app.models.system import AiProvider
 
-    providers = [
-        AiProvider(
-            slug="volcano", name="火山方舟(豆包)",
-            provider_type="volcano",
-            config={
-                "api_key": "ark-126678e1-ed22-4716-8ce6-41b7e614327f-2606a",
+    provider_defaults = [
+        {
+            "slug": "volcano",
+            "name": "火山方舟(豆包)",
+            "provider_type": "volcano",
+            "sort_order": 1,
+            "config": {
                 "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+                "model": "doubao-seed-2-0-lite-260428",
+                "image_model": "doubao-seedream-4-5-251128",
+                "image_size": "1920x1920",
+                "video_model": "doubao-seedance-1-5-pro-251215",
             },
-            is_active=True, sort_order=1,
-        ),
-        AiProvider(
-            slug="zhipu", name="智谱AI",
-            provider_type="openai",
-            config={
-                "api_key": "51ec9d1b59934faebafce2b40b54091e.oJe0NMOFhPbFcjJb",
+        },
+        {
+            "slug": "zhipu",
+            "name": "智谱AI",
+            "provider_type": "openai",
+            "sort_order": 2,
+            "config": {
                 "base_url": "https://open.bigmodel.cn/api/paas/v4",
+                "model": "GLM-4-Flash",
+                "image_model": "glm-image",
+                "audio_model": "glm-tts",
             },
-            is_active=True, sort_order=2,
-        ),
-        AiProvider(
-            slug="deepseek", name="DeepSeek",
-            provider_type="openai",
-            config={
-                "api_key": "sk-7fefd3a83a494eed8706b03f8e3cd516",
+        },
+        {
+            "slug": "deepseek",
+            "name": "DeepSeek",
+            "provider_type": "openai",
+            "sort_order": 3,
+            "config": {
                 "base_url": "https://api.deepseek.com/v1",
+                "model": "deepseek-chat",
             },
-            is_active=True, sort_order=3,
-        ),
+        },
+        {
+            "slug": "dify",
+            "name": "Dify",
+            "provider_type": "dify",
+            "sort_order": 4,
+            "config": {
+                "base_url": "https://api.dify.ai/v1",
+                "workflow_id": "",
+            },
+        },
     ]
+
     created = 0
-    for p in providers:
-        existing = await db.execute(select(AiProvider).where(AiProvider.slug == p.slug))
-        if not existing.scalar_one_or_none():
-            db.add(p)
-            created += 1
+    updated = 0
+    for item in provider_defaults:
+        result = await db.execute(select(AiProvider).where(AiProvider.slug == item["slug"]))
+        provider = result.scalar_one_or_none()
+        if provider:
+            changed = False
+            for field in ("name", "provider_type", "sort_order"):
+                if getattr(provider, field) != item[field]:
+                    setattr(provider, field, item[field])
+                    changed = True
+            config = dict(provider.config or {})
+            for key, value in item["config"].items():
+                if key not in config or config.get(key) is None:
+                    config[key] = value
+                    changed = True
+            if changed:
+                provider.config = config
+                updated += 1
+            continue
+
+        db.add(AiProvider(
+            slug=item["slug"],
+            name=item["name"],
+            provider_type=item["provider_type"],
+            config=item["config"],
+            is_active=True,
+            sort_order=item["sort_order"],
+        ))
+        created += 1
+
     await db.commit()
-    print(f"  ✓ 已创建 {created} 个 AI 提供商配置")
+    print(f"  ✓ 已创建 {created} 个、更新 {updated} 个 AI 提供商配置")
 
 
 async def main():

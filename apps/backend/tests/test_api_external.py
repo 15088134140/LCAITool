@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.api_key import ApiKey
 from app.models.external_file import ExternalFile
+from app.models.system import AiProvider
 from app.models.user import User
 
 
@@ -83,16 +84,18 @@ async def test_external_images_generations(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """图片生成请求，无 Provider 配置 → 502。"""
+    """图片生成请求，无 Provider 配置 → 503。"""
     response = await client.post(
         "/api/v1/external/images/generations",
         json={"provider": "volcano", "prompt": "一只可爱的小猫"},
         headers=external_auth_headers,
     )
-    assert response.status_code == 502
+    assert response.status_code == 503
     data = response.json()
-    # 项目使用自定义错误格式：{"code": 502, "message": "...", ...}
+    # 项目使用自定义错误格式：{"code": 503, "message": "...", ...}
     assert "message" in data
+    assert "AI 提供商 'volcano' 未配置" in data["message"]
+    assert data["error_code"] == "AI_PROVIDER_CONFIG_ERROR"
     assert "detail" not in data
 
 
@@ -101,15 +104,49 @@ async def test_external_images_unsupported_provider(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """不存在的 provider slug → 502（DB 查询不到）。"""
+    """不存在的 provider slug → 503（DB 查询不到）。"""
     response = await client.post(
         "/api/v1/external/images/generations",
         json={"provider": "nonexistent-provider", "prompt": "test"},
         headers=external_auth_headers,
     )
-    assert response.status_code == 502
+    assert response.status_code == 503
     data = response.json()
     assert "message" in data
+    assert "未配置" in data["message"]
+    assert data["error_code"] == "AI_PROVIDER_CONFIG_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_external_images_provider_missing_required_config(
+    client: AsyncClient,
+    external_auth_headers: dict,
+    db_session: AsyncSession,
+):
+    """Provider 存在但缺少 base_url/model 等必要配置时，应返回本地配置错误且不调用上游。"""
+    db_session.add(AiProvider(
+        id=uuid.uuid4(),
+        slug="volcano",
+        name="火山方舟",
+        provider_type="volcano",
+        config={"api_key": "test_key"},
+        is_active=True,
+        sort_order=1,
+    ))
+    await db_session.commit()
+
+    response = await client.post(
+        "/api/v1/external/images/generations",
+        json={"provider": "volcano", "prompt": "test"},
+        headers=external_auth_headers,
+    )
+
+    assert response.status_code == 503
+    data = response.json()
+    assert data["error_code"] == "AI_PROVIDER_CONFIG_ERROR"
+    assert "缺少必要配置" in data["message"]
+    assert "base_url" in data["message"]
+    assert "image_model" in data["message"]
 
 
 # ==================== 对话补全 ====================
@@ -120,7 +157,7 @@ async def test_external_chat_completions(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """对话补全请求，无 Provider 配置 → 502。"""
+    """对话补全请求，无 Provider 配置 → 503。"""
     response = await client.post(
         "/api/v1/external/chat/completions",
         json={
@@ -134,9 +171,10 @@ async def test_external_chat_completions(
         },
         headers=external_auth_headers,
     )
-    assert response.status_code == 502
+    assert response.status_code == 503
     data = response.json()
     assert "message" in data
+    assert data["error_code"] == "AI_PROVIDER_CONFIG_ERROR"
 
 
 @pytest.mark.asyncio
@@ -144,7 +182,7 @@ async def test_external_chat_unsupported_provider(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """不存在的 provider slug → 502（DB 查询不到）。"""
+    """不存在的 provider slug → 503（DB 查询不到）。"""
     response = await client.post(
         "/api/v1/external/chat/completions",
         json={
@@ -153,9 +191,10 @@ async def test_external_chat_unsupported_provider(
         },
         headers=external_auth_headers,
     )
-    assert response.status_code == 502
+    assert response.status_code == 503
     data = response.json()
     assert "message" in data
+    assert data["error_code"] == "AI_PROVIDER_CONFIG_ERROR"
 
 
 # ==================== 语音合成 ====================
@@ -166,7 +205,7 @@ async def test_external_audio_speech(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """语音合成请求，无 Provider 配置 → 502。"""
+    """语音合成请求，无 Provider 配置 → 503。"""
     response = await client.post(
         "/api/v1/external/audio/speech",
         json={
@@ -177,9 +216,10 @@ async def test_external_audio_speech(
         },
         headers=external_auth_headers,
     )
-    assert response.status_code == 502
+    assert response.status_code == 503
     data = response.json()
     assert "message" in data
+    assert data["error_code"] == "AI_PROVIDER_CONFIG_ERROR"
 
 
 @pytest.mark.asyncio
@@ -187,7 +227,7 @@ async def test_external_audio_unsupported_provider(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """不存在的 provider slug → 502（DB 查询不到）。"""
+    """不存在的 provider slug → 503（DB 查询不到）。"""
     response = await client.post(
         "/api/v1/external/audio/speech",
         json={
@@ -197,9 +237,10 @@ async def test_external_audio_unsupported_provider(
         },
         headers=external_auth_headers,
     )
-    assert response.status_code == 502
+    assert response.status_code == 503
     data = response.json()
     assert "message" in data
+    assert data["error_code"] == "AI_PROVIDER_CONFIG_ERROR"
 
 
 # ==================== 视频生成 ====================
@@ -210,7 +251,7 @@ async def test_external_video_generations(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """视频生成请求，无 Provider 配置 → 502。"""
+    """视频生成请求，无 Provider 配置 → 503。"""
     response = await client.post(
         "/api/v1/external/video/generations",
         json={
@@ -220,9 +261,10 @@ async def test_external_video_generations(
         },
         headers=external_auth_headers,
     )
-    assert response.status_code == 502
+    assert response.status_code == 503
     data = response.json()
     assert "message" in data
+    assert data["error_code"] == "AI_PROVIDER_CONFIG_ERROR"
 
 
 @pytest.mark.asyncio
@@ -230,7 +272,7 @@ async def test_external_video_unsupported_provider(
     client: AsyncClient,
     external_auth_headers: dict,
 ):
-    """不存在的 provider slug → 502（DB 查询不到）。"""
+    """不存在的 provider slug → 503（DB 查询不到）。"""
     response = await client.post(
         "/api/v1/external/video/generations",
         json={
@@ -239,9 +281,10 @@ async def test_external_video_unsupported_provider(
         },
         headers=external_auth_headers,
     )
-    assert response.status_code == 502
+    assert response.status_code == 503
     data = response.json()
     assert "message" in data
+    assert data["error_code"] == "AI_PROVIDER_CONFIG_ERROR"
 
 
 # ==================== 文件服务 ====================

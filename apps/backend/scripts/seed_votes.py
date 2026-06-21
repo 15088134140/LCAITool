@@ -74,7 +74,7 @@ async def seed_votes():
                     user = User(
                         nickname=nickname,
                         avatar=user_data["avatar"],
-                        password_hash=get_password_hash("test123456"),
+                        password_hash=get_password_hash("123456"),
                         balance=1000,
                         status=1,
                         id_card_verified=True,  # 标记为已实名认证，允许投票
@@ -142,7 +142,7 @@ async def seed_votes():
             print(f"✅ 完成！共生成了 {total_votes} 条投票记录")
             print(f"   测试用户数: {len(created_users)}")
             print(f"   创意数: {len(ideas)}")
-            print(f"\n测试用户登录密码: test123456")
+            print(f"\n测试用户登录密码: 123456")
             print(f"{'=' * 70}")
 
     except Exception as e:

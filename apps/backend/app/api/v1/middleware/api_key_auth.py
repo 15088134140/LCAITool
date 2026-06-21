@@ -56,6 +56,7 @@ async def verify_api_key_any(
     """从 api_key 查询参数或 Authorization header 验证 API Key。
 
     优先使用查询参数，适用于 <img>、<audio> 等嵌入资源场景。
+    如果未提供 API Key，则返回 None（允许无认证访问）。
     """
     # 先尝试查询参数
     if api_key_param:
@@ -66,4 +67,5 @@ async def verify_api_key_any(
     if auth_header.startswith("Bearer "):
         return await _validate_api_key(auth_header[7:], db)
 
-    raise HTTPException(status_code=401, detail="Missing API Key (provide via ?api_key= or Authorization header)")
+    # 未提供 API Key，返回 None（允许无认证访问）
+    return None
