@@ -97,7 +97,7 @@ class ChatMessage(BaseModel):
 
 class ChatCompletionRequest(BaseModel):
     """对话补全请求"""
-    provider: str = Field(examples=["deepseek"])
+    provider: str = Field(examples=["volcano"])
     messages: List[ChatMessage] = Field(examples=[
         [
             {"role": "system", "content": "你是一个专业的AI助手，请用简洁的语言回答用户问题。"},
