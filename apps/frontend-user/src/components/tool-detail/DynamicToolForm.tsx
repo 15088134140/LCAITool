@@ -311,6 +311,10 @@ export function DynamicToolForm({
     } finally {
       setSubmitting(false);
       setSubmitMsg('');
+    }
+  };
+
+  return (
     <form onSubmit={handleSubmit} className={`space-y-6 ${className}`}>
       {sortedFields.map((field) => {
         const { show, enabled } = evalCondition(field.condition);

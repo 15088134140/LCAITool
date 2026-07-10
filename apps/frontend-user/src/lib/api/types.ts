@@ -112,42 +112,6 @@ export interface RealNameVerification {
   id_card_number?: string;
 }
 
-// ============== 工具参数Schema类型 ==============
-
-export interface ToolParamOption {
-  label: string;
-  value: string | number | boolean;
-  icon?: string;
-  desc?: string;
-}
-
-export interface ToolParamCondition {
-  when: {
-    field: string;
-    operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'truthy' | 'falsy';
-    value?: any;
-  };
-  effect: 'show' | 'hide' | 'enable' | 'disable';
-}
-
-export interface ToolParamField {
-  key: string;
-  label: string;
-  type: 'section' | 'text' | 'textarea' | 'radio' | 'select' | 'range' | 'number' | 'boolean' | 'file' | 'action' | 'hidden';
-  required?: boolean;
-  defaultValue?: any;
-  placeholder?: string;
-  accept?: string;
-  min?: number;
-  max?: number;
-  order?: number;
-  uiHint?: string;
-  helpText?: string;
-  action?: string;
-  options?: ToolParamOption[];
-  condition?: ToolParamCondition;
-}
-
 // ============== 工具相关类型 ==============
 
 export interface ToolCategory {
@@ -305,9 +269,6 @@ export interface Tool {
   audio_fee: number;
   token_fee: number;
   config?: Record<string, any>;
-  param_schema?: ToolParamField[];
-  executor_key?: string;
-  pricing_schema?: Record<string, any>;
   status: number;
   use_count: number;
   favorite_count: number;
