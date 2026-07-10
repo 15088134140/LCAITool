@@ -1,111 +1,47 @@
-# 灵创AI工具箱（LCAITool）- Claude 工作入口
+# CLAUDE.md - Claude Code 开发入口
 
-## 项目一句话
+## 项目概述
 
-**灵创AI工具箱** 是专注于垂直专业场景的精品 AI 工具集合平台，深耕细分场景，提供可交付、可迭代的专业 AI 工具成果。
+**项目名称**: LCAITool
+**版本**: v1.0
+**架构**: 前后端分离 Monorepo
+**技术栈**: Python FastAPI + SQLAlchemy + React + Next.js + TypeScript
 
-## 基础沟通规则
+---
 
-- 使用中文回复用户问题。
-- 不确定需求边界时先沟通，不做假设。
-- 功能开发前先对照 PRD、设计文档或相关专题文档确认边界。
+## Claude Code 定位
 
-## 渐进式披露原则
+Claude Code 是本项目复杂编码与技术实现主力，重点处理架构设计、任务拆解、后端服务核心逻辑、API 契约设计、跨模块重构、旧代码行为分析、复杂实现、验证和代码审查。
 
-本文件是 Claude 工作入口，不是完整项目手册。
+完整工具分工以 `.ai/tool-rules.md` 为准；本文件只保留 Claude Code 入口摘要。
 
-- 只有每次会话必须生效的强制行为规则进入本文件。
-- 产品背景、技术栈、业务流程、安全规范、路线图等详细资料放入专题文档。
-- Claude 应根据任务类型按需读取下方专题文档，避免默认加载全部背景资料。
-- 后续新增规范时，优先判断应进入哪个专题文档；只有强制行为规则才加入本文件。
+## 处理任务前先读
 
-## 按需读取规则
+完整任务流程和阅读顺序以 `.ai/workflow.md` 为准。Claude Code 处理任务时至少关注：
 
-- 涉及产品定位、业务边界、用户价值：读取 `docs/project/overview.md`。
-- 涉及 MVP 范围、功能状态、后续路线：读取 `docs/project/roadmap.md`。
-- 涉及技术栈、目录结构、部署：读取 `docs/development/tech-stack.md`。
-- 涉及 UI 视觉、颜色、字体、组件交互：读取 `docs/development/design-system.md`。
-- 涉及编码原则、测试、数据库迁移、安全编码：读取 `docs/development/coding-principles.md`。
-- 涉及子代理、commit、Superpowers/gstack 协作：读取 `docs/development/agent-workflow.md`。
-- 涉及认证、工具使用、支付、迭代创作流程：读取 `docs/architecture/business-flows.md`。
-- 涉及执行器、任务队列、AI Provider、Dify、回调：读取 `docs/architecture/executor-patterns.md`。
-- 涉及隐私、接口安全、资金安全、性能目标：读取 `docs/architecture/security-and-performance.md`。
-- 查找完整 PRD、技术方案、设计稿、历史 plans/specs：读取 `docs/project/reference-index.md`。
+1. `.ai/workflow.md`：任务流程、阅读顺序、任务状态与 Superpowers 流程。
+2. `.ai/tool-rules.md`：Hermes、Claude Code、Superpowers 和子代理规则。
+3. `.ai/coding-standards.md`：通用编码、TypeScript、Git 和验证规范。
+4. 对应端规范：
+   - `apps/backend`：`.ai/backend-standards.md`
+   - `apps/frontend-admin`：`.ai/admin-standards.md`
+   - `apps/frontend-user`：`.ai/frontend-user-standards.md`
+5. `tasks/` 下的相关任务文档，如存在。
+6. `docs/superpowers/` 下的相关设计文档、实施计划或审查记录，如任务进入 Superpowers 流程。
 
-## 高优先级开发原则
+## Claude Code 硬规则摘要
 
-- 先设计后编码。
-- 遵循现有代码风格。
-- 优先实现核心路径，不做过度设计。
-- 新增接口必须考虑权限控制。
-- 涉及数据库变更必须通过 Alembic migration。
-- 涉及用户数据、支付、资金和安全相关逻辑必须考虑审计、幂等和回滚。
+1. 修改前先说明假设；不确定时先提问。
+2. 优先做小而可验证的改动。
+3. 只修改任务直接需要的代码；不要顺手重构无关内容。
+4. 不引入未被要求的抽象、配置项或“未来扩展”。
+5. 涉及接口变更时，先更新 `packages/api-contracts/` 或 `docs/api/`。
+6. 完成前运行相关验证；无法验证时说明原因。
+7. 派遣子代理时，遵守 `.ai/tool-rules.md` 中 Claude Code 环境的“子代理工作流规范”；子代理不得执行 `git commit`。
+8. 项目文档与沟通默认使用中文。
 
-## 子代理工作流规范（强制执行）
+## Superpowers
 
-本项目所有子代理任务必须遵循以下规则。
+Superpowers 的进入条件、流程产物路径和执行方式以 `.ai/workflow.md` 为准。
 
-### 禁止子代理自行执行 git commit
-
-子代理只负责写代码，不执行 `git commit`。
-
-- 子代理完成工作后，只需要在报告中列出所有修改/创建的文件路径清单。
-- git commit 操作统一由父代理按任务批量执行。
-- 原因：子代理隔离环境中的 git 操作可能静默失败，导致“报告说已提交，实际没提交”的不一致问题。
-
-### 派遣子代理的标准 prompt 必须附加规则
-
-父代理每次构造子代理 prompt 时，末尾必须加上这一行：
-
-```text
-⚠️ 重要规则：不要执行 git commit 命令！完成后只需要列出你修改/创建的所有文件路径，提交操作由父代理统一执行。
-```
-
-### 父代理提交责任
-
-子代理完成实现后，父代理应：
-
-1. 查看子代理列出的文件清单。
-2. 运行必要验证。
-3. `git add` 相关文件。
-4. 按任务单独 `git commit`。
-5. 向用户报告“已完成并提交”。
-
-## Superpowers + gstack 搭配配置
-
-### Superpowers（思考与流程层）
-
-负责所有 plan、brainstorm、debug、TDD、verify、code review。
-
-触发方式：自动触发。
-
-### gstack（执行与外部世界层）
-
-负责浏览器操作、QA、ship、deploy、canary、安全审计。
-
-触发方式：斜杠命令手动触发。
-
-### 浏览器规则
-
-- 使用 `/browse` 作为唯一浏览器入口。
-- 禁止使用 `mcp__claude-in-chrome__*` 操作浏览器。
-
-### 分工裁决
-
-- 计划撰写 → Superpowers: writing-plans。
-- 计划多视角审查 → gstack: `/autoplan`。
-- 编码 → Superpowers: test-driven-development。
-- 调试 → Superpowers: systematic-debugging。
-- 真实环境验证 → gstack: `/qa`。
-- 代码审查 → Superpowers: requesting-code-review。
-- 发布 → gstack: `/ship`。
-- 安全审计 → gstack: `/cso`。
-
-可用技能以当前会话提供的技能列表为准，不在本文件维护完整技能列表。
-
-## 参考入口
-
-- `docs/project/reference-index.md`：项目资料总索引。
-
-**最后更新时间**：2026-06-04  
-**文档版本**：V2.0
+非平凡需求、重构或多步骤实现，应优先使用 Superpowers 流程；支持 skills/plugin 的环境应优先调用对应技能。

@@ -1,7 +1,0 @@
-apps/frontend-user/src/app/login/page.tsx:        points: 100,
-apps/frontend-user/src/app/login/page.tsx:            points: 50,
-apps/frontend-user/src/app/pricing/page.tsx:      points: 50,
-apps/frontend-user/src/app/pricing/page.tsx:      points: 200,
-apps/frontend-user/src/app/pricing/page.tsx:      points: 500,
-apps/frontend-user/src/app/pricing/page.tsx:      points: 2000,
-apps/frontend-user/src/app/pricing/page.tsx:      points: 0,
