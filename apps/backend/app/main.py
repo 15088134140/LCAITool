@@ -320,6 +320,12 @@ async def health():
     )
 
 
+@app.get("/api/v1/health", tags=["system"])
+async def health_check():
+    """健康检查端点"""
+    return {"status": "healthy", "service": "lcaitool-backend"}
+
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """应用关闭时清理资源"""
