@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 Python 依赖
+# 安装 Python 依赖（从根目录 apps/backend 复制）
 COPY apps/backend/requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
@@ -27,7 +27,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH=/root/.local/bin:$PATH
 
-# 安装运行时依赖（PostgreSQL 客户端库）
+# 安装运行时依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 从 builder 复制已安装的 Python 包
 COPY --from=builder /root/.local /root/.local
 
-# 复制源码
+# 复制源码（从根目录 apps/backend 复制）
 COPY apps/backend/ .
 
 # 创建必要目录

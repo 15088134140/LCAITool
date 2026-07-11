@@ -61,3 +61,6 @@ storage/
 
 # Brainstorming visual companion
 .superpowers/
+
+# CodeGraph - local code knowledge graph
+.codegraph/
