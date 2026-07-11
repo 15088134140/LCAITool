@@ -43,7 +43,7 @@ RUN mkdir -p /app/storage /app/logs /app/uploads
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD python -c "import httpx; response = httpx.get('http://localhost:8000/api/v1/health'); assert response.status_code == 200"
+    CMD python -c "import httpx; response = httpx.get('http://localhost:8000/health'); assert response.status_code == 200"
 
 EXPOSE 8000
 
