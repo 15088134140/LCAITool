@@ -7,7 +7,7 @@ import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 // API配置
-const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || '/api/v1';
 export { API_BASE_URL };
 const TOKEN_KEY = 'lcaitool_access_token';
 

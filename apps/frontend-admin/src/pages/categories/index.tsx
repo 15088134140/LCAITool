@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Plus, Edit, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, X } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { toolApi, ToolCategory } from '@/api';
 import { formatDate } from '@/utils';

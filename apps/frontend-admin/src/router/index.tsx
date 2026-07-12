@@ -148,6 +148,8 @@ export const router = createBrowserRouter([
     path: '*',
     element: <div>404 - 页面不存在</div>,
   },
-]);
+], {
+  basename: '/admin',
+});
 
 export default router;

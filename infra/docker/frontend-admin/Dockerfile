@@ -1,5 +1,5 @@
 # ========================================
-#  LCAITool Frontend Admin Dockerfile
+#  LCAITool Frontend Admin Dockerfile (生产模式)
 # ========================================
 
 FROM node:20-alpine AS builder
@@ -10,22 +10,17 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # 复制 workspace 配置和 package.json
-COPY package.json pnpm-workspace.yaml ./
-COPY packages/ui/package.json ./packages/ui/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
-COPY packages/tailwind-config/package.json ./packages/tailwind-config/
-COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/ ./packages/
 COPY apps/frontend-admin/package.json ./apps/frontend-admin/
 
 # 安装依赖
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # 复制源码
-COPY packages/ui/ ./packages/ui/
-COPY packages/tailwind-config/ ./packages/tailwind-config/
 COPY apps/frontend-admin/ ./apps/frontend-admin/
 
-# 构建
+# 构建（完整类型检查 + 生产构建）
 RUN pnpm --filter @lcaitool/frontend-admin run build
 
 # Production stage

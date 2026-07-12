@@ -1,5 +1,5 @@
 # ========================================
-#  LCAITool Frontend User (Next.js) Dockerfile
+#  LCAITool Frontend User (Next.js) Dockerfile (生产模式)
 # ========================================
 
 FROM node:20-alpine AS builder
@@ -10,19 +10,14 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # 复制 workspace 配置和 package.json
-COPY package.json pnpm-workspace.yaml ./
-COPY packages/ui/package.json ./packages/ui/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
-COPY packages/tailwind-config/package.json ./packages/tailwind-config/
-COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/ ./packages/
 COPY apps/frontend-user/package.json ./apps/frontend-user/
 
 # 安装依赖
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # 复制源码
-COPY packages/ui/ ./packages/ui/
-COPY packages/tailwind-config/ ./packages/tailwind-config/
 COPY apps/frontend-user/ ./apps/frontend-user/
 
 # 构建 (Next.js standalone 模式)

@@ -5,7 +5,6 @@ import {
   ChevronRight,
   X,
   ThumbsUp,
-  Eye,
   CheckCircle2,
   XCircle,
   Hammer,
@@ -72,7 +71,6 @@ const IdeasPage = () => {
   const [loading, setLoading] = useState(false);
 
   // 弹窗状态
-  const [selectedIdea, setSelectedIdea] = useState<AdminIdea | null>(null);
   const [detailModal, setDetailModal] = useState<AdminIdea | null>(null);
   const [actionModal, setActionModal] = useState<{
     idea: AdminIdea;

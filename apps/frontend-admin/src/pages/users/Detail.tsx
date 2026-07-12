@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Edit,
@@ -334,7 +334,7 @@ const UserDetail = () => {
           </div>
           <div>
             <label className="text-sm text-gray-500">手机号</label>
-            <p className="text-gray-800 mt-1">{formatPhone(user.phone) || '未绑定'}</p>
+            <p className="text-gray-800 mt-1">{formatPhone(user.phone || '') || '未绑定'}</p>
           </div>
           <div>
             <label className="text-sm text-gray-500">邮箱</label>

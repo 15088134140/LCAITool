@@ -10,7 +10,7 @@ interface ApiResponse<T = any> {
 
 class Request {
   private instance: AxiosInstance;
-  private baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+  private baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
   constructor() {
     this.instance = axios.create({
@@ -68,7 +68,7 @@ class Request {
     );
   }
 
-  private handleBusinessError(code: number, message: string, url?: string) {
+  private handleBusinessError(code: number, message: string) {
     switch (code) {
       case 401:
         // 如果已经在登录页，不重复跳转（否则会清除登录页的 error state）

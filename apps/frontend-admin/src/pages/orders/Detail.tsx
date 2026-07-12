@@ -24,7 +24,6 @@ import {
   getRandomColor,
   copyToClipboard,
 } from '@/utils';
-import { Button } from '@lcaitool/ui';
 import { toast } from '@/components/ui/Toast';
 
 // Modal组件
@@ -374,9 +373,9 @@ const OrderDetail = () => {
                   <div>
                     <label className="text-sm text-gray-500">用户ID</label>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-gray-800 font-mono text-sm">{order.user.id}</span>
+                      <span className="text-gray-800 font-mono text-sm">{order.user?.id}</span>
                       <button
-                        onClick={() => handleCopy(order.user.id, '用户ID')}
+                        onClick={() => handleCopy(order.user?.id || '', '用户ID')}
                         className="p-1 rounded hover:bg-gray-100"
                         title="复制"
                       >
@@ -387,7 +386,7 @@ const OrderDetail = () => {
                 </div>
                 <div className="pt-4 border-t border-gray-100">
                   <button
-                    onClick={() => navigate(`/users/${order.user.id}`)}
+                    onClick={() => navigate(`/users/${order.user?.id}`)}
                     className="text-[#1E3A5F] hover:underline text-sm"
                   >
                     查看用户详情 →

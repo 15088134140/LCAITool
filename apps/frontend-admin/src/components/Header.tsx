@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Menu,
   Bell,
@@ -17,7 +17,7 @@ interface HeaderProps {
 const Header = ({ onToggleSidebar }: HeaderProps) => {
   const navigate = useNavigate();
   const { user, logout } = useUserStore();
-  const { currentPageTitle, breadcrumbs } = useAppStore();
+  const { currentPageTitle } = useAppStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 

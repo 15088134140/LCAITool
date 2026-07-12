@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import router from "./router";
-import { ToastProvider, toast, useToast } from "./components/ui/Toast";
+import { ToastProvider, useToast } from "./components/ui/Toast";
 import "./index.css";
 
 // 全局toast事件监听

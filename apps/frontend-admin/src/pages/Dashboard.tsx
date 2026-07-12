@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store';
-import { Users, UserCheck, DollarSign, Zap, Clock, Wrench, ShoppingCart, Lightbulb, Settings } from 'lucide-react';
+import { Users, UserCheck, DollarSign, Zap, Clock, Wrench, ShoppingCart, Lightbulb } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import StatCard from '@/components/StatCard';
 import { Link } from 'react-router-dom';

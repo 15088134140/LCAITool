@@ -4,10 +4,16 @@ import { persist } from 'zustand/middleware';
 interface User {
   id: string;
   username: string;
-  nickname: string;
-  avatar?: string;
+  nickname: string | null;
+  avatar?: string | null;
+  email?: string | null;
+  phone?: string | null;
   role: string;
   permissions: string[];
+  id_card_name?: string | null;
+  id_card_verified?: boolean;
+  balance?: number;
+  status?: number;
 }
 
 interface UserState {

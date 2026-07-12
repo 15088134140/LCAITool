@@ -150,7 +150,7 @@ const EditTool = () => {
   const handleRemoveTag = (tag: string) => {
     setFormData((prev) => ({
       ...prev,
-      tags: prev.tags?.filter((t) => t !== tag) || [],
+      tags: Array.isArray(prev.tags) ? prev.tags.filter((t: string) => t !== tag) : [],
     }));
   };
 
@@ -267,7 +267,7 @@ const EditTool = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">标签</label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {(formData.tags || []).map((tag, idx) => (
+                  {(Array.isArray(formData.tags) ? formData.tags : []).map((tag: string, idx: number) => (
                     <span
                       key={idx}
                       className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
@@ -324,7 +324,7 @@ const EditTool = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              const list = formData.cover_image.split('|').map(u => u.trim()).filter(Boolean);
+                              const list = (formData.cover_image || '').split('|').map(u => u.trim()).filter(Boolean);
                               list.splice(idx, 1);
                               handleInputChange('cover_image', list.join('|'));
                             }}
@@ -343,7 +343,7 @@ const EditTool = () => {
                   </div>
                   {/* URL textarea: one URL per line */}
                   <textarea
-                    value={formData.cover_image.split('|').join('\n')}
+                    value={(formData.cover_image || '').split('|').join('\n')}
                     onChange={(e) => {
                       const lines = e.target.value.split('\n').map(l => l.trim()).filter(Boolean);
                       handleInputChange('cover_image', lines.join('|'));

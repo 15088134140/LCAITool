@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Edit, Trash2, GripVertical, X, Upload, Image, Music, Video } from 'lucide-react';
 import { useAppStore } from '@/store';
-import { toolApi, Tool, ToolDemo, CreateDemoParams, UpdateDemoParams } from '@/api';
+import { toolApi, Tool, ToolDemo, CreateDemoParams } from '@/api';
 import { formatDate } from '@/utils';
 import { Button } from '@lcaitool/ui';
 
@@ -139,7 +139,7 @@ const DemoCaseManager = () => {
   const handleImageRemove = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      demo_images: prev.demo_images?.filter((_, i) => i !== index) || [],
+      demo_images: Array.isArray(prev.demo_images) ? prev.demo_images.filter((_: string, i: number) => i !== index) : [],
     }));
   };
 
@@ -264,7 +264,7 @@ const DemoCaseManager = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {demos.map((demo, index) => (
+            {demos.map((demo) => (
               <div
                 key={demo.id}
                 className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -393,7 +393,7 @@ const DemoCaseManager = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">演示图片</label>
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
-                  {(formData.demo_images || []).map((img, idx) => (
+                  {(Array.isArray(formData.demo_images) ? formData.demo_images : []).map((img: string, idx: number) => (
                     <div key={idx} className="relative">
                       <img
                         src={img}

@@ -20,7 +20,6 @@ import {
   getPaymentProviderText,
   debounce,
 } from '@/utils';
-import { Button } from '@lcaitool/ui';
 import { toast } from '@/components/ui/Toast';
 
 const OrderList = () => {

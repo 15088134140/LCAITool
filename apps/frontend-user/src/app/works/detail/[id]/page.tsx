@@ -12,7 +12,7 @@ import type { Work, WorkFile, Work as WorkVersion, ToolRating } from '@/lib/api/
 import ratingApi from '@/lib/api/modules/rating';
 import RatingModal from '@/components/rating/RatingModal';
 
-const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || '/api/v1';
 
 // 工具类型配置
 const toolConfig = {

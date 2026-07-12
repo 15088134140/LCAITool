@@ -10,7 +10,7 @@ import type {
 import { tokenStorage } from '../lib/api/client';
 
 // SSE配置
-const SSE_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || 'http://localhost:8000/api/v1';
+const SSE_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] || '/api/v1';
 const MAX_RECONNECT_ATTEMPTS = 10;
 const RECONNECT_DELAY_BASE = 1000; // 1秒
 const RECONNECT_DELAY_MAX = 30000; // 30秒
@@ -181,17 +181,14 @@ export const useSSE = (): UseSSEReturn => {
     clearReconnectTimer();
     currentTaskIdRef.current = taskId;
 
-    // 构建URL
+    // 构建URL（SSE_BASE_URL 为相对路径时，拼接当前 origin 构造绝对 URL）
     const token = tokenStorage.getToken();
-    const url = new URL(`${SSE_BASE_URL}/stream/tasks/${taskId}/stream`);
-
-    // 添加认证token到查询参数（因为EventSource不支持headers）
-    if (token) {
-      url.searchParams.append('token', token);
-    }
+    const path = `${SSE_BASE_URL}/stream/tasks/${taskId}/stream`;
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    const urlStr = `${path}${tokenParam}`;
 
     try {
-      const eventSource = new EventSource(url.toString(), {
+      const eventSource = new EventSource(urlStr, {
         withCredentials: true,
       });
       eventSourceRef.current = eventSource;

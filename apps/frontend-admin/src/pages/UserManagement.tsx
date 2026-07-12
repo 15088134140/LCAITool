@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Edit, Eye, Coins, UserX, UserCheck, ChevronLeft, ChevronRight, X, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, Plus, Edit, Eye, Coins, UserX, UserCheck, ChevronLeft, ChevronRight, X, CheckCircle2 } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { userApi, User, UserListParams } from '@/api/user';
 import { formatDate, formatPhone, getRandomColor, getUserStatusInfo, getVerificationStatusInfo } from '@/utils';
@@ -60,6 +60,7 @@ const UserManagement = () => {
 
   // 表单数据
   const [formData, setFormData] = useState({
+    username: '',
     nickname: '',
     phone: '',
     password: '',
@@ -126,7 +127,7 @@ const UserManagement = () => {
     try {
       await userApi.create(formData);
       setShowCreateModal(false);
-      setFormData({ nickname: '', phone: '', password: '' });
+      setFormData({ username: '', nickname: '', phone: '', password: '' });
       toast.success('创建用户成功');
       loadUsers();
     } catch (err: any) {
@@ -217,8 +218,9 @@ const UserManagement = () => {
   const openEditModal = (user: User) => {
     setSelectedUser(user);
     setFormData({
-      nickname: user.nickname,
-      phone: user.phone,
+      username: user.phone || '',
+      nickname: user.nickname || '',
+      phone: user.phone || '',
       password: '',
     });
     setShowEditModal(true);
@@ -344,10 +346,10 @@ const UserManagement = () => {
                           >
                             {(user.nickname || 'U')?.charAt(0).toUpperCase()}
                           </div>
-                          <span className="font-medium text-gray-800">{user.nickname}</span>
+                          <span className="font-medium text-gray-800">{user.nickname || ''}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">{formatPhone(user.phone)}</td>
+                      <td className="px-6 py-4 text-gray-600">{formatPhone(user.phone || '')}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <span
@@ -641,9 +643,9 @@ const UserManagement = () => {
               <p className="text-sm text-gray-600">
                 用户：<span className="font-medium text-gray-800">{selectedUser.nickname}</span>
               </p>
-              {selectedUser.idCardName && (
+              {selectedUser.real_name && (
                 <p className="text-sm text-gray-600 mt-1">
-                  姓名：<span className="font-medium text-gray-800">{selectedUser.idCardName}</span>
+                  姓名：<span className="font-medium text-gray-800">{selectedUser.real_name}</span>
                 </p>
               )}
             </div>

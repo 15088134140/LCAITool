@@ -5,7 +5,7 @@ services:
   # PostgreSQL Database
   # ============================================
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: lcaitool-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-lcaitool}
@@ -15,7 +15,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     networks:
       - lcaitool-network
     command: >
@@ -103,6 +103,7 @@ services:
     command: ["celery", "-A", "worker", "worker", "--loglevel=info"]
     environment:
       TZ: Asia/Shanghai
+      DEBUG: "false"
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lcaitool}:${DB_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-lcaitool}
       REDIS_URL: redis://redis:6379/0
     volumes:
@@ -117,6 +118,12 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A worker inspect ping -d celery@$$HOSTNAME | grep -q OK"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
 
   # ============================================
   # Frontend User (Next.js) - 根路径

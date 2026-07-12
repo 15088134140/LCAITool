@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Search, ChevronLeft, ChevronRight, X, CheckCircle2, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, CheckCircle2, XCircle } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { userApi, Verification } from '@/api/user';
-import { Button } from '@lcaitool/ui';
 import { toast } from '@/components/ui/Toast';
 
 // Modal组件
