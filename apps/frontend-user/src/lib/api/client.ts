@@ -33,12 +33,15 @@ export const tokenStorage = createTokenStorage();
 
 // 创建Axios实例
 const createApiClient = (): AxiosInstance => {
+  // 不设全局默认 Content-Type: application/json。
+  // axios 1.x 的 transformRequest 在 headers 已含 application/json 时，
+  // 会把 FormData 经 formDataToJSON 转成 JSON 发送（而非 multipart），
+  // 导致文件上传接口收到 {"file":{},...} 而 422。
+  // 不设默认值时，axios 会按 data 类型自动设置：
+  // 普通对象 -> application/json，FormData -> multipart/form-data（浏览器自动加 boundary）。
   const client = axios.create({
     baseURL: API_BASE_URL,
     timeout: 30000,
-    headers: {
-      'Content-Type': 'application/json',
-    },
   });
 
   // 请求拦截器 - 添加认证Token

@@ -139,6 +139,11 @@ class CreativeVideoExecutor(BaseToolExecutor):
         """
         from app.services.task_service import TaskService
 
+        # 兼容前端 DynamicToolForm 提交的 {file_id, file_name, ...} 对象，
+        # 也支持直接传 upload_id 字符串
+        if isinstance(upload_id, dict):
+            upload_id = upload_id.get("file_id") or upload_id.get("id")
+
         task = await TaskService.get_by_id(self.db, self.task_id)
         if not task:
             raise ValueError("任务不存在")
@@ -310,13 +315,13 @@ class CreativeVideoExecutor(BaseToolExecutor):
         os.makedirs(videos_dir, exist_ok=True)
 
         # 进度更新：校验素材
-        await self.update_progress(5, "校验素材")
+        await self.update_progress(5, "校验素材", step_index=0, total_steps=3, step_status='running')
 
         # 构建参考图片
         images = await self._build_video_images(normalized)
 
         # 进度更新：提交 Seedance
-        await self.update_progress(15, "提交 Seedance 视频生成")
+        await self.update_progress(15, "视频生成", step_index=1, total_steps=3, step_status='running')
 
         # 调用 Provider 生成视频
         response = await self.doubao_provider.generate_video(
@@ -336,7 +341,7 @@ class CreativeVideoExecutor(BaseToolExecutor):
             raise RuntimeError(response.error or "Seedance 视频生成失败")
 
         # 进度更新：保存视频
-        await self.update_progress(90, "保存视频")
+        await self.update_progress(90, "保存视频", step_index=2, total_steps=3, step_status='running')
 
         # 解码并保存视频
         try:
@@ -362,7 +367,7 @@ class CreativeVideoExecutor(BaseToolExecutor):
         work = await self._create_work_record(params, result_data)
 
         # 进度更新：完成
-        await self.update_progress(100, "完成")
+        await self.update_progress(100, "完成", step_index=2, total_steps=3, step_status='completed')
         await self.add_log("info", f"创意视频生成完成，成果 ID: {work.id}")
 
         return {
