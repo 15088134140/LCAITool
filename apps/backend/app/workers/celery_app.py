@@ -58,17 +58,13 @@ celery_app.conf.update(
     task_default_exchange='medium',
     task_default_routing_key='medium',
 
-    # 任务软超时和硬超时设置（按队列）
-    task_soft_time_limit={
-        'fast': 30,      # 快速任务：30秒
-        'medium': 300,   # 中等任务：5分钟
-        'heavy': 1800,   # 重任务：30分钟
-    },
-    task_time_limit={
-        'fast': 60,      # 快速任务：60秒
-        'medium': 600,   # 中等任务：10分钟
-        'heavy': 3600,   # 重任务：60分钟
-    },
+    # 任务软超时和硬超时设置
+    # 注意：celery 的 task_time_limit 字典 key 必须是任务名，不是队列名。
+    # 用队列名作 key 会导致 billiard pool 在计算超时时触发
+    # "unsupported operand type(s) for +: 'float' and 'dict'" 错误，worker 崩溃。
+    # 这里用全局默认值，需要差异化超时的任务在 @task 装饰器上单独配置。
+    task_soft_time_limit=300,   # 软超时：5分钟
+    task_time_limit=600,        # 硬超时：10分钟
 
     # 任务重试配置
     task_max_retries=3,
