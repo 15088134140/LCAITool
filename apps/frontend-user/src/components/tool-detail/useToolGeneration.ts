@@ -68,8 +68,8 @@ export function useToolGeneration(): ToolGenerationState {
         setProgressTaskId(task.id);
         setShowProgressModal(true);
       } catch (error: any) {
-        // 与现有标杆页保持一致的错误识别口径
-        const detail: string = error?.response?.data?.detail || '';
+        // 后端统一响应格式错误信息在 message 字段（HTTPException.detail 经全局处理器映射为 message）
+        const detail: string = error?.response?.data?.message || error?.response?.data?.detail || '';
         const status: number | undefined = error?.response?.status;
         if (
           detail.includes('余额') ||

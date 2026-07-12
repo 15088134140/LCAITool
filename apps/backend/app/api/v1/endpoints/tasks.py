@@ -48,6 +48,46 @@ async def _calculate_task_cost(db: AsyncSession, task_in: TaskCreate) -> int:
     return task_in.estimated_cost or 0
 
 
+async def _validate_task_params(db: AsyncSession, task_in: TaskCreate) -> None:
+    """创建任务前提前校验参数，避免无效任务进入队列后才报错。
+
+    复用各执行器的 _validate_params（若存在）。校验失败抛出 400，
+    由前端 useToolGeneration 的 toast 直接提示用户。
+    """
+    from fastapi import HTTPException
+    from app.executors.registry import get_executor_class
+
+    if not task_in.tool_id:
+        return
+
+    result = await db.execute(select(Tool).where(Tool.id == task_in.tool_id))
+    tool = result.scalar_one_or_none()
+    if not tool:
+        return
+
+    executor_key = tool.executor_key or task_in.task_type
+    executor_class = get_executor_class(executor_key)
+    # 仅当执行器实现了 _validate_params 时校验（目前仅创意视频）
+    if not executor_class or not hasattr(executor_class, "_validate_params"):
+        return
+
+    # 构造与 worker 一致的工具配置，供 _validate_params 读取（不局限于特定执行器）
+    tool_config = {
+        "base_fee": tool.base_fee,
+        "image_fee": tool.image_fee,
+        "audio_fee": tool.audio_fee,
+        "token_fee": tool.token_fee,
+        "is_mock_enabled": tool.is_mock_enabled,
+        "is_prompt_logging_enabled": tool.is_prompt_logging_enabled,
+    }
+    # _validate_params 是纯参数校验，不依赖 task_id/db；用占位 task_id 实例化
+    executor = executor_class(task_id=uuid.uuid4(), db=db, tool=tool_config)
+    try:
+        executor._validate_params(task_in.input_params or {})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 class ProgressUpdateRequest(BaseModel):
     progress: int = Field(..., ge=0, le=100, description="进度 0-100")
     message: str = Field("", description="进度消息")
@@ -98,6 +138,9 @@ async def create_task(
 
     # 覆盖前端传入的 estimated_cost
     task_in.estimated_cost = estimated_cost
+
+    # 提前校验参数：在创建任务和冻结积分之前，复用执行器校验
+    await _validate_task_params(db, task_in)
 
     # 创建任务（含预冻结积分）
     task = await TaskService.create_task(db=db, task_in=task_in)
