@@ -94,6 +94,36 @@ class ToolService:
         return tools, total
 
     @staticmethod
+    async def list_tools_admin(
+        db: AsyncSession,
+        search: Optional[str] = None,
+        status: Optional[int] = None,
+        category_id: Optional[uuid.UUID] = None,
+        skip: int = 0,
+        limit: int = 100
+    ) -> Tuple[List[Tool], int]:
+        """管理端工具列表：返回所有状态，支持按状态筛选。"""
+        query = select(Tool)
+        if status is not None:
+            query = query.where(Tool.status == status)
+        if category_id:
+            query = query.where(Tool.category_id == category_id)
+        if search:
+            query = query.where(
+                or_(
+                    Tool.name.ilike(f"%{search}%"),
+                    Tool.description.ilike(f"%{search}%")
+                )
+            )
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar()
+        query = query.order_by(Tool.created_at.desc()).offset(skip).limit(limit)
+        result = await db.execute(query)
+        tools = result.scalars().all()
+        return tools, total
+
+    @staticmethod
     async def create_tool(db: AsyncSession, tool_in: ToolCreate) -> Tool:
         """创建工具（自动校验 slug 唯一性）"""
         # 校验 slug 唯一性

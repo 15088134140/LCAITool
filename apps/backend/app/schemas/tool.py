@@ -71,7 +71,7 @@ class ToolCreate(ToolBase):
 
 
 class ToolUpdate(BaseModel):
-    slug: str = Field(..., max_length=100, description="工具标识")
+    slug: Optional[str] = Field(None, max_length=100, description="工具标识")
     name: Optional[str] = Field(None, max_length=100, description="工具名称")
     description: Optional[str] = Field(None, description="详细描述")
     short_desc: Optional[str] = Field(None, max_length=255, description="简短描述")

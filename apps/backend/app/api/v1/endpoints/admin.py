@@ -549,6 +549,31 @@ async def list_executors(
 
 # ==================== 工具管理 ====================
 
+@router.get("/tools", summary="工具列表（管理端，支持状态筛选）")
+async def admin_list_tools(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    status: Optional[int] = Query(None, description="状态:0下线 1上线 2维护中"),
+    category_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+) -> Any:
+    """管理端工具列表，返回所有状态，支持按状态筛选。"""
+    import uuid
+    skip = (page - 1) * page_size
+    cat_uuid = uuid.UUID(category_id) if category_id else None
+    tools, total = await ToolService.list_tools_admin(
+        db, search=search, status=status, category_id=cat_uuid, skip=skip, limit=page_size
+    )
+    return {
+        "items": [ToolResponse.model_validate(tool) for tool in tools],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
 @router.post("/tools", summary="创建工具")
 async def create_tool(
     tool_in: ToolCreate,
