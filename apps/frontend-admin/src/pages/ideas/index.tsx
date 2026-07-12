@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   Search,
-  ChevronLeft,
-  ChevronRight,
-  X,
   ThumbsUp,
   CheckCircle2,
   XCircle,
@@ -13,35 +10,11 @@ import {
 import { useAppStore } from '@/store';
 import { ideasApi, AdminIdea } from '@/api/ideas';
 import { formatDate } from '@/utils';
-import { Button } from '@lcaitool/ui';
+import { Button, Pagination, Modal } from '@lcaitool/ui';
+import { EmptyState, TableSkeleton } from '@/components/ui';
 import { toast } from '@/components/ui/Toast';
 
-// Modal 组件
-const Modal = ({
-  title,
-  children,
-  onClose,
-}: {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-}) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-    <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <X size={18} className="text-gray-500" />
-        </button>
-      </div>
-      {children}
-    </div>
-  </div>
-);
+
 
 const statusLabels: Record<string, string> = {
   pending: '待审核',
@@ -64,7 +37,7 @@ const IdeasPage = () => {
   const [ideas, setIdeas] = useState<AdminIdea[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(20);
   const [keyword, setKeyword] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -106,7 +79,7 @@ const IdeasPage = () => {
 
   useEffect(() => {
     fetchList();
-  }, [page, statusFilter, searchKeyword]);
+  }, [page, pageSize, statusFilter, searchKeyword]);
 
   const handleSearch = () => {
     setPage(1);
@@ -141,8 +114,6 @@ const IdeasPage = () => {
       toast.error('操作失败');
     }
   };
-
-  const totalPages = Math.ceil(total / pageSize);
 
   // 判断哪些操作按钮可用
   const canApprove = (status: string) => status === 'pending' || status === 'reviewing';
@@ -188,7 +159,7 @@ const IdeasPage = () => {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead>
+            <thead className="bg-gray-50 sticky top-0 z-10">
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">标题</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">用户</th>
@@ -201,12 +172,12 @@ const IdeasPage = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-500">加载中...</td>
-                </tr>
+                <TableSkeleton cols={7} />
               ) : ideas.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-500">暂无数据</td>
+                  <td colSpan={7}>
+                    <EmptyState title="暂无数据" />
+                  </td>
                 </tr>
               ) : (
                 ideas.map((idea) => (
@@ -306,29 +277,16 @@ const IdeasPage = () => {
         </div>
 
         {/* 分页 */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
-            <span className="text-sm text-gray-500">
-              共 {total} 条，第 {page}/{totalPages} 页
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page <= 1}
-                className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft size={18} className="text-gray-600" />
-              </button>
-              <button
-                onClick={() => setPage(Math.min(totalPages, page + 1))}
-                disabled={page >= totalPages}
-                className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight size={18} className="text-gray-600" />
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* 详情弹窗 */}

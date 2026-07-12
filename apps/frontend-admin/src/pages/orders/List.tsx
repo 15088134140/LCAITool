@@ -6,8 +6,6 @@ import {
   Eye,
   RefreshCw,
   Calendar,
-  ChevronLeft,
-  ChevronRight,
   Download,
 } from 'lucide-react';
 import { useAppStore } from '@/store';
@@ -18,9 +16,11 @@ import {
   formatMoney,
   getOrderStatusInfo,
   getPaymentProviderText,
-  debounce,
 } from '@/utils';
 import { toast } from '@/components/ui/Toast';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { Pagination } from '@lcaitool/ui';
+import { EmptyState } from '@/components/ui';
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -57,13 +57,19 @@ const OrderList = () => {
     loadOrders();
   }, [params]);
 
-  const debouncedSearch = debounce((value: string) => {
-    setParams(prev => ({ ...prev, page: 1, keyword: value }));
-  }, 300);
+  // 搜索防抖：用 useDebouncedValue 稳定定时器，避免旧实现在组件体内每次渲染
+  // 重建 debounce 实例导致 clearTimeout 清不到上一次 timer 的失效 bug。
+  const debouncedKeyword = useDebouncedValue(searchInput, 300);
+  useEffect(() => {
+    setParams((prev) =>
+      prev.keyword === debouncedKeyword
+        ? prev
+        : { ...prev, page: 1, keyword: debouncedKeyword }
+    );
+  }, [debouncedKeyword]);
 
   const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchInput(e.target.value);
-    debouncedSearch(e.target.value);
   };
 
   const loadOrders = async () => {
@@ -112,7 +118,6 @@ const OrderList = () => {
     setShowFilter(false);
   };
 
-  const totalPages = Math.ceil(total / params.pageSize);
   const handlePageChange = (page: number) => {
     setParams(prev => ({ ...prev, page }));
   };
@@ -236,29 +241,12 @@ const OrderList = () => {
         )}
       </div>
 
-      {/* 统计卡片 */}
+      {/* 统计卡片：仅展示全局总量。分状态统计需后端按状态分组接口支持，
+          旧实现用 orders.filter 基于当前页数据计算会截断误导，故移除。 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="text-sm text-gray-500">全部订单</div>
           <div className="text-2xl font-bold text-gray-800 mt-1">{total}</div>
-        </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-          <div className="text-sm text-gray-500">待支付</div>
-          <div className="text-2xl font-bold text-[#F59E0B] mt-1">
-            {orders.filter(o => o.status === 'pending').length}
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-          <div className="text-sm text-gray-500">已支付</div>
-          <div className="text-2xl font-bold text-[#059669] mt-1">
-            {orders.filter(o => o.status === 'paid').length}
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-          <div className="text-sm text-gray-500">已退款</div>
-          <div className="text-2xl font-bold text-[#6B7280] mt-1">
-            {orders.filter(o => o.status === 'refunded').length}
-          </div>
         </div>
       </div>
 
@@ -269,14 +257,12 @@ const OrderList = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E3A5F]"></div>
           </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">暂无订单数据</p>
-          </div>
+          <EmptyState title="暂无订单数据" />
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
                   <tr>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">订单信息</th>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">用户信息</th>
@@ -347,51 +333,15 @@ const OrderList = () => {
             </div>
 
             {/* 分页 */}
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-              <div className="text-sm text-gray-500">
-                共 {total} 条记录，第 {params.page} / {totalPages || 1} 页
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handlePageChange(params.page - 1)}
-                  disabled={params.page <= 1}
-                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum = i + 1;
-                  if (totalPages > 5) {
-                    if (params.page > 3) {
-                      pageNum = params.page - 2 + i;
-                    }
-                    if (params.page > totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    }
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`w-9 h-9 rounded-lg font-medium transition-colors ${
-                        params.page === pageNum
-                          ? 'bg-[#1E3A5F] text-white'
-                          : 'border border-gray-300 hover:bg-gray-50 text-gray-600'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => handlePageChange(params.page + 1)}
-                  disabled={params.page >= totalPages}
-                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            <Pagination
+              page={params.page}
+              pageSize={params.pageSize}
+              total={total}
+              onPageChange={handlePageChange}
+              onPageSizeChange={(size) =>
+                setParams((prev) => ({ ...prev, page: 1, pageSize: size }))
+              }
+            />
           </>
         )}
       </div>

@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   Search,
-  ChevronLeft,
-  ChevronRight,
-  X,
   Eye,
   EyeOff,
   Star,
@@ -14,35 +11,12 @@ import { ratingApi, AdminRating } from '@/api/rating';
 import { toolApi } from '@/api/tool';
 import type { Tool } from '@/api/tool';
 import { formatDate } from '@/utils';
-import { Button } from '@lcaitool/ui';
+import { Button, Pagination, Modal } from '@lcaitool/ui';
+import { EmptyState, TableSkeleton } from '@/components/ui';
 import { toast } from '@/components/ui/Toast';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
-// Modal 组件
-const Modal = ({
-  title,
-  children,
-  onClose,
-}: {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-}) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-    <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <X size={18} className="text-gray-500" />
-        </button>
-      </div>
-      {children}
-    </div>
-  </div>
-);
+
 
 const StarRating = ({ value }: { value: number }) => (
   <div className="flex items-center gap-0.5">
@@ -72,6 +46,17 @@ const ReviewsPage = () => {
     status: undefined as number | undefined,
     keyword: '',
   });
+  const [searchInput, setSearchInput] = useState('');
+
+  // 搜索防抖：避免每键即请求造成的卡顿与多余网络请求。
+  const debouncedKeyword = useDebouncedValue(searchInput, 300);
+  useEffect(() => {
+    setParams((prev) =>
+      prev.keyword === debouncedKeyword
+        ? prev
+        : { ...prev, page: 1, keyword: debouncedKeyword }
+    );
+  }, [debouncedKeyword]);
 
   // 工具列表（用于下拉筛选）
   const [tools, setTools] = useState<Tool[]>([]);
@@ -133,7 +118,7 @@ const ReviewsPage = () => {
 
   // 搜索
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setParams((prev) => ({ ...prev, page: 1, keyword: e.target.value }));
+    setSearchInput(e.target.value);
   };
 
   // 筛选
@@ -142,7 +127,6 @@ const ReviewsPage = () => {
   };
 
   // 分页
-  const totalPages = Math.ceil(total / params.pageSize);
   const handlePageChange = (page: number) => {
     setParams((prev) => ({ ...prev, page }));
   };
@@ -199,7 +183,7 @@ const ReviewsPage = () => {
               <input
                 type="text"
                 placeholder="搜索评价内容..."
-                value={params.keyword}
+                value={searchInput}
                 onChange={handleSearch}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none w-64"
               />
@@ -261,7 +245,7 @@ const ReviewsPage = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
               <tr>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">用户</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">工具</th>
@@ -274,15 +258,11 @@ const ReviewsPage = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    加载中...
-                  </td>
-                </tr>
+                <TableSkeleton cols={7} />
               ) : reviews.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    暂无数据
+                  <td colSpan={7}>
+                    <EmptyState title="暂无数据" />
                   </td>
                 </tr>
               ) : (
@@ -355,51 +335,15 @@ const ReviewsPage = () => {
         </div>
 
         {/* 分页 */}
-        <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-          <span className="text-sm text-gray-500">
-            共 {total} 条记录，第 {params.page} / {totalPages || 1} 页
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handlePageChange(params.page - 1)}
-              disabled={params.page <= 1}
-              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum = i + 1;
-              if (totalPages > 5) {
-                if (params.page > 3) {
-                  pageNum = params.page - 2 + i;
-                }
-                if (params.page > totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                }
-              }
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => handlePageChange(pageNum)}
-                  className={`w-9 h-9 rounded-lg font-medium transition-colors ${
-                    params.page === pageNum
-                      ? 'bg-[#1E3A5F] text-white'
-                      : 'border border-gray-300 hover:bg-gray-50 text-gray-600'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => handlePageChange(params.page + 1)}
-              disabled={params.page >= totalPages}
-              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={params.page}
+          pageSize={params.pageSize}
+          total={total}
+          onPageChange={handlePageChange}
+          onPageSizeChange={(size) =>
+            setParams((prev) => ({ ...prev, page: 1, pageSize: size }))
+          }
+        />
       </div>
 
       {/* 回复弹窗 */}

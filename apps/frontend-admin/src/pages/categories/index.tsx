@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Search, Plus, Edit, Trash2, X } from 'lucide-react';
+import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { toolApi, ToolCategory } from '@/api';
 import { formatDate } from '@/utils';
-import { Button } from '@lcaitool/ui';
+import { Button, Modal } from '@lcaitool/ui';
+import { EmptyState, TableSkeleton } from '@/components/ui';
 import { toast } from '@/components/ui/Toast';
 
 const CategoryManagement = () => {
@@ -170,7 +171,7 @@ const CategoryManagement = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
               <tr>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">名称</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">标识</th>
@@ -184,15 +185,11 @@ const CategoryManagement = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                    加载中...
-                  </td>
-                </tr>
+                <TableSkeleton cols={8} />
               ) : filteredCategories.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                    暂无数据
+                  <td colSpan={8}>
+                    <EmptyState title="暂无数据" />
                   </td>
                 </tr>
               ) : (
@@ -232,6 +229,7 @@ const CategoryManagement = () => {
                           onClick={() => openEditModal(category)}
                           className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
                           title="编辑"
+                          aria-label="编辑"
                         >
                           <Edit size={16} />
                         </button>
@@ -243,6 +241,7 @@ const CategoryManagement = () => {
                               : 'text-green-500 hover:bg-green-50'
                           }`}
                           title={category.is_active ? '禁用' : '启用'}
+                          aria-label={category.is_active ? '禁用' : '启用'}
                         >
                           <span className="text-xs font-medium">
                             {category.is_active ? '禁用' : '启用'}
@@ -253,10 +252,12 @@ const CategoryManagement = () => {
                             setDeletingCategory(category);
                             setShowDeleteModal(true);
                           }}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1 p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="删除"
+                          aria-label="删除"
                         >
                           <Trash2 size={16} />
+                          <span className="text-xs">删除</span>
                         </button>
                       </div>
                     </td>
@@ -412,28 +413,7 @@ const CategoryManagement = () => {
   );
 };
 
-interface ModalProps {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-}
 
-const Modal = ({ title, children, onClose }: ModalProps) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-    <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <X size={18} className="text-gray-500" />
-        </button>
-      </div>
-      {children}
-    </div>
-  </div>
-);
+
 
 export default CategoryManagement;

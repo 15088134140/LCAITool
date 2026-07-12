@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Edit, Eye, Trash2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Search, Plus, Edit, Eye, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { toolApi, Tool, ToolListParams, ToolCategory } from '@/api';
 import { formatDate } from '@/utils';
-import { Button } from '@lcaitool/ui';
+import { Button, Pagination, Modal } from '@lcaitool/ui';
+import { EmptyState, TableSkeleton } from '@/components/ui';
+import { toast } from '@/components/ui/Toast';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const ToolManagement = () => {
   const navigate = useNavigate();
@@ -22,9 +25,25 @@ const ToolManagement = () => {
     status: undefined,
     category_id: undefined,
   });
+  const [searchInput, setSearchInput] = useState('');
+
+  // 搜索防抖：避免每键即请求造成的卡顿与多余网络请求。
+  const debouncedKeyword = useDebouncedValue(searchInput, 300);
+  useEffect(() => {
+    setParams((prev) =>
+      prev.keyword === debouncedKeyword
+        ? prev
+        : { ...prev, page: 1, keyword: debouncedKeyword }
+    );
+  }, [debouncedKeyword]);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+
+  // 批量操作
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchOperating, setBatchOperating] = useState(false);
+  const [showBatchDeleteModal, setShowBatchDeleteModal] = useState(false);
 
   useEffect(() => {
     setCurrentPageTitle('工具管理');
@@ -56,13 +75,14 @@ const ToolManagement = () => {
       setTotal(data.total);
     } catch (err) {
       console.error('加载工具列表失败:', err);
+      toast.error('加载工具列表失败');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setParams((prev) => ({ ...prev, page: 1, keyword: e.target.value }));
+    setSearchInput(e.target.value);
   };
 
   const handleStatusChange = (value: string) => {
@@ -89,9 +109,11 @@ const ToolManagement = () => {
     try {
       const newStatus = tool.status === 1 ? 0 : 1;
       await toolApi.toggleStatus(tool.id, newStatus);
+      toast.success(newStatus === 1 ? '工具已上线' : '工具已下线');
       loadTools();
     } catch (err) {
       console.error('切换工具状态失败:', err);
+      toast.error('切换工具状态失败');
     }
   };
 
@@ -99,12 +121,78 @@ const ToolManagement = () => {
     if (!selectedTool) return;
     try {
       await toolApi.delete(selectedTool.id);
+      toast.success('工具已删除');
       setShowDeleteModal(false);
       setSelectedTool(null);
       loadTools();
     } catch (err) {
       console.error('删除工具失败:', err);
+      toast.error('删除工具失败');
     }
+  };
+
+  // 批量选择
+  const allSelected = tools.length > 0 && tools.every((t) => selectedIds.has(t.id));
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(tools.map((t) => t.id)));
+    }
+  };
+  const toggleOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // 批量上下线（前端循环单条接口 + 进度反馈，后端暂无批量接口）
+  const handleBatchToggleStatus = async (newStatus: number) => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBatchOperating(true);
+    let success = 0;
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await toolApi.toggleStatus(id, newStatus);
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+    setBatchOperating(false);
+    toast.success(
+      `批量${newStatus === 1 ? '上线' : '下线'}完成：成功 ${success} 项${failed ? `，失败 ${failed} 项` : ''}`
+    );
+    clearSelection();
+    loadTools();
+  };
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBatchOperating(true);
+    let success = 0;
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await toolApi.delete(id);
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+    setBatchOperating(false);
+    setShowBatchDeleteModal(false);
+    toast.success(`批量删除完成：成功 ${success} 项${failed ? `，失败 ${failed} 项` : ''}`);
+    clearSelection();
+    loadTools();
   };
 
   const getStatusText = (status: number) => {
@@ -143,8 +231,6 @@ const ToolManagement = () => {
     }
   };
 
-  const totalPages = Math.ceil(total / params.pageSize);
-
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -155,7 +241,7 @@ const ToolManagement = () => {
               <input
                 type="text"
                 placeholder="搜索工具名称..."
-                value={params.keyword}
+                value={searchInput}
                 onChange={handleSearch}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none w-64"
               />
@@ -194,11 +280,55 @@ const ToolManagement = () => {
         </div>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 flex-wrap">
+          <span className="text-sm text-gray-600">已选 {selectedIds.size} 项</span>
+          <button
+            onClick={() => handleBatchToggleStatus(1)}
+            disabled={batchOperating}
+            className="px-3 py-1.5 text-sm text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50"
+          >
+            批量上线
+          </button>
+          <button
+            onClick={() => handleBatchToggleStatus(0)}
+            disabled={batchOperating}
+            className="px-3 py-1.5 text-sm text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50"
+          >
+            批量下线
+          </button>
+          <button
+            onClick={() => setShowBatchDeleteModal(true)}
+            disabled={batchOperating}
+            className="px-3 py-1.5 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50"
+          >
+            批量删除
+          </button>
+          <button
+            onClick={clearSelection}
+            disabled={batchOperating}
+            className="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            取消选择
+          </button>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
               <tr>
+                <th className="px-6 py-4 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    disabled={tools.length === 0}
+                    className="w-4 h-4 rounded border-gray-300"
+                    aria-label="全选"
+                  />
+                </th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">工具</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">类目</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">基础费</th>
@@ -213,20 +343,25 @@ const ToolManagement = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
-                    加载中...
-                  </td>
-                </tr>
+                <TableSkeleton cols={11} />
               ) : tools.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
-                    暂无数据
+                  <td colSpan={11}>
+                    <EmptyState title="暂无数据" />
                   </td>
                 </tr>
               ) : (
                 tools.map((tool) => (
                   <tr key={tool.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 w-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(tool.id)}
+                        onChange={() => toggleOne(tool.id)}
+                        className="w-4 h-4 rounded border-gray-300"
+                        aria-label={`选择 ${tool.name}`}
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {tool.cover_image ? (
@@ -311,6 +446,7 @@ const ToolManagement = () => {
                           onClick={() => navigate(`/tools/${tool.id}/demos`)}
                           className="p-1.5 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"
                           title="演示案例"
+                          aria-label="演示案例"
                         >
                           <Eye size={16} />
                         </button>
@@ -318,6 +454,7 @@ const ToolManagement = () => {
                           onClick={() => navigate(`/tools/${tool.id}/edit`)}
                           className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
                           title="编辑"
+                          aria-label="编辑"
                         >
                           <Edit size={16} />
                         </button>
@@ -329,6 +466,7 @@ const ToolManagement = () => {
                               : 'text-green-500 hover:bg-green-50'
                           }`}
                           title={tool.status === 1 ? '下线' : '上线'}
+                          aria-label={tool.status === 1 ? '下线' : '上线'}
                         >
                           {tool.status === 1 ? <ArrowDown size={16} /> : <ArrowUp size={16} />}
                         </button>
@@ -337,10 +475,12 @@ const ToolManagement = () => {
                             setSelectedTool(tool);
                             setShowDeleteModal(true);
                           }}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1 p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="删除"
+                          aria-label="删除"
                         >
                           <Trash2 size={16} />
+                          <span className="text-xs">删除</span>
                         </button>
                       </div>
                     </td>
@@ -351,53 +491,15 @@ const ToolManagement = () => {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-sm text-gray-500">
-              共 {total} 条记录，第 {params.page} / {totalPages} 页
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handlePageChange(params.page - 1)}
-                disabled={params.page <= 1}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum = i + 1;
-                if (totalPages > 5) {
-                  if (params.page > 3) {
-                    pageNum = params.page - 2 + i;
-                  }
-                  if (params.page > totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  }
-                }
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`w-9 h-9 rounded-lg font-medium transition-colors ${
-                      params.page === pageNum
-                        ? 'bg-[#1E3A5F] text-white'
-                        : 'border border-gray-300 hover:bg-gray-50 text-gray-600'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => handlePageChange(params.page + 1)}
-                disabled={params.page >= totalPages}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          page={params.page}
+          pageSize={params.pageSize}
+          total={total}
+          onPageChange={handlePageChange}
+          onPageSizeChange={(size) =>
+            setParams((prev) => ({ ...prev, page: 1, pageSize: size }))
+          }
+        />
       </div>
 
       {showDeleteModal && selectedTool && (
@@ -416,64 +518,25 @@ const ToolManagement = () => {
           </p>
         </Modal>
       )}
+
+      {showBatchDeleteModal && (
+        <Modal
+          title="批量删除工具"
+          onClose={() => setShowBatchDeleteModal(false)}
+          onConfirm={handleBatchDelete}
+          confirmText="删除"
+          confirmVariant="danger"
+        >
+          <p className="text-gray-600">
+            确定要删除选中的 <span className="font-medium text-gray-800">{selectedIds.size}</span> 个工具吗？此操作无法撤销。
+          </p>
+        </Modal>
+      )}
     </div>
   );
 };
 
-interface ModalProps {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-  onConfirm?: () => void;
-  confirmText?: string;
-  confirmVariant?: 'primary' | 'danger';
-}
 
-const Modal = ({
-  title,
-  children,
-  onClose,
-  onConfirm,
-  confirmText = '确定',
-  confirmVariant = 'primary',
-}: ModalProps) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-    <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <X size={18} className="text-gray-500" />
-        </button>
-      </div>
-      <div className="mb-6">{children}</div>
-      <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          取消
-        </button>
-        {onConfirm && (
-          <Button
-            type="button"
-            onClick={onConfirm}
-            className={`px-4 py-2 rounded-lg text-white ${
-              confirmVariant === 'danger'
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-gradient-to-r from-[#059669] to-[#10B981] hover:from-[#047857] hover:to-[#059669]'
-            }`}
-          >
-            {confirmText}
-          </Button>
-        )}
-      </div>
-    </div>
-  </div>
-);
+
 
 export default ToolManagement;

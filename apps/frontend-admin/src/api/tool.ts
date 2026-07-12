@@ -281,7 +281,7 @@ export const toolApi = {
     if (params.category_id) {
       filteredParams.category_id = params.category_id;
     }
-    const res: any = await request.get('/tools', { params: filteredParams });
+    const res: any = await request.get(`${ADMIN_PREFIX}/tools`, { params: filteredParams });
     // 后端返回 { items, total, page, page_size }，前端需要 { list, total, page, pageSize }
     return {
       list: res.items || [],

@@ -1,35 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, X, CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { userApi, Verification } from '@/api/user';
 import { toast } from '@/components/ui/Toast';
+import { Pagination, Modal } from '@lcaitool/ui';
+import { EmptyState, TableSkeleton } from '@/components/ui';
 
-// Modal组件
-const Modal = ({
-  title,
-  children,
-  onClose,
-}: {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-}) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-    <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <X size={18} className="text-gray-500" />
-        </button>
-      </div>
-      {children}
-    </div>
-  </div>
-);
+
 
 const VerificationManagement = () => {
   const { setCurrentPageTitle, setBreadcrumbs } = useAppStore();
@@ -38,7 +15,7 @@ const VerificationManagement = () => {
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState<string>('');
 
   const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -58,7 +35,7 @@ const VerificationManagement = () => {
 
   useEffect(() => {
     loadVerifications();
-  }, [page, statusFilter]);
+  }, [page, pageSize, statusFilter]);
 
   const loadVerifications = async () => {
     setLoading(true);
@@ -74,8 +51,6 @@ const VerificationManagement = () => {
       setLoading(false);
     }
   };
-
-  const totalPages = Math.ceil(total / pageSize);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -144,7 +119,7 @@ const VerificationManagement = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
               <tr>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">用户昵称</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">真实姓名</th>
@@ -155,15 +130,11 @@ const VerificationManagement = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                    加载中...
-                  </td>
-                </tr>
+                <TableSkeleton cols={5} />
               ) : verifications.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                    暂无数据
+                  <td colSpan={5}>
+                    <EmptyState title="暂无数据" />
                   </td>
                 </tr>
               ) : (
@@ -235,53 +206,16 @@ const VerificationManagement = () => {
         </div>
 
         {/* 分页 */}
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-sm text-gray-500">
-              共 {total} 条记录，第 {page} / {totalPages} 页
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page <= 1}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum = i + 1;
-                if (totalPages > 5) {
-                  if (page > 3) {
-                    pageNum = page - 2 + i;
-                  }
-                  if (page > totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  }
-                }
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`w-9 h-9 rounded-lg font-medium transition-colors ${
-                      page === pageNum
-                        ? 'bg-[#1E3A5F] text-white'
-                        : 'border border-gray-300 hover:bg-gray-50 text-gray-600'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page >= totalPages}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={handlePageChange}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* 审核弹窗 */}
