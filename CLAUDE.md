@@ -54,7 +54,9 @@ Superpowers 的进入条件、流程产物路径和执行方式以 `.ai/workflow
 
 ### 🎯 使用原则（**强制优先**）
 
-在执行任何代码探索任务时，**优先使用 CodeGraph，再使用 grep/find/Read**：
+在执行任何代码探索任务时，**优先使用 CodeGraph，再使用 grep/find/Read**。如环境中 CodeGraph 工具不可用，则自动 fallback 到常规方式。
+
+这条原则同样适用于所有派遣的子代理。
 
 1. **架构理解**：先通过 CodeGraph 获取模块概览，再深入具体文件
 2. **影响分析**：修改代码前先查询调用链和依赖关系（blast radius）
