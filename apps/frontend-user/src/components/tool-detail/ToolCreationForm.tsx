@@ -71,22 +71,31 @@ function DynamicToolPage({ tool }: { tool: Tool }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-4">开始创作</h2>
+          <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+            选择适合您的创作方式，简单几步即可生成专属作品
+          </p>
         </div>
-        <div className="max-w-2xl mx-auto">
-          <DynamicToolForm
-            paramSchema={tool.param_schema!}
-            toolId={tool.id}
-            onSubmit={handleSubmit}
-            onValuesChange={(vals) => setFormValues(vals)}
-            disabled={generation.isCreating}
-            submitLabel={generation.isCreating ? '正在创建任务...' : '开始生成'}
-            rightSlot={
-              <PriceEstimatePanel
-                estimate={estimate}
-                className="mt-6"
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+              <DynamicToolForm
+                paramSchema={tool.param_schema!}
+                toolId={tool.id}
+                onSubmit={handleSubmit}
+                onValuesChange={(vals) => setFormValues(vals)}
+                disabled={generation.isCreating}
+                submitLabel={generation.isCreating ? '正在创建任务...' : '开始生成'}
               />
-            }
-          />
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <div className="sticky top-24">
+              <PriceEstimatePanel estimate={estimate} className="mb-6" />
+              <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                <p className="text-sm text-gray-500 text-center">预计耗时：2-5 分钟</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
